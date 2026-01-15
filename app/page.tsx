@@ -1,63 +1,79 @@
-import Image from "next/image";
+import ParticleField from "./components/ParticleField";
+import LaunchButton from "./components/LaunchButton";
 
 export default function Home() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <div className="relative min-h-screen overflow-hidden bg-bg-primary">
+      {/* Particle Field Background */}
+      <ParticleField />
+
+      {/* Subtle Gradient Overlay */}
+      <div className="fixed inset-0 bg-gradient-subtle opacity-30 pointer-events-none z-10" />
+
+      {/* Main Content */}
+      <main className="relative z-20 flex min-h-screen flex-col items-center justify-center px-4 sm:px-6 lg:px-8 py-20">
+        <div className="flex flex-col items-center justify-center text-center space-y-12 max-w-5xl mx-auto">
+          
+          {/* Year Badge */}
+          <div className="mb-4 animate-scale-in">
+            <div className="inline-block px-6 py-2 rounded-full bg-bg-elevated border border-muted">
+              <span className="text-sm font-medium text-text-secondary">2026</span>
+            </div>
+          </div>
+
+          {/* Main Heading */}
+          <h1 className="text-7xl sm:text-8xl md:text-9xl lg:text-[12rem] font-black leading-none mb-12 animate-fade-in-up delay-200">
+            <span className=" gradient-text">STELLAR</span>
+            <span className="leading-none block text-text-primary">WRAP</span>
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+
+          {/* Subheading */}
+          <p className="text-xl sm:text-2xl md:text-3xl font-light max-w-4xl mx-auto leading-relaxed px-4 mb-8 text-text-secondary animate-fade-in-up delay-400">
+            Your weekly, monthly, or yearly journey on the Stellar network,{" "}
+            <span className="font-medium text-text-primary">wrapped</span>
           </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+       <div className="flex flex-col items-center justify-center gap-4">
+           {/* Description */}
+           <div className="text-base sm:text-lg max-w-3xl mx-auto space-y-2 px-4 mb-12 text-text-muted animate-fade-in delay-600">
+            <p>
+              Discover your personalized review with your top transactions,
+            </p>
+            <p>
+              smart contracts, NFT activity, and achievements on Stellar.
+            </p>
+          </div>
+
+          {/* CTA Button */}
+          <div className="mb-9 animate-fade-in-up delay-800">
+            <LaunchButton />
+          </div>
+
+          {/* Feature Pills */}
+          <div className="flex flex-wrap items-center justify-center gap-4 mt-12 animate-fade-in delay-1000">
+            {[
+              "Soroban Contracts",
+              "NFT Activity",
+              "DeFi Stats",
+              "Network Volume",
+            ].map((feature, index) => (
+              <div
+                key={feature}
+                className="feature-pill animate-fade-in-up"
+                style={{ animationDelay: `${1 + index * 0.1}s` }}
+              >
+                {feature}
+              </div>
+            ))}
+          </div>
+
+          <p className="text-sm mt-12 text-text-muted animate-fade-in delay-1400">
+            Connect your Stellar wallet to get started
+          </p>
+       </div>
+
+          {/* Bottom Note */}
+         
         </div>
       </main>
     </div>
