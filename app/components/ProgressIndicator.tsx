@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { Home } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from "next/navigation";
 
 interface ProgressIndicatorProps {
   currentStep: number;
@@ -10,13 +10,13 @@ interface ProgressIndicatorProps {
 }
 
 export function ProgressIndicator({ currentStep, totalSteps, onNext, showNext = false }: ProgressIndicatorProps) {
-  const navigate = useNavigate();
+ const router = useRouter();
 
   return (
     <>
       {/* Home button */}
       <motion.button
-        onClick={() => navigate('/')}
+        onClick={() => router.push('/')}
         className="absolute top-6 left-6 md:top-8 md:left-8 z-30 group"
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
