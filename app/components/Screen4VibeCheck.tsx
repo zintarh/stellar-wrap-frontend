@@ -1,0 +1,261 @@
+"use client"
+
+import { motion } from 'framer-motion';
+import { useEffect, useState } from 'react';
+import { TrendingUp, Palette, Code } from 'lucide-react';
+
+interface VibeData {
+  type: string;
+  percentage: number;
+  color: string;
+  label: string;
+}
+
+interface Screen4VibeCheckProps {
+  vibes: VibeData[];
+}
+
+// Icon mapping for different vibe types
+const vibeIcons: Record<string, any> = {
+  defi: TrendingUp,
+  nft: Palette,
+  dev: Code,
+};
+
+export function Screen4VibeCheck({ vibes }: Screen4VibeCheckProps) {
+  const [blobShapes, setBlobShapes] = useState<any[]>([]);
+
+  useEffect(() => {
+    // Generate organic blob shapes based on percentages
+    const shapes = vibes.map((vibe, index) => {
+      const baseSize = (vibe.percentage / 100) * 250 + 100;
+      return {
+        ...vibe,
+        size: baseSize,
+        x: (index - 1) * 200,
+        y: 0,
+        rotate: Math.random() * 360,
+      };
+    });
+    setBlobShapes(shapes);
+  }, [vibes]);
+
+  return (
+    <div className="relative w-full h-full overflow-hidden flex" style={{ backgroundColor: 'var(--color-theme-background)' }}>
+      {/* Dark gradient background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-black via-black to-black opacity-60" />
+      
+      {/* Hexagon pattern */}
+      <div className="absolute inset-0 opacity-5">
+        <div 
+          className="w-full h-full"
+          style={{
+            backgroundImage: `
+              radial-gradient(circle, rgba(var(--color-theme-primary-rgb), 0.8) 1px, transparent 1px)
+            `,
+            backgroundSize: '40px 40px',
+          }}
+        />
+      </div>
+
+      {/* Content container */}
+      <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-12 py-8 sm:py-12 md:py-16 flex items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12 lg:gap-16 w-full items-center">
+          {/* Left: Title and Stats */}
+          <div>
+            <motion.div
+              initial={{ opacity: 0, x: -50 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.2 }}
+              className="mb-8 sm:mb-12 md:mb-16"
+            >
+              <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-white/90 tracking-tight mb-2 md:mb-3 leading-none">
+                VIBE
+              </h2>
+              <h2 
+                className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-tight leading-none"
+                style={{
+                  background: `linear-gradient(to right, #ffffff, var(--color-theme-primary))`,
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                }}
+              >
+                CHECK
+              </h2>
+            </motion.div>
+
+            <div className="space-y-3 sm:space-y-4 md:space-y-6">
+              {vibes.map((vibe, index) => {
+                const Icon = vibeIcons[vibe.type] || TrendingUp;
+                return (
+                  <motion.div
+                    key={vibe.type}
+                    initial={{ opacity: 0, x: -50 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.5 + index * 0.15 }}
+                    whileHover={{ x: 10, transition: { duration: 0.2 } }}
+                    className="group"
+                  >
+                    <div className="relative">
+                      <motion.div
+                        className="absolute -inset-1 sm:-inset-2 rounded-xl sm:rounded-2xl blur-md opacity-0 group-hover:opacity-50 transition-opacity"
+                        style={{ backgroundColor: 'var(--color-theme-primary)' }}
+                      />
+                      <div className="relative backdrop-blur-sm p-4 sm:p-5 md:p-6 rounded-xl sm:rounded-2xl border border-white/10 flex items-center justify-between"
+                        style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)' }}
+                      >
+                        <div className="flex items-center gap-3 sm:gap-4 md:gap-5">
+                          <motion.div 
+                            className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl border-2 border-white/30 flex items-center justify-center"
+                            style={{ backgroundColor: 'var(--color-theme-primary)' }}
+                            animate={{
+                              boxShadow: [
+                                `0 0 10px rgba(var(--color-theme-primary-rgb), 0.3)`,
+                                `0 0 20px rgba(var(--color-theme-primary-rgb), 0.5)`,
+                                `0 0 10px rgba(var(--color-theme-primary-rgb), 0.3)`,
+                              ],
+                            }}
+                            transition={{
+                              duration: 2,
+                              repeat: Infinity,
+                              delay: index * 0.3,
+                            }}
+                          >
+                            <Icon className="w-5 h-5 sm:w-6 sm:h-6 text-black" />
+                          </motion.div>
+                          <span className="text-lg sm:text-xl md:text-2xl font-black text-white">
+                            {vibe.label}
+                          </span>
+                        </div>
+                        <motion.span 
+                          className="text-3xl sm:text-4xl md:text-5xl font-black text-white"
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          transition={{ 
+                            delay: 0.7 + index * 0.15,
+                            type: "spring",
+                            stiffness: 200
+                          }}
+                        >
+                          {vibe.percentage}%
+                        </motion.span>
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Right: Visualization */}
+          <div className="relative h-[400px] sm:h-[500px] md:h-[600px] flex items-center justify-center mt-8 lg:mt-0">
+            {/* Outer ring */}
+            <motion.div
+              className="absolute inset-0 rounded-full border"
+              style={{ borderColor: 'rgba(var(--color-theme-primary-rgb), 0.2)' }}
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.3, duration: 1 }}
+            />
+            <motion.div
+              className="absolute inset-12 rounded-full border"
+              style={{ borderColor: 'rgba(var(--color-theme-primary-rgb), 0.1)' }}
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.4, duration: 1 }}
+            />
+
+            {/* Animated blobs with icons */}
+            <div className="relative w-full h-full flex items-center justify-center">
+              {blobShapes.map((blob, index) => {
+                const Icon = vibeIcons[blob.type] || TrendingUp;
+                return (
+                  <motion.div
+                    key={blob.type}
+                    className="absolute"
+                    initial={{ opacity: 0, scale: 0 }}
+                    animate={{ 
+                      opacity: 1, 
+                      scale: 1,
+                    }}
+                    transition={{
+                      delay: 0.5 + index * 0.2,
+                      type: "spring",
+                      stiffness: 50,
+                    }}
+                    style={{
+                      x: blob.x,
+                      y: blob.y,
+                    }}
+                  >
+                    <motion.div
+                      className="relative rounded-full flex items-center justify-center"
+                      style={{
+                        width: blob.size,
+                        height: blob.size,
+                      }}
+                      animate={{
+                        y: [0, -30, 0],
+                        x: [0, Math.sin(index) * 20, 0],
+                        scale: [1, 1.1, 1],
+                        rotate: [blob.rotate, blob.rotate + 15, blob.rotate],
+                      }}
+                      transition={{
+                        duration: 4 + Math.random() * 2,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                        delay: index * 0.5,
+                      }}
+                    >
+                      {/* Reduced blur background */}
+                      <div 
+                        className="absolute inset-0 rounded-full"
+                        style={{
+                          backgroundColor: 'var(--color-theme-primary)',
+                          filter: 'blur(20px)',
+                          opacity: 0.6,
+                        }}
+                      />
+                      
+                      {/* Icon in center */}
+                      <div className="relative z-10 flex items-center justify-center">
+                        <Icon 
+                          className="text-white" 
+                          style={{ 
+                            width: blob.size * 0.3,
+                            height: blob.size * 0.3,
+                          }} 
+                        />
+                      </div>
+                    </motion.div>
+                  </motion.div>
+                );
+              })}
+
+              {/* Center glow - reduced blur */}
+              <motion.div
+                className="absolute w-32 h-32 rounded-full backdrop-blur-xl border border-white/30"
+                style={{ backgroundColor: 'rgba(255, 255, 255, 0.2)' }}
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 1, type: "spring", stiffness: 200 }}
+              >
+                <motion.div
+                  className="absolute inset-0 rounded-full opacity-50 blur-md"
+                  style={{ backgroundColor: 'var(--color-theme-primary)' }}
+                  animate={{
+                    opacity: [0.3, 0.5, 0.3],
+                  }}
+                  transition={{
+                    duration: 2,
+                    repeat: Infinity,
+                  }}
+                />
+              </motion.div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
