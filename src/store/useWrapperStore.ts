@@ -37,7 +37,7 @@ export const useWrapperStore = create<WrapperStore>((set, get) => ({
         }
     },
 
-    fetchData: async (address: string) => {
+    fetchData: async (_address: string) => {
         set({ isLoading: true, error: null });
 
         try {
