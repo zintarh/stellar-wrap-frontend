@@ -15,10 +15,10 @@ export const isFreighterInstalled = async (): Promise<boolean> => {
 
 /**
  * Connects to Freighter wallet and returns the user's public key
- * @param network - The network to connect to (mainnet or testnet)
+ * @param _network - The network to connect to (mainnet or testnet)
  * @throws {Error} If wallet is not installed, user rejects connection, or any other error occurs
  */
-export const connectFreighter = async (network: Network): Promise<string> => {
+export const connectFreighter = async (_network: Network): Promise<string> => {
   // Check if Freighter is installed
   const installed = await isFreighterInstalled();
 
