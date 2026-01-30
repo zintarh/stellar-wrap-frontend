@@ -8,16 +8,9 @@
   --color-theme-primary: #054020;
   --color-theme-primary-rgb: 5, 64, 32;
   --color-theme-background: #000000;
-}
 
-@theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-
-  --color-theme-primary: var(--color-theme-primary);
-  --color-theme-background: var(--color-theme-background);
 }
 
 /* Utility class for theme background */
