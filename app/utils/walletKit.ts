@@ -1,6 +1,7 @@
 import { StellarWalletsKit } from "@creit-tech/stellar-wallets-kit/sdk";
 import { defaultModules } from "@creit-tech/stellar-wallets-kit/modules/utils";
 import { WalletConnectModule } from "@creit-tech/stellar-wallets-kit/modules/wallet-connect";
+import { transactionObserver } from "../../services/transactionObserver";
 
 // Contract address from environment variable with fallback placeholder
 const CONTRACT_ADDRESS =
@@ -49,20 +50,26 @@ export async function mintWrap(userAddress: string): Promise<string> {
     // Ensure wallet kit is initialized
     initWalletKit();
 
-    // Build the transaction to invoke the mint_wrap function
-    // Note: This is a placeholder implementation. The actual Soroban contract
-    // invocation will need to be implemented based on the contract's specific
-    // interface and parameters when the contract engineer provides details.
+    transactionObserver.startTransaction();
 
-    // For now, we'll simulate the contract call structure
+    // The actual implementation will construct the transaction here.
+    // Transitioning to 'simulating' (this is where we'd call Soroban RPC simulateTransaction)
+    transactionObserver.markSimulating();
+
+    // Since contract logic is blocked on Issue #37, this will throw the error.
+    // In actual implementation, we'd proceed to markSimulated(), ask for wallet signature (markSigning()),
+    // markSigned(), and markSubmitting() -> markSubmitted(txHash).
     const txHash = await invokeMintWrapContract(userAddress);
 
     return txHash;
   } catch (error) {
     if (error instanceof Error) {
+      transactionObserver.markFailed(error);
       throw new Error(`Minting failed: ${error.message}`);
     }
-    throw new Error("Minting failed: Unknown error occurred");
+    const genericError = new Error("Minting failed: Unknown error occurred");
+    transactionObserver.markFailed(genericError);
+    throw genericError;
   }
 }
 
@@ -73,16 +80,6 @@ export async function mintWrap(userAddress: string): Promise<string> {
 async function invokeMintWrapContract(userAddress: string): Promise<string> {
   // TODO: Replace this placeholder with actual Soroban contract invocation
   // when the contract engineer provides the contract details
-
-  // The actual implementation will look something like:
-  // const contract = new Contract(CONTRACT_ADDRESS);
-  // const operation = contract.call('mint_wrap', userAddress);
-  // const transaction = new TransactionBuilder(...)
-  //   .addOperation(operation)
-  //   .build();
-  // const { signedTxXdr } = await kit.signTransaction(transaction.toXDR());
-  // const result = await submitTransaction(signedTxXdr);
-  // return result.hash;
 
   throw new Error(
     "Contract integration pending. The mint_wrap function will be implemented by the contract engineer. " +
