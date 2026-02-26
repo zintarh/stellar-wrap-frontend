@@ -9,6 +9,7 @@ import {
   ContractValidationError,
 } from "./contractErrors";
 import { mintWrap as contractMintWrap, type MintWrapOptions, type TransactionObserver } from "../../src/services/contractBridge";
+import { useTransactionStore } from "../store/transactionStore";
 
 if (
   typeof process !== "undefined" &&
@@ -144,10 +145,46 @@ export async function mintWrap(params: MintWrapParams): Promise<string> {
     // Get stats if not provided
     let finalStats = stats;
     if (!finalStats) {
-    
       // Fetch from API if not in store
       finalStats = await fetchIndexedStats(userAddress, network);
     }
+
+    const { setTransactionState, setTransactionHash, setTransactionError, resetTransaction } = useTransactionStore.getState();
+    resetTransaction();
+    setTransactionState("building");
+
+    const bridgedObserver: TransactionObserver = (state, data) => {
+      // Call local observer if passed from component
+      if (observer) observer(state, data);
+
+      // Update global UI state
+      switch (state) {
+        case "pending":
+          setTransactionState("building");
+          break;
+        case "simulating":
+          setTransactionState("simulating");
+          break;
+        case "signed":
+          setTransactionState("signing");
+          break;
+        case "submitted":
+          setTransactionState("submitting");
+          break;
+        case "confirmed":
+          setTransactionState("confirmed");
+          if (data && typeof data === 'object' && 'transactionHash' in data) {
+            setTransactionHash((data as any).transactionHash as string);
+          }
+          break;
+        case "failed":
+          setTransactionState("failed");
+          if (data && typeof data === 'object' && 'error' in data) {
+            setTransactionError((data as any).error as string);
+          }
+          break;
+      }
+    };
 
     // Build mint options for contract bridge
     const mintOptions: MintWrapOptions = {
@@ -159,11 +196,14 @@ export async function mintWrap(params: MintWrapParams): Promise<string> {
         contractCalls: finalStats.contractCalls,
         timeframe: finalStats.timeframe || "all",
       },
-      observer: observer,
+      observer: bridgedObserver,
     };
 
     // Invoke contract bridge with full transaction lifecycle
     const result = await contractMintWrap(mintOptions);
+
+    useTransactionStore.getState().setTransactionState("confirmed");
+    useTransactionStore.getState().setTransactionHash(result.transactionHash);
 
     return result.transactionHash;
   } catch (error) {
@@ -176,8 +216,14 @@ export async function mintWrap(params: MintWrapParams): Promise<string> {
       throw error;
     }
     if (error instanceof Error) {
+      useTransactionStore.getState().setTransactionState("failed");
+      useTransactionStore.getState().setTransactionError(error.message);
       throw new Error(`Minting failed: ${error.message}`);
     }
-    throw new Error("Minting failed: Unknown error occurred");
+    const genericError = new Error("Minting failed: Unknown error occurred");
+    useTransactionStore.getState().setTransactionState("failed");
+    useTransactionStore.getState().setTransactionError(genericError.message);
+    throw genericError;
   }
 }
+
