@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Wallet, Copy, CheckCircle, XCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useWrapStore } from "../store/wrapStore";
-import { connectFreighter } from "../utils/walletConnect";
+import { connectFreighter, connectAlbedo } from "../utils/walletConnect";
 import { ProgressIndicator } from "../components/ProgressIndicator";
 import { MuteToggle } from "../components/MuteToggle";
 import { useStellarAddressValidation } from "../../src/hooks/useStellarAddressValidation";
@@ -51,6 +51,28 @@ export default function ConnectPage() {
 
     try {
       const publicKey = await connectFreighter(network);
+      setAddress(publicKey);
+      setError(null);
+      playSound(SOUND_NAMES.SLIDE_WHOOSH);
+      router.push("/loading");
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to connect wallet";
+      setError(errorMessage);
+      setLocalError(errorMessage);
+      setStatus("error");
+    } finally {
+      setIsConnecting(false);
+    }
+  };
+
+  const handleAlbedoConnect = async () => {
+    setIsConnecting(true);
+    setLocalError(null);
+    setStatus("loading");
+
+    try {
+      const publicKey = await connectAlbedo();
       setAddress(publicKey);
       setError(null);
       playSound(SOUND_NAMES.SLIDE_WHOOSH);
@@ -149,6 +171,13 @@ export default function ConnectPage() {
     if ((e.key === "Enter" || e.key === " ") && !isConnecting) {
       e.preventDefault();
       handleFreighterConnect();
+    }
+  };
+
+  const handleAlbedoKeyDown = (e: KeyboardEvent) => {
+    if ((e.key === "Enter" || e.key === " ") && !isConnecting) {
+      e.preventDefault();
+      handleAlbedoConnect();
     }
   };
 
@@ -615,6 +644,40 @@ export default function ConnectPage() {
                   </>
                 )}
               </motion.button>
+
+              <div className="mt-3">
+                <motion.button
+                  ref={freighterButtonRef}
+                  onClick={handleAlbedoConnect}
+                  onKeyDown={handleAlbedoKeyDown}
+                  disabled={isConnecting}
+                  className="w-full px-6 py-4 bg-transparent border-2 rounded-xl font-bold text-white/70 hover:text-white transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-theme-primary focus:ring-offset-2 focus:ring-offset-black"
+                  style={{
+                    borderColor: "rgba(var(--color-theme-primary-rgb), 0.3)",
+                  }}
+                  whileHover={{ scale: isConnecting ? 1 : 1.02 }}
+                  whileTap={{ scale: isConnecting ? 1 : 0.98 }}
+                  tabIndex={0}
+                  aria-label="Connect with Albedo wallet"
+                  aria-disabled={isConnecting}
+                  role="button"
+                >
+                  {isConnecting ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-white/70 border-t-transparent rounded-full animate-spin" />
+                      <span>Connecting...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Wallet
+                        className="w-5 h-5"
+                        style={{ color: "var(--color-theme-primary)" }}
+                      />
+                      <span>Connect with Albedo</span>
+                    </>
+                  )}
+                </motion.button>
+              </div>
             </div>
 
             <div className="mt-6 pt-6 border-t border-white/10">

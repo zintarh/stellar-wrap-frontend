@@ -1,6 +1,20 @@
 import { isConnected, getAddress, requestAccess } from "@stellar/freighter-api";
 import { Network } from "../../src/config";
 
+interface AlbedoPublicKeyResult {
+  publicKey: string;
+}
+
+interface Albedo {
+  publicKey: (params?: Record<string, unknown>) => Promise<AlbedoPublicKeyResult>;
+}
+
+declare global {
+  interface Window {
+    albedo?: Albedo;
+  }
+}
+
 /**
  * Checks if Freighter wallet extension is installed
  */
@@ -83,6 +97,39 @@ export const getCurrentPublicKey = async (): Promise<string | null> => {
  * @param address The address string to validate
  * @returns True if valid Stellar address, false otherwise
  */
+/**
+ * Connects to Albedo wallet via browser extension and returns the user's public key
+ * @throws {Error} If Albedo is not installed, popup is blocked, or user rejects
+ */
+export const connectAlbedo = async (): Promise<string> => {
+  if (typeof window === "undefined" || !window.albedo) {
+    throw new Error(
+      "Albedo wallet not found. Please install the Albedo browser extension.",
+    );
+  }
+
+  try {
+    const result = await window.albedo.publicKey();
+    return result.publicKey;
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      if (
+        error.message?.toLowerCase().includes("popup") ||
+        error.message?.toLowerCase().includes("blocked")
+      ) {
+        throw new Error(
+          "Albedo popup was blocked by your browser. Please allow popups for this site.",
+        );
+      }
+      if (error.message?.toLowerCase().includes("declined")) {
+        throw new Error("Connection rejected by user.");
+      }
+      throw error;
+    }
+    throw new Error("Failed to connect to Albedo wallet. Please try again.");
+  }
+};
+
 export const isValidStellarAddress = (address: string): boolean => {
   if (!address || typeof address !== "string") {
     return false;

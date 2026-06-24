@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ColorToggle } from './ColorToggle';
 import { NetworkToggle } from './NetworkToggle';
+import ParticleField from './ParticleField';
 import { useWrapStore, WrapPeriod } from '../store/wrapStore';
 
 export function LandingPage() {
@@ -23,6 +24,9 @@ export function LandingPage() {
 
   return (
     <div className="relative w-full min-h-screen h-screen overflow-hidden bg-theme-background">
+      {/* Particle field background */}
+      <ParticleField />
+
       {/* Deep space gradient */}
       <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/20" />
       

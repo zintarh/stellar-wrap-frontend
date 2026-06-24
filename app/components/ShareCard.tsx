@@ -341,6 +341,21 @@ export function ShareCard({
               </span>
             </div>
           </motion.button>
+
+          {/* View on Stellar Expert link */}
+          {address && (
+            <motion.a
+              href={`https://stellar.expert/explorer/${network === "mainnet" ? "public" : "testnet"}/account/${address}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block mt-4 text-center text-sm font-bold text-white/40 hover:text-white/60 transition-colors"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 1.1 }}
+            >
+              View full history on Stellar.expert →
+            </motion.a>
+          )}
         </div>
 
         {/* Right: Share options */}

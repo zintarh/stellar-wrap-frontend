@@ -2,7 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { AlertCircle, RotateCcw, X } from "lucide-react";
-import { useIndexingStore } from "@/app/store/indexingStore";
+import { useWrapStore } from "@/app/store/wrapStore";
 import { INDEXING_STEPS, STEP_ORDER } from "@/app/types/indexing";
 
 interface StepProgressDisplayProps {
@@ -20,10 +20,10 @@ export function StepProgressDisplay({
     overallProgress,
     completedSteps,
     totalSteps,
-    error,
+    indexingError,
     estimatedTimeRemaining,
     isLoading,
-  } = useIndexingStore();
+  } = useWrapStore();
 
   const formatTime = (ms: number): string => {
     const seconds = Math.ceil(ms / 1000);
@@ -34,7 +34,7 @@ export function StepProgressDisplay({
     return `${minutes}m`;
   };
 
-  if (!isLoading && !error) {
+  if (!isLoading && !indexingError) {
     return null;
   }
 
@@ -51,11 +51,11 @@ export function StepProgressDisplay({
         {/* Header Section */}
         <div className="space-y-2">
           <h2 className="text-2xl md:text-3xl font-black text-white">
-            {error ? "Indexing Error" : "Indexing Your Wrapped"}
+            {indexingError ? "Indexing Error" : "Indexing Your Wrapped"}
           </h2>
           <p className="text-neutral-400 text-sm md:text-base">
-            {error
-              ? error.message
+            {indexingError
+              ? indexingError.message
               : currentStep
                 ? INDEXING_STEPS[currentStep].description
                 : "Preparing your data..."}
@@ -213,7 +213,7 @@ export function StepProgressDisplay({
         </div>
 
         {/* Time Estimate */}
-        {estimatedTimeRemaining && !error && (
+        {estimatedTimeRemaining && !indexingError && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -228,7 +228,7 @@ export function StepProgressDisplay({
 
         {/* Error State */}
         <AnimatePresence>
-          {error && (
+          {indexingError && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -239,15 +239,15 @@ export function StepProgressDisplay({
                 <AlertCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
                 <div className="space-y-1">
                   <p className="font-semibold text-red-300">
-                    Error in {INDEXING_STEPS[error.step].label}
+                    Error in {INDEXING_STEPS[indexingError.step].label}
                   </p>
-                  <p className="text-sm text-red-200/80">{error.message}</p>
+                  <p className="text-sm text-red-200/80">{indexingError.message}</p>
                 </div>
               </div>
 
               {/* Error Actions */}
               <div className="flex gap-3 pt-2">
-                {error.recoverable && onRetry && (
+                {indexingError.recoverable && onRetry && (
                   <motion.button
                     onClick={onRetry}
                     whileHover={{ scale: 1.05 }}

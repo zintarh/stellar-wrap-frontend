@@ -24,6 +24,14 @@ export default function ParticleField() {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
+    const prefersReducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+
+    if (prefersReducedMotion) return;
+
+    const isMobile = window.innerWidth < 768;
+
     const resizeCanvas = () => {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
@@ -33,7 +41,10 @@ export default function ParticleField() {
     window.addEventListener("resize", resizeCanvas);
 
     // Initialize particles - subtle and minimal
-    const particleCount = Math.floor((canvas.width * canvas.height) / 20000);
+    const divisor = isMobile ? 80000 : 20000;
+    const particleCount = Math.floor(
+      (canvas.width * canvas.height) / divisor,
+    );
     particlesRef.current = Array.from({ length: particleCount }, () => ({
       x: Math.random() * canvas.width,
       y: Math.random() * canvas.height,

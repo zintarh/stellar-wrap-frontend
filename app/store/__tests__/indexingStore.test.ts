@@ -1,5 +1,5 @@
 /**
- * Unit Tests for indexingStore (Zustand)
+ * Unit Tests for indexing slice (now in wrapStore)
  *
  * Run with: npx tsx app/store/__tests__/indexingStore.test.ts
  *
@@ -32,18 +32,20 @@ const STEP_ORDER: IndexingStep[] = [
 
 interface IndexingError { step: IndexingStep; message: string; recoverable: boolean; }
 
-interface IndexingStoreState {
+interface WriteStoreState {
+    // Indexing state (mirrors the slice now in wrapStore)
     currentStep: IndexingStep | null;
     stepProgress: Record<IndexingStep, number>;
     completedStepRecord: Record<IndexingStep, boolean>;
     overallProgress: number; completedSteps: number; totalSteps: number;
     startTime: number | null; estimatedTimeRemaining: number | null;
-    error: IndexingError | null; isLoading: boolean; isCancelled: boolean;
+    indexingError: IndexingError | null; isLoading: boolean; isCancelled: boolean;
+    // Indexing actions
     setCurrentStep: (step: IndexingStep | null) => void;
     setStepProgress: (step: IndexingStep, progress: number) => void;
     updateOverallProgress: () => void;
-    setError: (step: IndexingStep, message: string, recoverable?: boolean) => void;
-    clearError: () => void;
+    setIndexingError: (step: IndexingStep, message: string, recoverable?: boolean) => void;
+    clearIndexingError: () => void;
     startIndexing: () => void;
     completeStep: (step: IndexingStep) => void;
     cancelIndexing: () => void;
@@ -65,10 +67,10 @@ const initialState = {
     completedStepRecord: { ...initialCompletedStepRecord },
     overallProgress: 0, completedSteps: 0, totalSteps: STEP_ORDER.length,
     startTime: null as number | null, estimatedTimeRemaining: null as number | null,
-    error: null as IndexingError | null, isLoading: false, isCancelled: false,
+    indexingError: null as IndexingError | null, isLoading: false, isCancelled: false,
 };
 
-const useIndexingStore = create<IndexingStoreState>((set, get) => ({
+const useIndexingStore = create<WriteStoreState>((set, get) => ({
     ...initialState,
     setCurrentStep: (step) => { set({ currentStep: step }); get().updateOverallProgress(); },
     setStepProgress: (step, progress) => {
@@ -85,8 +87,8 @@ const useIndexingStore = create<IndexingStoreState>((set, get) => ({
         });
         set({ overallProgress: Math.round(totalProgress) });
     },
-    setError: (step, message, recoverable = true) => { set({ error: { step, message, recoverable }, isLoading: false }); },
-    clearError: () => { set({ error: null }); },
+    setIndexingError: (step, message, recoverable = true) => { set({ indexingError: { step, message, recoverable }, isLoading: false }); },
+    clearIndexingError: () => { set({ indexingError: null }); },
     startIndexing: () => { set({ ...initialState, isLoading: true, startTime: Date.now(), totalSteps: STEP_ORDER.length, completedSteps: 0 }); },
     completeStep: (step) => {
         set((state) => {
@@ -128,7 +130,7 @@ section('Initial state');
     assert(state.totalSteps === 7, 'totalSteps is 7');
     assert(state.isLoading === false, 'isLoading starts false');
     assert(state.isCancelled === false, 'isCancelled starts false');
-    assert(state.error === null, 'error starts null');
+    assert(state.indexingError === null, 'indexingError starts null');
 }
 
 // ─── startIndexing ──────────────────────────────────────────────────────────
@@ -202,28 +204,28 @@ section('Overall progress calculation');
     assert(state.overallProgress === 100, 'all steps: overallProgress is 100');
 }
 
-// ─── setError ───────────────────────────────────────────────────────────────
+// ─── setIndexingError ───────────────────────────────────────────────────────
 
-section('setError');
+section('setIndexingError');
 {
     useIndexingStore.getState().reset();
     useIndexingStore.getState().startIndexing();
 
-    useIndexingStore.getState().setError('fetching-transactions', 'Horizon 503', true);
+    useIndexingStore.getState().setIndexingError('fetching-transactions', 'Horizon 503', true);
     const state = useIndexingStore.getState();
-    assert(state.error !== null, 'error is set');
-    assert(state.error!.step === 'fetching-transactions', 'error step matches');
-    assert(state.error!.message === 'Horizon 503', 'error message matches');
-    assert(state.error!.recoverable === true, 'error is recoverable');
-    assert(state.isLoading === false, 'setError stops loading');
+    assert(state.indexingError !== null, 'indexingError is set');
+    assert(state.indexingError!.step === 'fetching-transactions', 'indexingError step matches');
+    assert(state.indexingError!.message === 'Horizon 503', 'indexingError message matches');
+    assert(state.indexingError!.recoverable === true, 'indexingError is recoverable');
+    assert(state.isLoading === false, 'setIndexingError stops loading');
 }
 
-// ─── clearError ─────────────────────────────────────────────────────────────
+// ─── clearIndexingError ─────────────────────────────────────────────────────
 
-section('clearError');
+section('clearIndexingError');
 {
-    useIndexingStore.getState().clearError();
-    assert(useIndexingStore.getState().error === null, 'error cleared');
+    useIndexingStore.getState().clearIndexingError();
+    assert(useIndexingStore.getState().indexingError === null, 'indexingError cleared');
 }
 
 // ─── cancelIndexing ─────────────────────────────────────────────────────────
@@ -247,7 +249,7 @@ section('reset');
 {
     useIndexingStore.getState().startIndexing();
     useIndexingStore.getState().completeStep('initializing');
-    useIndexingStore.getState().setError('finalizing', 'oops');
+    useIndexingStore.getState().setIndexingError('finalizing', 'oops');
 
     useIndexingStore.getState().reset();
     const state = useIndexingStore.getState();
@@ -255,7 +257,7 @@ section('reset');
     assert(state.completedSteps === 0, 'reset: completedSteps 0');
     assert(state.overallProgress === 0, 'reset: overallProgress 0');
     assert(state.isLoading === false, 'reset: isLoading false');
-    assert(state.error === null, 'reset: error null');
+    assert(state.indexingError === null, 'reset: indexingError null');
     assert(state.isCancelled === false, 'reset: isCancelled false');
 }
 

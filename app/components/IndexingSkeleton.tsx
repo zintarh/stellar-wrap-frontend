@@ -2,7 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { AlertCircle, RotateCcw, X, TrendingUp, Coins, FileText, Zap } from "lucide-react";
-import { useIndexingStore } from "@/app/store/indexingStore";
+import { useWrapStore } from "@/app/store/wrapStore";
 import { INDEXING_STEPS, STEP_ORDER, IndexingStep } from "@/app/types/indexing";
 
 interface IndexingSkeletonProps {
@@ -24,11 +24,11 @@ export function IndexingSkeleton({
     overallProgress,
     completedSteps,
     totalSteps,
-    error,
+    indexingError,
     estimatedTimeRemaining,
     isLoading,
     metrics,
-  } = useIndexingStore();
+  } = useWrapStore();
 
   const formatTime = (ms: number): string => {
     const seconds = Math.ceil(ms / 1000);
@@ -100,7 +100,7 @@ export function IndexingSkeleton({
 
   const stepViz = getStepVisualization(currentStep);
 
-  if (!isLoading && !error) {
+  if (!isLoading && !indexingError) {
     return null;
   }
 
@@ -125,11 +125,11 @@ export function IndexingSkeleton({
         {/* Header Section */}
         <div className="relative space-y-2">
           <h2 className="text-2xl md:text-3xl font-black text-white">
-            {error ? "Indexing Error" : "Scanning the Blockchain"}
+            {indexingError ? "Indexing Error" : "Scanning the Blockchain"}
           </h2>
           <p className="text-neutral-400 text-sm md:text-base">
-            {error
-              ? error.message
+            {indexingError
+              ? indexingError.message
               : currentStep
                 ? INDEXING_STEPS[currentStep].description
                 : "Preparing your data..."}
@@ -138,7 +138,7 @@ export function IndexingSkeleton({
 
         {/* Step-Specific Real-Time Visualization */}
         <AnimatePresence mode="wait">
-          {stepViz && !error && (
+          {stepViz && !indexingError && (
             <motion.div
               key={currentStep}
               initial={{ opacity: 0, scale: 0.9 }}
@@ -350,7 +350,7 @@ export function IndexingSkeleton({
         </div>
 
         {/* Time Estimate */}
-        {estimatedTimeRemaining && !error && (
+        {estimatedTimeRemaining && !indexingError && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -365,7 +365,7 @@ export function IndexingSkeleton({
 
         {/* Error State */}
         <AnimatePresence>
-          {error && (
+          {indexingError && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -376,15 +376,15 @@ export function IndexingSkeleton({
                 <AlertCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
                 <div className="space-y-1">
                   <p className="font-semibold text-red-300">
-                    Error in {INDEXING_STEPS[error.step].label}
+                    Error in {INDEXING_STEPS[indexingError.step].label}
                   </p>
-                  <p className="text-sm text-red-200/80">{error.message}</p>
+                  <p className="text-sm text-red-200/80">{indexingError.message}</p>
                 </div>
               </div>
 
               {/* Error Actions */}
               <div className="flex gap-3 pt-2">
-                {error.recoverable && onRetry && (
+                {indexingError.recoverable && onRetry && (
                   <motion.button
                     onClick={onRetry}
                     whileHover={{ scale: 1.05 }}

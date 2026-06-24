@@ -9,7 +9,6 @@ import { IndexingSkeleton } from "../components/IndexingSkeleton";
 import { CacheStatusBadge } from "../components/CacheStatusBadge";
 import { MuteToggle } from "../components/MuteToggle";
 import { useWrapStore } from "../store/wrapStore";
-import { useIndexingStore } from "../store/indexingStore";
 import { mockData } from "../data/mockData";
 import { useSound } from "../hooks/useSound";
 import { SOUND_NAMES } from "../utils/soundManager";
@@ -18,9 +17,8 @@ import { IndexerEventEmitter } from "../utils/indexerEventEmitter";
 
 export default function LoadingScreen() {
   const router = useRouter();
-  const { address, period, network, setStatus, setResult, setError, setCacheMeta } =
+  const { address, period, network, setStatus, setResult, setError, setCacheMeta, startIndexing, cancelIndexing, loadIndexingState } =
     useWrapStore();
-  const { startIndexing, cancelIndexing, loadState } = useIndexingStore();
   const { playSound } = useSound();
 
   const handleComplete = useCallback(() => {
@@ -80,7 +78,7 @@ export default function LoadingScreen() {
         setError(null);
         setCacheMeta(null);
 
-        // NOTE: Do NOT call loadState() here - it will overwrite isLoading: true
+        // NOTE: Do NOT call loadIndexingState() here - it will overwrite isLoading: true
         // The startIndexing() call above already set isLoading, which is what matters
 
         // Call real indexer service - will emit step progress events
@@ -201,7 +199,7 @@ export default function LoadingScreen() {
     setCacheMeta,
     handleComplete,
     startIndexing,
-    loadState,
+    loadIndexingState,
   ]);
 
   const starConfigs = useMemo(
