@@ -234,7 +234,7 @@ export function LandingPage() {
       </div>
 
       {/* Main content */}
-      <div className="relative z-10 h-full flex flex-col items-center justify-center px-8">
+      <div className="relative z-10 h-full flex flex-col items-center justify-center px-4 sm:px-8 w-full max-w-full overflow-x-hidden">
         
         {/* Top HUD bar */}
         <motion.div
@@ -434,16 +434,17 @@ export function LandingPage() {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 1.5 }}
+          className="w-full max-w-[min(100%,22rem)] sm:max-w-md px-2"
         >
           <motion.button
             onClick={handleStart}
-            className="relative group"
+            className="relative group w-full"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.98 }}
           >
             {/* Button glow effect */}
             <motion.div
-              className="absolute -inset-2 md:-inset-4 rounded-xl md:rounded-2xl blur-xl md:blur-2xl"
+              className="absolute -inset-1 sm:-inset-2 md:-inset-4 rounded-xl md:rounded-2xl blur-lg sm:blur-xl md:blur-2xl"
               style={{ backgroundColor: 'rgba(var(--color-theme-primary-rgb), 0.4)' }}
               animate={{
                 opacity: [0.5, 0.8, 0.5],
@@ -470,18 +471,19 @@ export function LandingPage() {
                 }}
               />
               
-              <div className="relative px-8 py-4 sm:px-12 sm:py-6 md:px-20 md:py-8 rounded-xl md:rounded-2xl bg-theme-background"
+              <div className="relative px-4 py-3 min-h-[44px] sm:px-8 sm:py-5 md:px-12 md:py-6 rounded-xl md:rounded-2xl bg-theme-background"
               >
-                <div className="flex items-center gap-3 sm:gap-4 md:gap-6">
-                  <div className="flex flex-col items-start">
-                    <span className="text-[10px] sm:text-xs font-black tracking-[0.15em] sm:tracking-[0.2em] mb-1 text-white/50">INITIALIZE</span>
-                    <span className="text-xl sm:text-3xl md:text-4xl font-black tracking-tight text-white">START WRAP</span>
+                <div className="flex items-center justify-between gap-2 sm:gap-4 md:gap-6">
+                  <div className="flex flex-col items-start min-w-0">
+                    <span className="text-[10px] sm:text-xs font-black tracking-[0.12em] sm:tracking-[0.2em] mb-0.5 sm:mb-1 text-white/50">INITIALIZE</span>
+                    <span className="text-lg sm:text-2xl md:text-4xl font-black tracking-tight text-white whitespace-nowrap">START WRAP</span>
                   </div>
                   <motion.div
                     animate={{ x: [0, 5, 0] }}
                     transition={{ duration: 1.5, repeat: Infinity }}
+                    className="shrink-0"
                   >
-                    <svg className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10" viewBox="0 0 40 40" fill="none">
+                    <svg className="w-5 h-5 sm:w-7 sm:h-7 md:w-10 md:h-10" viewBox="0 0 40 40" fill="none">
                       <path d="M15 10L25 20L15 30" stroke="var(--color-theme-primary)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
                   </motion.div>
