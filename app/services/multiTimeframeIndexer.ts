@@ -244,11 +244,11 @@ export async function indexAccountMultiTimeframe(
     emitter.on("stepProgress", stepProgressHandler);
 
     try {
-      const result = await indexAccount(accountId, network, period);
+      const wrapped = await indexAccount(accountId, network, period);
       emitter.off("stepChange", stepChangeHandler);
       emitter.off("stepProgress", stepProgressHandler);
       emit(tf, 100, "success");
-      return result;
+      return wrapped.result;
     } catch (err) {
       emitter.off("stepChange", stepChangeHandler);
       emitter.off("stepProgress", stepProgressHandler);
@@ -276,8 +276,7 @@ export async function indexAccountMultiTimeframe(
   settled.forEach((outcome, i) => {
     const tf = timeframes[i];
     if (outcome.status === "fulfilled") {
-      // indexAccount returns IndexerResultWithMeta, extract the result
-      results[tf] = { status: "success", data: outcome.value.result, error: null };
+      results[tf] = { status: "success", data: outcome.value, error: null };
     } else {
       const msg =
         outcome.reason instanceof Error
