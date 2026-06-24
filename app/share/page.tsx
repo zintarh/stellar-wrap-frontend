@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Share2 } from "lucide-react";
 import { mockData } from "@/app/data/mockData";
+import { GOLDEN_USER } from "@/src/data/mockData";
 import { ProgressIndicator } from "@/app/components/ProgressIndicator";
 import { MuteToggle } from "../components/MuteToggle";
 import { ShareCard } from "../components/ShareCard";
@@ -100,7 +101,7 @@ export default function ShareCardPage() {
         className="absolute"
         style={{ left: "-9999px", top: 0 }}
       >
-        <ShareImageCard themeColor={themeColor} />
+        <ShareImageCard themeColor={themeColor} archetypeImage={GOLDEN_USER.archetype.image} />
       </div>
 
       <ShareCard
