@@ -199,7 +199,7 @@ feat(share): use canonical wrap data in share card
 For breaking changes or references:
 
 ```text
-feat(store): remove legacy wrapperStore in favor of wrapStore
+feat(store): consolidate state into wrapStore
 
-BREAKING CHANGE: wrapperStore is no longer exported; update imports to useWrapStore.
+BREAKING CHANGE: legacy store exports removed; update imports to useWrapStore.
 ```
