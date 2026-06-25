@@ -9,7 +9,7 @@ import { IndexingSkeleton } from "../components/IndexingSkeleton";
 import { CacheStatusBadge } from "../components/CacheStatusBadge";
 import { MuteToggle } from "../components/MuteToggle";
 import { useWrapStore } from "../store/wrapStore";
-import { useIndexingStore } from "../store/indexingStore";
+import { useWrapStore } from "../store/wrapStore";
 import { mockData } from "../data/mockData";
 import { useSound } from "../hooks/useSound";
 import { SOUND_NAMES } from "../utils/soundManager";
@@ -20,7 +20,7 @@ export default function LoadingScreen() {
   const router = useRouter();
   const { address, period, network, setStatus, setResult, setError, setCacheMeta } =
     useWrapStore();
-  const { startIndexing, cancelIndexing, loadState } = useIndexingStore();
+  const { startIndexing, cancelIndexing, loadIndexingState: loadState } = useWrapStore();
   const { playSound } = useSound();
 
   const handleComplete = useCallback(() => {

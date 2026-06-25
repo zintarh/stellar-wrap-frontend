@@ -2,7 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { AlertCircle, RotateCcw, X, TrendingUp, Coins, FileText, Zap } from "lucide-react";
-import { useIndexingStore } from "@/app/store/indexingStore";
+import { useWrapStore } from "@/app/store/wrapStore";
 import { INDEXING_STEPS, STEP_ORDER, IndexingStep } from "@/app/types/indexing";
 
 interface IndexingSkeletonProps {
@@ -24,11 +24,11 @@ export function IndexingSkeleton({
     overallProgress,
     completedSteps,
     totalSteps,
-    error,
+    indexingError: error,
     estimatedTimeRemaining,
     isLoading,
     metrics,
-  } = useIndexingStore();
+  } = useWrapStore();
 
   const formatTime = (ms: number): string => {
     const seconds = Math.ceil(ms / 1000);

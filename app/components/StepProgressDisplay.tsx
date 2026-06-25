@@ -2,7 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { AlertCircle, RotateCcw, X } from "lucide-react";
-import { useIndexingStore } from "@/app/store/indexingStore";
+import { useWrapStore } from "@/app/store/wrapStore";
 import { INDEXING_STEPS, STEP_ORDER } from "@/app/types/indexing";
 
 interface StepProgressDisplayProps {
@@ -20,10 +20,10 @@ export function StepProgressDisplay({
     overallProgress,
     completedSteps,
     totalSteps,
-    error,
+    indexingError: error,
     estimatedTimeRemaining,
     isLoading,
-  } = useIndexingStore();
+  } = useWrapStore();
 
   const formatTime = (ms: number): string => {
     const seconds = Math.ceil(ms / 1000);

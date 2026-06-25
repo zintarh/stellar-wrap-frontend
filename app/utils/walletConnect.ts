@@ -75,6 +75,45 @@ export const getCurrentPublicKey = async (): Promise<string | null> => {
 };
 
 /**
+ * Checks if Albedo wallet is available (SDK loaded via script tag)
+ */
+export const isAlbedoInstalled = (): boolean => {
+  return typeof window !== "undefined" && typeof (window as unknown as Record<string, unknown>).albedo !== "undefined";
+};
+
+/**
+ * Connects to Albedo wallet and returns the user's public key
+ * Albedo uses a popup-based flow at https://albedo.link
+ * @throws {Error} If Albedo is not available, popup is blocked, or user rejects
+ */
+export const connectAlbedo = async (_network: Network): Promise<string> => {
+  if (!isAlbedoInstalled()) {
+    throw new Error(
+      "Albedo wallet not found. Please ensure the Albedo SDK script is loaded.",
+    );
+  }
+
+  try {
+    const albedo = (window as unknown as Record<string, { publicKey: (opts?: Record<string, unknown>) => Promise<{ publicKey: string }> }>).albedo;
+    const result = await albedo.publicKey();
+    return result.publicKey;
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      if (error.message?.includes("blocked") || error.message?.includes("popup")) {
+        throw new Error(
+          "Albedo popup was blocked. Please allow popups for this site and try again.",
+        );
+      }
+      if (error.message?.includes("cancel") || error.message?.includes("denied")) {
+        throw new Error("Connection rejected by user.");
+      }
+      throw error;
+    }
+    throw new Error("Failed to connect to Albedo wallet. Please try again.");
+  }
+};
+
+/**
  * Validates if a string is a valid Stellar public key address
  * Stellar addresses:
  * - Start with 'G'

@@ -8,7 +8,7 @@
 
 import { EventEmitter } from "events";
 import { IndexingStep, IndexingMetrics } from "@/app/types/indexing";
-import { useIndexingStore } from "@/app/store/indexingStore";
+import { useWrapStore } from "@/app/store/wrapStore";
 
 /**
  * Event types emitted by the indexer service
@@ -104,7 +104,7 @@ export class IndexerEventEmitter extends EventEmitter {
       return;
     }
 
-    const store = useIndexingStore;
+    const store = useWrapStore;
 
     this.on("step-change", ({ step }) => {
       store.getState().setCurrentStep(step);
@@ -119,12 +119,11 @@ export class IndexerEventEmitter extends EventEmitter {
     });
 
     this.on("step-error", ({ step, message, recoverable }) => {
-      store.getState().setError(step, message, recoverable);
+      store.getState().setIndexingError(step, message, recoverable);
     });
 
     this.on("indexing-complete", ({ _data }) => {
-      // Clear persisted state on successful completion
-      store.getState().clearPersistedState();
+      store.getState().clearPersistedIndexingState();
     });
 
     this.on("indexing-cancelled", () => {
