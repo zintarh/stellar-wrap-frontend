@@ -1,6 +1,6 @@
 "use client";
 
-import React, { JSX, useEffect, useRef, useState } from "react";
+import React, { JSX, useCallback, useEffect, useRef, useState } from "react";
 import { motion, useAnimation, AnimatePresence } from "framer-motion";
 import confetti from "canvas-confetti";
 import { Home, Share2, ChevronRight } from "lucide-react";
@@ -217,34 +217,44 @@ export default function ArchetypeReveal(): JSX.Element {
 
   const triggerConfetti = useConfetti();
 
+  const runRevealAnimation = useCallback(async () => {
+    setIsFlipped(false);
+    await controls.start({
+      rotateY: 0,
+      transition: { duration: 0 },
+    });
+
+    await controls.start({
+      y: 0,
+      scale: 1,
+      opacity: 1,
+      transition: { duration: 0.8, type: "spring" },
+    });
+
+    playSound(SOUND_NAMES.CARD_FLIP);
+    await controls.start({
+      x: [0, -4, 4, -4, 4, 0],
+      rotateZ: [0, -1, 1, -1, 1, 0],
+      transition: { duration: 0.4 },
+    });
+
+    setIsFlipped(true);
+    triggerConfetti();
+
+    await controls.start({
+      rotateY: 180,
+      transition: { duration: 0.8, ease: "easeInOut" },
+    });
+  }, [controls, playSound, triggerConfetti]);
+
   useEffect(() => {
-    const sequence = async () => {
-      await controls.start({
-        y: 0,
-        scale: 1,
-        opacity: 1,
-        transition: { duration: 0.8, type: "spring" },
-      });
-
-      
-      playSound(SOUND_NAMES.CARD_FLIP);
-      await controls.start({
-        x: [0, -4, 4, -4, 4, 0],
-        rotateZ: [0, -1, 1, -1, 1, 0],
-        transition: { duration: 0.4 },
-      });
-
-      setIsFlipped(true);
-      triggerConfetti();
-
-      await controls.start({
-        rotateY: 180,
-        transition: { duration: 0.8, ease: "easeInOut" },
-      });
-    };
-    sequence();
+    runRevealAnimation();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const handleCardTap = () => {
+    void runRevealAnimation();
+  };
 
   // --- Share Functionality ---
   const handleShare = (platform: string) => {
@@ -404,9 +414,19 @@ export default function ArchetypeReveal(): JSX.Element {
             />
 
             <motion.div
+              role="button"
+              tabIndex={0}
+              aria-label="Tap to replay persona reveal"
+              onClick={handleCardTap}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  handleCardTap();
+                }
+              }}
               initial={{ y: 40, scale: 0.95, opacity: 0, rotateY: 0 }}
               animate={controls}
-              className="relative h-[200px] sm:h-[280px] w-full max-w-[800px]"
+              className="relative h-[200px] sm:h-[280px] w-full max-w-[800px] cursor-pointer"
               style={{ transformStyle: "preserve-3d" }}
             >
               {/* FRONT */}
@@ -417,8 +437,8 @@ export default function ArchetypeReveal(): JSX.Element {
                   backfaceVisibility: "hidden",
                 }}
               >
-                <div className="text-2xl sm:text-4xl animate-pulse opacity-40">
-                  🔮
+                <div className="text-6xl sm:text-8xl font-black text-white/50 animate-pulse">
+                  ?
                 </div>
               </div>
 
