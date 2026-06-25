@@ -9,16 +9,35 @@ import { IndexingSkeleton } from "../components/IndexingSkeleton";
 import { CacheStatusBadge } from "../components/CacheStatusBadge";
 import { MuteToggle } from "../components/MuteToggle";
 import { useWrapStore } from "../store/wrapStore";
+
 import { mockData } from "../data/mockData";
 import { useSound } from "../hooks/useSound";
 import { SOUND_NAMES } from "../utils/soundManager";
 import { indexAccount } from "../services/indexerService";
 import { IndexerEventEmitter } from "../utils/indexerEventEmitter";
+import type { DappInfo } from "../utils/indexer";
+
+function mapIndexerDapps(dapps: DappInfo[]) {
+  return dapps.map((dapp) => ({
+    name: dapp.name,
+    interactions: dapp.transactionCount,
+  }));
+}
+
+function mapMockDapps() {
+  return mockData.dapps.map((dapp) => ({
+    name: dapp.name,
+    interactions: dapp.transactions,
+    color: dapp.color,
+    gradient: dapp.gradient,
+  }));
+}
 
 export default function LoadingScreen() {
   const router = useRouter();
   const { address, period, network, setStatus, setResult, setError, setCacheMeta, startIndexing, cancelIndexing, loadIndexingState } =
     useWrapStore();
+
   const { playSound } = useSound();
 
   const handleComplete = useCallback(() => {
@@ -107,12 +126,9 @@ export default function LoadingScreen() {
               totalTransactions:
                 indexerResult.totalTransactions || mockData.transactions,
               percentile: mockData.percentile,
-              dapps: mockData.dapps.map((dapp) => ({
-                name: dapp.name,
-                interactions: dapp.transactions,
-                color: dapp.color,
-                gradient: dapp.gradient,
-              })),
+              dapps: indexerResult.dapps?.length
+                ? mapIndexerDapps(indexerResult.dapps)
+                : mapMockDapps(),
               vibes: mockData.vibes,
               persona: mockData.persona,
               personaDescription: mockData.personaDescription,
@@ -125,12 +141,7 @@ export default function LoadingScreen() {
               username: mockData.username,
               totalTransactions: mockData.transactions,
               percentile: mockData.percentile,
-              dapps: mockData.dapps.map((dapp) => ({
-                name: dapp.name,
-                interactions: dapp.transactions,
-                color: dapp.color,
-                gradient: dapp.gradient,
-              })),
+              dapps: mapMockDapps(),
               vibes: mockData.vibes,
               persona: mockData.persona,
               personaDescription: mockData.personaDescription,
@@ -143,12 +154,7 @@ export default function LoadingScreen() {
             username: mockData.username,
             totalTransactions: mockData.transactions,
             percentile: mockData.percentile,
-            dapps: mockData.dapps.map((dapp) => ({
-              name: dapp.name,
-              interactions: dapp.transactions,
-              color: dapp.color,
-              gradient: dapp.gradient,
-            })),
+            dapps: mapMockDapps(),
             vibes: mockData.vibes,
             persona: mockData.persona,
             personaDescription: mockData.personaDescription,

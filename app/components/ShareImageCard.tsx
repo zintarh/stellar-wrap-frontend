@@ -1,14 +1,20 @@
 "use client";
 
+import Image from "next/image";
 import { mockData } from "../data/mockData";
 
 interface ShareImageCardProps {
   themeColor: string;
+  archetypeImage?: string; // e.g. '/archetypes/wizard.png'
 }
 
-export function ShareImageCard({ themeColor }: ShareImageCardProps) {
+export function ShareImageCard({ themeColor, archetypeImage }: ShareImageCardProps) {
   const { persona, transactions, username, vibes } = mockData;
   const topVibe = vibes[0];
+  // Derive image from persona name if not explicitly provided: "The Wizard" -> /archetypes/wizard.png
+  const resolvedArchetypeImage =
+    archetypeImage ??
+    `/archetypes/${persona.toLowerCase().replace(/^the\s+/, "").replace(/\s+/g, "-")}.png`;
 
   // Convert any color format to rgb values for gradient
   const getRgbValues = (color: string): string => {
@@ -161,17 +167,25 @@ export function ShareImageCard({ themeColor }: ShareImageCardProps) {
             >
               Persona
             </p>
-            <p
-              style={{
-                fontSize: "30px",
-                fontWeight: "900",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                backgroundClip: "text",
-              }}
-            >
-              {persona}
-            </p>
+            <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+              <Image
+                src={resolvedArchetypeImage}
+                alt={persona}
+                width={64}
+                height={64}
+                style={{ borderRadius: "12px", objectFit: "cover", flexShrink: 0 }}
+              />
+              <p
+                style={{
+                  fontSize: "30px",
+                  fontWeight: "900",
+                  color: "white",
+                  margin: 0,
+                }}
+              >
+                {persona}
+              </p>
+            </div>
           </div>
 
           {/* Top Vibe */}

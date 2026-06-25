@@ -64,7 +64,7 @@ export function StepProgressDisplay({
 
         {/* Current Step Info */}
         <AnimatePresence mode="wait">
-          {currentStep && !error && (
+          {currentStep && !indexingError && (
             <motion.div
               key={currentStep}
               initial={{ opacity: 0, y: 10 }}

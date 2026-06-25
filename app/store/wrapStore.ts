@@ -12,7 +12,11 @@ import {
   INDEXING_STEPS,
   STEP_ORDER,
   PersistedIndexingState,
+  IndexingMetrics,
 } from "@/app/types/indexing";
+
+const PERSISTENCE_KEY = "stellar-wrap-indexing-state";
+const PERSISTENCE_TIMEOUT = 5 * 60 * 1000;
 
 export type WrapPeriod = "weekly" | "monthly" | "yearly";
 
@@ -21,7 +25,6 @@ export interface DappData {
   logo?: string;
   interactions: number;
   isFanFavorite?: boolean;
-  // optional visual fields used by some UIs
   color?: string;
   gradient?: string;
 }
@@ -45,16 +48,14 @@ export interface WrapResult {
 
 type WrapStatus = "idle" | "loading" | "ready" | "error";
 
-/** Cache metadata for UI (badge, age, refresh). Issue #48 */
 export interface CacheMeta {
   fromCache: boolean;
   cacheTimestamp?: number;
   refreshingInBackground?: boolean;
 }
 
-/** Contract addresses per network (from config/env), synced on load and network change */
 export type ContractAddressesByNetwork = Partial<Record<Network, string>>;
-// In-memory cache for API results
+
 let cacheStore: CacheStore = {};
 
 export function getCacheStore(): CacheStore {
@@ -65,9 +66,6 @@ export function resetCache(): void {
   cacheStore = {};
 }
 
-const INDEXING_PERSISTENCE_KEY = "stellar-wrap-indexing-state";
-const INDEXING_PERSISTENCE_TIMEOUT = 5 * 60 * 1000; // 5 minutes
-
 const initialCompletedStepRecord: Record<IndexingStep, boolean> = {
   initializing: false,
   "fetching-transactions": false,
@@ -76,14 +74,6 @@ const initialCompletedStepRecord: Record<IndexingStep, boolean> = {
   "identifying-assets": false,
   "counting-contracts": false,
   finalizing: false,
-};
-
-const initialMetrics = {
-  transactionCount: 0,
-  assetCount: 0,
-  contractCount: 0,
-  volumeProcessed: "0",
-  timeframesProcessed: 0,
 };
 
 const initialIndexingState = {
@@ -106,7 +96,13 @@ const initialIndexingState = {
   indexingError: null as IndexingError | null,
   isLoading: false,
   isCancelled: false,
-  metrics: { ...initialMetrics },
+  metrics: {
+    transactionCount: 0,
+    assetCount: 0,
+    contractCount: 0,
+    volumeProcessed: "0",
+    timeframesProcessed: 0,
+  },
 };
 
 interface WrapStoreState {
@@ -116,22 +112,9 @@ interface WrapStoreState {
   status: WrapStatus;
   error: string | null;
   result: WrapResult | null;
-  /** Cache metadata for "Using cached data" badge and age. Issue #48 */
   cacheMeta: CacheMeta | null;
-  /** Contract address for the current network; updated when network changes */
   currentContractAddress: string | null;
-  /** Contract addresses per network (mainnet, testnet); synced from config */
   contractAddresses: ContractAddressesByNetwork;
-  // setters
-  setAddress: (address: string | null) => void;
-  setPeriod: (period: WrapPeriod) => void;
-  setNetwork: (network: Network) => void;
-  setStatus: (status: WrapStatus) => void;
-  setError: (error: string | null) => void;
-  setResult: (result: WrapResult | null) => void;
-  setCacheMeta: (meta: CacheMeta | null) => void;
-  setContractAddresses: (addresses: ContractAddressesByNetwork) => void;
-  reset: () => void;
   // Indexing state
   currentStep: IndexingStep | null;
   stepProgress: Record<IndexingStep, number>;
@@ -144,12 +127,26 @@ interface WrapStoreState {
   indexingError: IndexingError | null;
   isLoading: boolean;
   isCancelled: boolean;
-  metrics: typeof initialMetrics;
+  metrics: IndexingMetrics;
+  // Setters
+  setAddress: (address: string | null) => void;
+  setPeriod: (period: WrapPeriod) => void;
+  setNetwork: (network: Network) => void;
+  setStatus: (status: WrapStatus) => void;
+  setError: (error: string | null) => void;
+  setResult: (result: WrapResult | null) => void;
+  setCacheMeta: (meta: CacheMeta | null) => void;
+  setContractAddresses: (addresses: ContractAddressesByNetwork) => void;
+  reset: () => void;
   // Indexing actions
   setCurrentStep: (step: IndexingStep | null) => void;
   setStepProgress: (step: IndexingStep, progress: number) => void;
   updateOverallProgress: () => void;
-  setIndexingError: (step: IndexingStep, message: string, recoverable?: boolean) => void;
+  setIndexingError: (
+    step: IndexingStep,
+    message: string,
+    recoverable?: boolean,
+  ) => void;
   clearIndexingError: () => void;
   startIndexing: () => void;
   completeStep: (step: IndexingStep) => void;
@@ -158,7 +155,7 @@ interface WrapStoreState {
   saveIndexingState: () => void;
   loadIndexingState: () => boolean;
   clearPersistedIndexingState: () => void;
-  updateMetrics: (metrics: Partial<typeof initialMetrics>) => void;
+  updateMetrics: (metrics: Partial<IndexingMetrics>) => void;
 }
 
 function syncContractState(network: Network): {
@@ -195,11 +192,8 @@ export const useWrapStore = create<WrapStoreState>()(
       cacheMeta: null,
       currentContractAddress: null,
       contractAddresses: {},
-
       // Indexing initial state
       ...initialIndexingState,
-
-      // Wrap setters
       setAddress: (address) => set({ address }),
       setPeriod: (period) => set({ period }),
       setNetwork: (network) => set({ network, ...syncContractState(network) }),
@@ -348,10 +342,7 @@ export const useWrapStore = create<WrapStoreState>()(
 
         if (typeof window !== "undefined") {
           try {
-            localStorage.setItem(
-              INDEXING_PERSISTENCE_KEY,
-              JSON.stringify(persistedState),
-            );
+            localStorage.setItem(PERSISTENCE_KEY, JSON.stringify(persistedState));
           } catch (error) {
             console.warn("Failed to persist indexing state:", error);
           }
@@ -362,16 +353,14 @@ export const useWrapStore = create<WrapStoreState>()(
         if (typeof window === "undefined") return false;
 
         try {
-          const saved = localStorage.getItem(INDEXING_PERSISTENCE_KEY);
+          const saved = localStorage.getItem(PERSISTENCE_KEY);
           if (!saved) return false;
 
           const persistedState: PersistedIndexingState = JSON.parse(saved);
           const now = Date.now();
 
-          if (
-            now - persistedState.timestamp > INDEXING_PERSISTENCE_TIMEOUT
-          ) {
-            localStorage.removeItem(INDEXING_PERSISTENCE_KEY);
+          if (now - persistedState.timestamp > PERSISTENCE_TIMEOUT) {
+            localStorage.removeItem(PERSISTENCE_KEY);
             return false;
           }
 
@@ -393,7 +382,7 @@ export const useWrapStore = create<WrapStoreState>()(
       clearPersistedIndexingState: () => {
         if (typeof window !== "undefined") {
           try {
-            localStorage.removeItem(INDEXING_PERSISTENCE_KEY);
+            localStorage.removeItem(PERSISTENCE_KEY);
           } catch (error) {
             console.warn("Failed to clear persisted state:", error);
           }

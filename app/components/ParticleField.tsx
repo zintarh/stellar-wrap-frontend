@@ -6,7 +6,6 @@ interface Particle {
   x: number;
   y: number;
   size: number;
-  speed: number;
   opacity: number;
   vx: number;
   vy: number;
@@ -28,9 +27,10 @@ export default function ParticleField() {
       "(prefers-reduced-motion: reduce)",
     ).matches;
 
-    if (prefersReducedMotion) return;
-
-    const isMobile = window.innerWidth < 768;
+    if (prefersReducedMotion) {
+      canvas.remove();
+      return;
+    }
 
     const resizeCanvas = () => {
       canvas.width = window.innerWidth;
@@ -40,16 +40,16 @@ export default function ParticleField() {
     resizeCanvas();
     window.addEventListener("resize", resizeCanvas);
 
-    // Initialize particles - subtle and minimal
-    const divisor = isMobile ? 80000 : 20000;
-    const particleCount = Math.floor(
-      (canvas.width * canvas.height) / divisor,
+    const isMobile = window.innerWidth < 768;
+    const divisor = isMobile ? 60000 : 20000;
+    const particleCount = Math.min(
+      Math.floor((canvas.width * canvas.height) / divisor),
+      150,
     );
     particlesRef.current = Array.from({ length: particleCount }, () => ({
       x: Math.random() * canvas.width,
       y: Math.random() * canvas.height,
       size: Math.random() * 1.5 + 0.5,
-      speed: Math.random() * 0.3 + 0.2,
       opacity: Math.random() * 0.3 + 0.2,
       vx: (Math.random() - 0.5) * 0.3,
       vy: (Math.random() - 0.5) * 0.3,
@@ -59,24 +59,20 @@ export default function ParticleField() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       particlesRef.current.forEach((particle) => {
-        // Update position
         particle.x += particle.vx;
         particle.y += particle.vy;
 
-        // Boundary wrapping
         if (particle.x < 0) particle.x = canvas.width;
         if (particle.x > canvas.width) particle.x = 0;
         if (particle.y < 0) particle.y = canvas.height;
         if (particle.y > canvas.height) particle.y = 0;
 
-        // Draw particle - subtle white
         ctx.beginPath();
         ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
         ctx.fillStyle = `rgba(255, 255, 255, ${particle.opacity})`;
         ctx.fill();
       });
 
-      // Draw subtle connections
       ctx.strokeStyle = "rgba(255, 255, 255, 0.05)";
       ctx.lineWidth = 0.5;
       for (let i = 0; i < particlesRef.current.length; i++) {
@@ -86,7 +82,7 @@ export default function ParticleField() {
           const distance = Math.sqrt(dx * dx + dy * dy);
 
           if (distance < 100) {
-            ctx.globalAlpha = (100 - distance) / 100 * 0.1;
+            ctx.globalAlpha = ((100 - distance) / 100) * 0.1;
             ctx.beginPath();
             ctx.moveTo(particlesRef.current[i].x, particlesRef.current[i].y);
             ctx.lineTo(particlesRef.current[j].x, particlesRef.current[j].y);

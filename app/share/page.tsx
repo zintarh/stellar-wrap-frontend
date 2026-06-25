@@ -2,13 +2,15 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Share2 } from "lucide-react";
+import { ExternalLink, Share2 } from "lucide-react";
 import { mockData } from "@/app/data/mockData";
+import { GOLDEN_USER } from "@/src/data/mockData";
 import { ProgressIndicator } from "@/app/components/ProgressIndicator";
 import { MuteToggle } from "../components/MuteToggle";
 import { ShareCard } from "../components/ShareCard";
 import { ShareImageCard } from "../components/ShareImageCard";
 import { useTheme, themeColors } from "../context/ThemeContext";
+import { useWrapStore } from "../store/wrapStore";
 import {
   XIcon,
   WhatsAppIcon,
@@ -31,6 +33,13 @@ export default function ShareCardPage() {
   const shareBtnRef = useRef<HTMLButtonElement | null>(null);
   const shareImageRef = useRef<HTMLDivElement>(null!);
   const { color } = useTheme();
+  const { address: walletAddress, network } = useWrapStore();
+
+  const stellarExpertUrl = walletAddress
+    ? network === "testnet"
+      ? `https://stellar.expert/explorer/testnet/account/${walletAddress}`
+      : `https://stellar.expert/explorer/public/account/${walletAddress}`
+    : null;
 
   // Get computed theme color from CSS variable
   const [themeColor] = useState<string>(() => {
@@ -100,7 +109,7 @@ export default function ShareCardPage() {
         className="absolute"
         style={{ left: "-9999px", top: 0 }}
       >
-        <ShareImageCard themeColor={themeColor} />
+        <ShareImageCard themeColor={themeColor} archetypeImage={GOLDEN_USER.archetype.image} />
       </div>
 
       <ShareCard
@@ -122,6 +131,22 @@ export default function ShareCardPage() {
       >
         <MuteToggle />
       </motion.div>
+
+      {stellarExpertUrl && (
+        <motion.a
+          href={stellarExpertUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="absolute bottom-6 right-6 md:bottom-8 md:right-8 z-30 flex items-center gap-2 px-4 py-3 rounded-xl backdrop-blur-xl border border-white/10 text-white/60 hover:text-white/90 hover:border-white/30 transition-all text-xs font-medium"
+          style={{ backgroundColor: "rgba(0, 0, 0, 0.5)" }}
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.4 }}
+        >
+          <ExternalLink className="w-3.5 h-3.5" />
+          View full history on Stellar.expert
+        </motion.a>
+      )}
 
       <div className="absolute bottom-6 left-6 z-30">
         <div className="relative">

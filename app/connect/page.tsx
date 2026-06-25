@@ -72,7 +72,7 @@ export default function ConnectPage() {
     setStatus("loading");
 
     try {
-      const publicKey = await connectAlbedo();
+      const publicKey = await connectAlbedo(network);
       setAddress(publicKey);
       setError(null);
       playSound(SOUND_NAMES.SLIDE_WHOOSH);
@@ -608,10 +608,10 @@ export default function ConnectPage() {
               </div>
             </motion.button>
 
-            {/* Freighter Connect Option */}
-            <div className="mt-6 pt-6 border-t border-white/10">
+            {/* Wallet Connect Options */}
+            <div className="mt-6 pt-6 border-t border-white/10 space-y-3">
               <p className="text-center text-sm font-medium text-white/50 mb-4">
-                or
+                or connect with
               </p>
               <motion.button
                 ref={freighterButtonRef}
@@ -645,39 +645,36 @@ export default function ConnectPage() {
                 )}
               </motion.button>
 
-              <div className="mt-3">
-                <motion.button
-                  ref={freighterButtonRef}
-                  onClick={handleAlbedoConnect}
-                  onKeyDown={handleAlbedoKeyDown}
-                  disabled={isConnecting}
-                  className="w-full px-6 py-4 bg-transparent border-2 rounded-xl font-bold text-white/70 hover:text-white transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-theme-primary focus:ring-offset-2 focus:ring-offset-black"
-                  style={{
-                    borderColor: "rgba(var(--color-theme-primary-rgb), 0.3)",
-                  }}
-                  whileHover={{ scale: isConnecting ? 1 : 1.02 }}
-                  whileTap={{ scale: isConnecting ? 1 : 0.98 }}
-                  tabIndex={0}
-                  aria-label="Connect with Albedo wallet"
-                  aria-disabled={isConnecting}
-                  role="button"
-                >
-                  {isConnecting ? (
-                    <>
-                      <div className="w-5 h-5 border-2 border-white/70 border-t-transparent rounded-full animate-spin" />
-                      <span>Connecting...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Wallet
-                        className="w-5 h-5"
-                        style={{ color: "var(--color-theme-primary)" }}
-                      />
-                      <span>Connect with Albedo</span>
-                    </>
-                  )}
-                </motion.button>
-              </div>
+              <motion.button
+                onClick={handleAlbedoConnect}
+                onKeyDown={handleAlbedoKeyDown}
+                disabled={isConnecting}
+                className="w-full px-6 py-4 bg-transparent border-2 rounded-xl font-bold text-white/70 hover:text-white transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-theme-primary focus:ring-offset-2 focus:ring-offset-black"
+                style={{
+                  borderColor: "rgba(var(--color-theme-primary-rgb), 0.3)",
+                }}
+                whileHover={{ scale: isConnecting ? 1 : 1.02 }}
+                whileTap={{ scale: isConnecting ? 1 : 0.98 }}
+                tabIndex={0}
+                aria-label="Connect with Albedo wallet"
+                aria-disabled={isConnecting}
+                role="button"
+              >
+                {isConnecting ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white/70 border-t-transparent rounded-full animate-spin" />
+                    <span>Connecting...</span>
+                  </>
+                ) : (
+                  <>
+                    <Wallet
+                      className="w-5 h-5"
+                      style={{ color: "var(--color-theme-primary)" }}
+                    />
+                    <span>Connect with Albedo</span>
+                  </>
+                )}
+              </motion.button>
             </div>
 
             <div className="mt-6 pt-6 border-t border-white/10">

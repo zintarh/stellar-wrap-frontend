@@ -1,13 +1,13 @@
 import { motion } from "motion/react";
-import { Share2, Download, Twitter, Loader2, Sparkles } from "lucide-react";
-import { useState, RefObject } from "react";
+import { Share2, Download, Twitter, Loader2, Sparkles, AlertCircle } from "lucide-react";
+import { useState, RefObject, useEffect } from "react";
 import { downloadShareImage } from "../utils/imageExport";
 import { mintWrap } from "../utils/walletKit";
 import { useWrapStore } from "@/app/store/wrapStore";
+import { useTransactionStore } from "@/app/store/transactionStore";
 import { toast } from "sonner";
 import { useSound } from "../hooks/useSound";
 import { SOUND_NAMES } from "../utils/soundManager";
-
 interface ShareCardProps {
   username: string;
   transactions: number;
@@ -26,11 +26,44 @@ export function ShareCard({
   shareImageRef,
 }: ShareCardProps) {
   const [isDownloading, setIsDownloading] = useState(false);
-  const [isMinting, setIsMinting] = useState(false);
-  const [mintSuccess, setMintSuccess] = useState<string | null>(null);
-  const [mintState, setMintState] = useState<string>("");
   const { address, network } = useWrapStore();
   const { playSound } = useSound();
+  
+  const { transactionState, transactionHash, transactionError, resetTransaction } = useTransactionStore();
+
+  const isMinting = [
+    "building",
+    "simulating",
+    "signing",
+    "submitting",
+    "confirming",
+  ].includes(transactionState);
+  
+  const mintSuccess = transactionState === "confirmed" ? transactionHash : null;
+  const mintFailed = transactionState === "failed";
+
+  useEffect(() => {
+    if (transactionState === "confirmed" && transactionHash) {
+      playSound(SOUND_NAMES.MINT_SUCCESS);
+      toast.success("Minted successfully!", {
+        description: "View your transaction on Stellar Explorer",
+        action: {
+          label: "View",
+          onClick: () =>
+            window.open(
+              `https://stellar.expert/explorer/testnet/tx/${transactionHash}`,
+              "_blank",
+            ),
+        },
+      });
+    }
+
+    if (transactionState === "failed" && transactionError) {
+      toast.error("Minting failed", {
+        description: transactionError,
+      });
+    }
+  }, [transactionState, transactionHash, transactionError, playSound]);
 
   const handleDownload = async () => {
     if (!shareImageRef.current) return;
@@ -65,13 +98,12 @@ export function ShareCard({
       return;
     }
 
-    setIsMinting(true);
-    setMintSuccess(null);
-    setMintState("");
+    if (transactionState === "failed" || transactionState === "confirmed") {
+      resetTransaction();
+    }
 
     // Transaction state observer
     const observer = (state: string, data?: unknown) => {
-      setMintState(state);
       console.log("Transaction state:", state, data);
       
       // Handle simulation results
@@ -87,34 +119,36 @@ export function ShareCard({
     };
 
     try {
-      const txHash = await mintWrap({
+      await mintWrap({
         userAddress: address,
         network: network || "testnet",
         observer,
       });
-      setMintSuccess(txHash);
-      playSound(SOUND_NAMES.MINT_SUCCESS);
-      const explorerNetwork = network === "mainnet" ? "public" : "testnet";
-      toast.success("Minted successfully!", {
-        description: "View your transaction on Stellar Explorer",
-        action: {
-          label: "View",
-          onClick: () =>
-            window.open(
-              `https://stellar.expert/explorer/${explorerNetwork}/tx/${txHash}`,
-              "_blank",
-            ),
-        },
-      });
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Failed to mint";
-      toast.error("Minting failed", {
-        description: errorMessage,
-      });
-    } finally {
-      setIsMinting(false);
-      setMintState("");
+      // Errors are handled by transactionObserver setting state to 'failed'
+      // which triggers the useEffect to show a toast, so we just log here.
+      console.error("Minting process caught error:", error);
+    }
+  };
+
+  const getMintButtonText = () => {
+    switch (transactionState) {
+      case "building":
+        return "Building transaction...";
+      case "simulating":
+        return "Simulating transaction...";
+      case "signing":
+        return "Awaiting wallet signature...";
+      case "submitting":
+        return "Submitting transaction...";
+      case "confirming":
+        return "Confirming transaction...";
+      case "confirmed":
+        return "Minted!";
+      case "failed":
+        return "Retry Mint";
+      default:
+        return "Mint My Wrap";
     }
   };
   return (
@@ -301,43 +335,34 @@ export function ShareCard({
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 1.0 }}
             whileHover={{
-              scale: 1.02,
+              scale: isMinting || !!mintSuccess ? 1 : 1.02,
               transition: { duration: 0.2 },
             }}
-            whileTap={{ scale: 0.98 }}
-            className="w-full group relative mt-8"
+            whileTap={{ scale: isMinting || !!mintSuccess ? 1 : 0.98 }}
+            className={`w-full group relative mt-8 ${mintFailed ? "animate-pulse" : ""}`}
             onClick={handleMint}
             disabled={isMinting || !!mintSuccess}
           >
             <motion.div
-              className="absolute -inset-1 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity"
-              style={{ backgroundColor: "var(--color-theme-primary)" }}
+              className={`absolute -inset-1 rounded-2xl blur-xl transition-opacity ${mintFailed ? "opacity-50" : "opacity-0 group-hover:opacity-100"}`}
+              style={{ backgroundColor: mintFailed ? "rgba(239, 68, 68, 0.5)" : "var(--color-theme-primary)" }}
             />
             <div
-              className="relative flex items-center justify-center gap-4 backdrop-blur-sm text-white px-8 py-6 rounded-2xl border border-white/20"
+              className="relative flex items-center justify-center gap-4 backdrop-blur-sm text-white px-8 py-6 rounded-2xl border border-white/20 transition-colors"
               style={{
-                backgroundColor: "rgba(var(--color-theme-primary-rgb), 0.2)",
+                backgroundColor: mintFailed ? "rgba(239, 68, 68, 0.2)" : "rgba(var(--color-theme-primary-rgb), 0.2)",
+                borderColor: mintFailed ? "rgba(239, 68, 68, 0.5)" : "rgba(255, 255, 255, 0.2)"
               }}
             >
               {isMinting ? (
                 <Loader2 className="w-6 h-6 animate-spin" />
+              ) : mintFailed ? (
+                <AlertCircle className="w-6 h-6 text-red-500" />
               ) : (
                 <Sparkles className="w-6 h-6" />
               )}
-              <span className="text-2xl font-black tracking-tight">
-                {isMinting
-                  ? mintState === "simulating"
-                    ? "Simulating..."
-                    : mintState === "signed"
-                      ? "Signing..."
-                      : mintState === "submitted"
-                        ? "Submitting..."
-                        : mintState === "confirmed"
-                          ? "Confirmed!"
-                          : "Minting..."
-                  : mintSuccess
-                    ? "Minted!"
-                    : "Mint My Wrap"}
+              <span className={`text-2xl font-black tracking-tight ${mintFailed ? "text-red-100" : ""}`}>
+                {getMintButtonText()}
               </span>
             </div>
           </motion.button>

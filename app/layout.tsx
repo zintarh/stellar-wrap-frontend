@@ -6,6 +6,7 @@ import { DevTool } from "./components/DevTool";
 import { Toaster } from "sonner";
 import { SoundManager } from "./components/SoundManager";
 import { RateLimitBanner } from "./components/RateLimitBanner";
+import { AppNavbar } from "./components/AppNavbar";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -34,6 +35,7 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <Providers>
+          <AppNavbar />
           {children}
           <SoundManager />
           <RateLimitBanner />

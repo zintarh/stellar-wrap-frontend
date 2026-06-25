@@ -2,7 +2,8 @@
 
 import { motion } from 'framer-motion';
 import { useMemo } from 'react';
-import { TrendingUp, Palette, Code } from 'lucide-react';
+import { TrendingUp, Palette, Code, AppWindow } from 'lucide-react';
+import { formatDappDisplayName } from '@/app/utils/formatDappLabel';
 
 type VibeIconKey = 'defi' | 'nft' | 'dev';
 
@@ -13,9 +14,17 @@ interface VibeData {
   label: string;
 }
 
+interface TopDappItem {
+  name: string;
+  interactions: number;
+}
+
 interface Screen4VibeCheckProps {
   vibes: VibeData[];
+  dapps?: TopDappItem[];
 }
+
+const TOP_DAPPS_LIMIT = 5;
 
 // Icon mapping for different vibe types
 const vibeIcons: Record<VibeIconKey, React.ComponentType<{ className?: string }>> = {
@@ -24,7 +33,12 @@ const vibeIcons: Record<VibeIconKey, React.ComponentType<{ className?: string }>
   dev: Code,
 };
 
-export function Screen4VibeCheck({ vibes }: Screen4VibeCheckProps) {
+export function Screen4VibeCheck({ vibes, dapps = [] }: Screen4VibeCheckProps) {
+  const topDapps = useMemo(
+    () => [...dapps].sort((a, b) => b.interactions - a.interactions).slice(0, TOP_DAPPS_LIMIT),
+    [dapps],
+  );
+
   const blobShapes = useMemo(
     () =>
       vibes.map((vibe, index) => {
@@ -150,6 +164,58 @@ export function Screen4VibeCheck({ vibes }: Screen4VibeCheckProps) {
                 );
               })}
             </div>
+
+            {topDapps.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.85 }}
+                className="mt-8 sm:mt-10 md:mt-12"
+              >
+                <h3 className="text-xs sm:text-sm font-black tracking-[0.25em] text-white/50 mb-3 sm:mb-4">
+                  TOP DAPPS
+                </h3>
+                <div className="space-y-2 sm:space-y-3">
+                  {topDapps.map((dapp, index) => (
+                    <motion.div
+                      key={dapp.name}
+                      initial={{ opacity: 0, x: -40 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{
+                        delay: 0.95 + index * 0.1,
+                        type: 'spring',
+                        stiffness: 120,
+                        damping: 18,
+                      }}
+                      className="group"
+                    >
+                      <div
+                        className="flex items-center justify-between gap-3 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-white/10 backdrop-blur-sm"
+                        style={{ backgroundColor: 'rgba(255, 255, 255, 0.04)' }}
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div
+                            className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center shrink-0 border border-white/20"
+                            style={{ backgroundColor: 'rgba(var(--color-theme-primary-rgb), 0.15)' }}
+                          >
+                            <AppWindow className="w-4 h-4 text-white/80" />
+                          </div>
+                          <span
+                            className="text-sm sm:text-base font-bold text-white truncate"
+                            title={dapp.name}
+                          >
+                            {formatDappDisplayName(dapp.name)}
+                          </span>
+                        </div>
+                        <span className="text-sm sm:text-base font-black text-white/70 shrink-0 tabular-nums">
+                          {dapp.interactions.toLocaleString()}
+                        </span>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              </motion.div>
+            )}
           </div>
 
           {/* Right: Visualization */}

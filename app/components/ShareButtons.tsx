@@ -8,17 +8,44 @@ interface ShareButtonsProps {
   title: string;
   text: string;
   hashtags?: string[];
+  persona?: string;
+  topStat?: string;
 }
 
-export function ShareButtons({ title, text, hashtags = [] }: ShareButtonsProps) {
+function buildFarcasterComposeUrl(
+  text: string,
+  appUrl: string,
+  shareOgUrl: string,
+  persona?: string,
+  topStat?: string,
+): string {
+  const castText =
+    persona && topStat
+      ? `I'm ${persona} on Stellar Wrapped! ${topStat}. Get yours at ${appUrl}`
+      : `${text} ${appUrl}`;
+
+  return `https://farcaster.xyz/~/compose?text=${encodeURIComponent(castText)}&embeds[]=${encodeURIComponent(shareOgUrl)}`;
+}
+
+export function ShareButtons({
+  title,
+  text,
+  hashtags = [],
+  persona,
+  topStat,
+}: ShareButtonsProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [shareUrl, setShareUrl] = useState('');
+  const [appUrl, setAppUrl] = useState('');
+  const [shareOgUrl, setShareOgUrl] = useState('');
   
   useEffect(() => {
     if (typeof window === 'undefined') return;
     // Defer state update to avoid synchronous setState in effect body
     const id = window.requestAnimationFrame(() => {
       setShareUrl(window.location.href);
+      setAppUrl(window.location.origin);
+      setShareOgUrl(`${window.location.origin}/share`);
     });
     return () => window.cancelAnimationFrame(id);
   }, []);
@@ -27,6 +54,7 @@ export function ShareButtons({ title, text, hashtags = [] }: ShareButtonsProps) 
 
   const shareLinks = {
     twitter: shareUrl ? `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareUrl)}&hashtags=${hashtagString}` : '',
+    farcaster: shareOgUrl && appUrl ? buildFarcasterComposeUrl(text, appUrl, shareOgUrl, persona, topStat) : '',
     whatsapp: shareUrl ? `https://wa.me/?text=${encodeURIComponent(`${text} ${shareUrl}`)}` : '',
     facebook: shareUrl ? `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}` : '',
     linkedin: shareUrl ? `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}` : '',
@@ -84,6 +112,22 @@ export function ShareButtons({ title, text, hashtags = [] }: ShareButtonsProps) 
                 <X className="w-5 h-5 text-white" />
               </div>
               <span className="text-white font-bold text-sm">X</span>
+            </motion.button>
+
+            {/* Farcaster */}
+            <motion.button
+              whileHover={{ scale: 1.05, x: 5 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => handleShare('farcaster')}
+              className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all group"
+              style={{ backgroundColor: 'rgba(138, 180, 248, 0.1)' }}
+            >
+              <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: '#7959FF' }}>
+                <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 1000 1000" aria-hidden="true">
+                  <path d="M257.778 155.556H742.222V844.444H671.111V528.889H328.889V844.444H257.778V155.556Z" />
+                </svg>
+              </div>
+              <span className="text-white font-bold text-sm">Share on Farcaster</span>
             </motion.button>
 
             {/* WhatsApp */}

@@ -1,12 +1,26 @@
-"use client"
+"use client";
 
-import Link from "next/link"
-import { ColorToggle } from "./ColorToggle"
-import { motion } from "framer-motion"
+import { useRouter } from "next/navigation";
+import { ColorToggle } from "./ColorToggle";
+import { motion } from "framer-motion";
+import { useWrapStore } from "@/app/store/wrapStore";
+import { LogOut } from "lucide-react";
+
+function truncate(addr: string) {
+  return `${addr.slice(0, 4)}…${addr.slice(-4)}`;
+}
 
 export function Navbar() {
+  const router = useRouter();
+  const { address, reset } = useWrapStore();
+
+  const handleDisconnect = () => {
+    reset();
+    router.push("/");
+  };
+
   return (
-    <motion.nav 
+    <motion.nav
       initial={{ y: -20, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       className="fixed top-0 left-0 right-0 z-50 px-6 py-4 flex items-center justify-between backdrop-blur-md bg-black/20 border-b border-white/5"
@@ -18,11 +32,25 @@ export function Navbar() {
         <span className="font-bold text-lg tracking-tight">Zimma</span>
       </div>
 
-      <div className="flex items-center gap-6">
-        <Link href="/features" className="text-sm text-neutral-400 hover:text-white transition-colors hidden sm:block">Features</Link>
-        <Link href="/about" className="text-sm text-neutral-400 hover:text-white transition-colors hidden sm:block">About</Link>
+      <div className="flex items-center gap-3">
         <ColorToggle />
+
+        {address && (
+          <>
+            <span className="text-xs font-mono text-neutral-300 bg-white/5 border border-white/10 rounded-full px-3 py-1">
+              {truncate(address)}
+            </span>
+            <button
+              onClick={handleDisconnect}
+              aria-label="Disconnect wallet"
+              className="flex items-center gap-1.5 text-xs text-neutral-400 hover:text-white border border-white/10 rounded-full px-3 py-1 hover:bg-white/5 transition-colors"
+            >
+              <LogOut size={12} />
+              Disconnect
+            </button>
+          </>
+        )}
       </div>
     </motion.nav>
-  )
+  );
 }

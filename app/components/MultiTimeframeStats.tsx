@@ -16,6 +16,8 @@ import {
   selectFailedTimeframes,
 } from "@/app/store/multiTimeframeStore";
 import { TIMEFRAME_LABELS, Timeframe } from "@/app/services/multiTimeframeIndexer";
+import { WeeklyComparisonChart } from "@/app/components/WeeklyComparisonChart";
+import { useWrapStore } from "@/app/store/wrapStore";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -219,8 +221,17 @@ export function MultiTimeframeStats() {
   const isComplete = useMultiTimeframeStore(selectIsComplete);
   const failedTimeframes = useMultiTimeframeStore(selectFailedTimeframes);
   const error = useMultiTimeframeStore((s) => s.error);
+  const results = useMultiTimeframeStore((s) => s.results);
+  const period = useWrapStore((s) => s.period);
 
   const timeframes: Timeframe[] = ["1w", "2w", "1m"];
+
+  const showChart =
+    period === "monthly" &&
+    isComplete &&
+    results["1w"].data !== null &&
+    results["2w"].data !== null &&
+    results["1m"].data !== null;
 
   return (
     <div className="space-y-4">
@@ -265,6 +276,20 @@ export function MultiTimeframeStats() {
 
       {/* Comparison panel — only shown when at least 2 succeeded */}
       {isComplete && <ComparisonPanel />}
+
+      {/* Weekly comparison chart — monthly period only */}
+      {showChart && (
+        <div className="rounded-2xl border border-white/10 bg-slate-900/60 p-5">
+          <h3 className="text-sm font-semibold text-white mb-4">
+            📊 Weekly Activity (current week vs last 4 weeks)
+          </h3>
+          <WeeklyComparisonChart
+            tx1w={results["1w"].data!.totalTransactions}
+            tx2w={results["2w"].data!.totalTransactions}
+            tx1m={results["1m"].data!.totalTransactions}
+          />
+        </div>
+      )}
     </div>
   );
 }
