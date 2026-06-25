@@ -38,6 +38,8 @@ interface Operation {
   destination_asset_code?: string;
   source_asset_code?: string;
   memo?: string;
+  contract?: string;
+  contract_id?: string;
 }
 
 /**
@@ -149,6 +151,7 @@ export function calculateAchievements(
         case "extend_footprint_ttl":
         case "restore_footprint":
           categories.contractCalls++;
+          processContractOperation(op, dappMap);
           vibeMap.set("soroban-user", (vibeMap.get("soroban-user") || 0) + 1);
           break;
 
@@ -208,9 +211,31 @@ export function calculateAchievements(
     mostActiveAsset,
     contractCalls: categories.contractCalls,
     gasSpent: totalGasSpent,
-    dapps: Array.from(dappMap.values()).sort((a, b) => b.volume - a.volume),
+    dapps: Array.from(dappMap.values()).sort(
+      (a, b) => b.transactionCount - a.transactionCount || b.volume - a.volume,
+    ),
     vibes,
   };
+}
+
+/**
+ * Track Soroban contract interactions as dApp entries (address used when name is unknown).
+ */
+function processContractOperation(
+  op: Operation,
+  dappMap: Map<string, DappInfo>,
+): void {
+  const contractId = op.contract_id || op.contract;
+  if (!contractId) return;
+
+  const existing = dappMap.get(contractId) || {
+    name: contractId,
+    icon: "📜",
+    volume: 0,
+    transactionCount: 0,
+  };
+  existing.transactionCount += 1;
+  dappMap.set(contractId, existing);
 }
 
 /**

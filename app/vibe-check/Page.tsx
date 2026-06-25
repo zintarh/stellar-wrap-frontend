@@ -13,10 +13,11 @@ export default function VibeCheckPage() {
   const router = useRouter();
   const { result } = useWrapStore();
   const vibes = result?.vibes ?? [];
+  const dapps = result?.dapps ?? [];
 
   return (
     <div className="relative w-full h-screen">
-      <Screen4VibeCheck vibes={vibes} />
+      <Screen4VibeCheck vibes={vibes} dapps={dapps} />
 
       <ProgressIndicator
         currentStep={4}
@@ -43,6 +44,12 @@ export default function VibeCheckPage() {
             : "Check out my Stellar Vibe Check! 🎨 #StellarWrapped #DeFi"
         }
         hashtags={["StellarWrapped", "DeFi", "CryptoVibe"]}
+        persona={result?.persona}
+        topStat={
+          vibes.length
+            ? `${vibes[0].percentage}% ${vibes[0].label}`
+            : undefined
+        }
       />
     </div>
   );
