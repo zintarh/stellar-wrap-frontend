@@ -73,6 +73,17 @@ This project is designed to support the growth of the Stellar network by:
 
 ## ⚙️ Configuration
 
+### Prerequisites
+
+- **Node.js** >= 18.0.0
+- **pnpm** >= 9.0.0
+
+### Install pnpm globally
+
+```bash
+npm install -g pnpm@9
+```
+
 ### Environment variables
 
 Copy `.env.example` to `.env.local` and set:
@@ -89,15 +100,15 @@ Contract addresses are loaded per network; the app uses the selected network (ma
 ### Running tests
 
 ```bash
-npm install
-npm test
+pnpm install
+pnpm test
 ```
 
-If you see `Cannot find module 'ansi-styles'` when running `npm test`, run a clean install:
+If you see `Cannot find module 'ansi-styles'` when running `pnpm test`, run a clean install:
 
 ```bash
-rm -rf node_modules && npm install
-npm test
+rm -rf node_modules && pnpm install
+pnpm test
 ```
 
 ---
