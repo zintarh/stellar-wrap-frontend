@@ -3,6 +3,7 @@
 :root {
   --background: #191414;
   --foreground: #ededed;
+  --font-sans: Arial, Helvetica, sans-serif;
 
   /* Theme Variables - Default (Green) */
   --color-theme-primary: #054020;

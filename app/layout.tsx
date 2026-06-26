@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 import { DevTool } from "./components/DevTool";
@@ -8,16 +7,6 @@ import { SoundManager } from "./components/SoundManager";
 import { RateLimitBanner } from "./components/RateLimitBanner";
 import { AppNavbar } from "./components/AppNavbar";
 import { SkipNavigation } from "./components/SkipNavigation";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
   title: "Stellar Wrap | Reveal Your On-Chain Persona",
@@ -32,7 +21,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className="antialiased"
         suppressHydrationWarning
       >
         <SkipNavigation />
