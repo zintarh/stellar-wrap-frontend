@@ -1,10 +1,17 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { lazy, Suspense } from 'react';
+
+// import { ReactNode } from "react";
 import { Home, Share2, ChevronRight, Palette } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { ReactNode } from "react";
+import { motion } from "framer-motion";
 import { MuteToggle } from "./MuteToggle";
+
+// Swap static imports for lazy ones
+const TopDapps = lazy(() => import('./cards/TopDapps'));
+const TransactionsOfFury = lazy(() => import('./cards/TransactionsOfFury'));
+const Screen4VibeCheck = lazy(() => import('./cards/Screen4VibeCheck'));
 
 interface StoryShellProps {
   children: ReactNode;
