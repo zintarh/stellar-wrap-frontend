@@ -1,14 +1,18 @@
 #!/bin/sh
-. "$(dirname "$0")/_/husky.sh"
 
-echo "🏗  Running build before push..."
-npm run build
+echo "Running TypeScript type check before push..."
+echo "  Skip in an emergency: git push --no-verify"
+echo
+
+yarn tsc --noEmit --pretty
 
 status=$?
 
 if [ $status -ne 0 ]; then
   echo
-  echo "✖ Build failed. Fix errors before pushing to GitHub."
+  echo "✖ Type check failed. Fix the errors above before pushing."
+  echo "  Emergency bypass: git push --no-verify  (use sparingly)"
   exit $status
 fi
 
+echo "✓ Type check passed."
