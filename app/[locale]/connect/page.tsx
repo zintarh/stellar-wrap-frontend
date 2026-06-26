@@ -4,13 +4,13 @@ import { useState, useRef, useEffect, KeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Wallet, Copy, CheckCircle, XCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useWrapStore } from "../store/wrapStore";
-import { connectFreighter, connectAlbedo } from "../utils/walletConnect";
-import { ProgressIndicator } from "../components/ProgressIndicator";
-import { MuteToggle } from "../components/MuteToggle";
-import { useStellarAddressValidation } from "../../src/hooks/useStellarAddressValidation";
-import { useSound } from "../hooks/useSound";
-import { SOUND_NAMES } from "../utils/soundManager";
+import { useWrapStore } from "../../store/wrapStore";
+import { connectFreighter, connectAlbedo } from "../../utils/walletConnect";
+import { ProgressIndicator } from "../../components/ProgressIndicator";
+import { MuteToggle } from "../../components/MuteToggle";
+import { useStellarAddressValidation } from "../../../src/hooks/useStellarAddressValidation";
+import { useSound } from "../../hooks/useSound";
+import { SOUND_NAMES } from "../../utils/soundManager";
 
 export default function ConnectPage() {
   const router = useRouter();
