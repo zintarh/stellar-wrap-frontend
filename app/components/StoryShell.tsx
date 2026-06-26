@@ -1,12 +1,17 @@
 "use client";
 
 import { lazy, Suspense } from 'react';
+import { Home, Share2, ChevronRight, Palette } from "lucide-react";
+
+// StoryShell.tsx snippet
+import { AnimatePresence, motion } from 'framer-motion';
+import { LazyStoryCard } from './LazyStoryCard';
+import { StorySkeleton } from './StorySkeleton';
 
 // import { ReactNode } from "react";
-import { Home, Share2, ChevronRight, Palette } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
-import { MuteToggle } from "./MuteToggle";
+// import { useRouter } from "next/navigation";
+// import { motion } from "framer-motion";
+// import { MuteToggle } from "./MuteToggle";
 
 // Swap static imports for lazy ones
 const TopDapps = lazy(() => import('./cards/TopDapps'));
@@ -106,6 +111,25 @@ export function StoryShell({ children, activeSegment = 1 }: StoryShellProps) {
         >
           <Home className="w-4 h-4 group-hover:scale-110 transition-transform" />
           <span>Home</span>
+          <AnimatePresence mode="wait">
+            {cards.map((card, index) => (
+              <motion.div 
+                key={card.id}
+                initial={{ opacity: 0, x: 100 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -100 }}
+                className="absolute inset-0"
+              >
+                <LazyStoryCard>
+                  <Suspense fallback={<StorySkeleton />}>
+                    {/* Render your specific lazy component based on the flow */}
+                    {index === 0 && <TopDapps />}
+                    {index === 1 && <TransactionsOfFury />}
+                  </Suspense>
+                </LazyStoryCard>
+              </motion.div>
+            ))}
+        </AnimatePresence>
         </motion.button>
 
         {/* Segmented Progress Bar */}
