@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Wallet, Copy, CheckCircle, XCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useWrapStore } from "../store/wrapStore";
+import { useTransactionStore } from "../store/transactionStore";
+import { useMultiTimeframeStore } from "../store/multiTimeframeStore";
 import { connectFreighter, connectAlbedo } from "../utils/walletConnect";
 import { ProgressIndicator } from "../components/ProgressIndicator";
 import { MuteToggle } from "../components/MuteToggle";
@@ -14,7 +16,9 @@ import { SOUND_NAMES } from "../utils/soundManager";
 
 export default function ConnectPage() {
   const router = useRouter();
-  const { setAddress, setError, setStatus, network } = useWrapStore();
+  const { setAddress, setError, setStatus, network, reset } = useWrapStore();
+  const { resetTransaction } = useTransactionStore();
+  const { reset: resetMultiTimeframe } = useMultiTimeframeStore();
   const { playSound } = useSound();
 
   const {
@@ -48,6 +52,10 @@ export default function ConnectPage() {
     setIsConnecting(true);
     setLocalError(null);
     setStatus("loading");
+    // Reset all stores before connecting
+    reset();
+    resetTransaction();
+    resetMultiTimeframe();
 
     try {
       const publicKey = await connectFreighter(network);
@@ -70,6 +78,10 @@ export default function ConnectPage() {
     setIsConnecting(true);
     setLocalError(null);
     setStatus("loading");
+    // Reset all stores before connecting
+    reset();
+    resetTransaction();
+    resetMultiTimeframe();
 
     try {
       const publicKey = await connectAlbedo(network);
@@ -102,6 +114,11 @@ export default function ConnectPage() {
       setError("Invalid wallet address");
       return;
     }
+
+    // Reset all stores before connecting
+    reset();
+    resetTransaction();
+    resetMultiTimeframe();
 
     setAddress(walletAddress.trim());
     playSound(SOUND_NAMES.SLIDE_WHOOSH);
