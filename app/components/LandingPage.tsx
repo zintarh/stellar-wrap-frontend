@@ -8,7 +8,6 @@ import { ColorToggle } from './ColorToggle';
 import { NetworkToggle } from './NetworkToggle';
 import ParticleField from './ParticleField';
 import { useWrapStore, WrapPeriod } from '../store/wrapStore';
-import ParticleField from './ParticleField';
 
 export function LandingPage() {
   const router = useRouter();
@@ -30,8 +29,6 @@ export function LandingPage() {
 
       {/* Deep space gradient */}
       <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/20" />
-      
-      <ParticleField />
 
       {/* Hexagonal grid pattern */}
       <div className="absolute inset-0 opacity-20">

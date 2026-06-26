@@ -1,12 +1,18 @@
-import html2canvas from "html2canvas";
-
 /**
- * Downloads the ShareImageCard as a PNG image
+ * Downloads the ShareImageCard as a PNG image.
+ *
+ * html2canvas (~200 KB) is dynamically imported here so it is only loaded
+ * when this function is actually invoked — i.e. on the /share page when the
+ * user clicks "Download Image".  It never ends up in the initial bundle.
+ *
  * @param element - The DOM element to capture (ShareImageCard ref)
  * @returns Promise that resolves when download is triggered
  * @throws Error if canvas generation or download fails
  */
 export async function downloadShareImage(element: HTMLElement): Promise<void> {
+  // Dynamic import: html2canvas is only loaded when this function is called.
+  const html2canvas = (await import("html2canvas")).default;
+
   try {
     // Step 1: Clone the element
     const clone = element.cloneNode(true) as HTMLElement;

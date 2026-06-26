@@ -2,7 +2,6 @@ import { motion } from "motion/react";
 import { Share2, Download, Twitter, Loader2, Sparkles, AlertCircle } from "lucide-react";
 import { useState, RefObject, useEffect } from "react";
 import { downloadShareImage } from "../utils/imageExport";
-import { mintWrap } from "../utils/walletKit";
 import { useWrapStore } from "@/app/store/wrapStore";
 import { useTransactionStore } from "@/app/store/transactionStore";
 import { toast } from "sonner";
@@ -119,6 +118,9 @@ export function ShareCard({
     };
 
     try {
+      // Dynamically import walletKit (pulls in stellar-sdk + Soroban contract code)
+      // so it is NOT included in the initial bundle — only loaded when minting.
+      const { mintWrap } = await import("../utils/walletKit");
       await mintWrap({
         userAddress: address,
         network: network || "testnet",

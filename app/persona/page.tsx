@@ -2,7 +2,6 @@
 
 import React, { JSX, useCallback, useEffect, useRef, useState } from "react";
 import { motion, useAnimation, AnimatePresence } from "framer-motion";
-import confetti from "canvas-confetti";
 import { Home, Share2, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { readStreamableValue } from "ai/rsc";
@@ -23,7 +22,11 @@ const ARCHETYPE_DATA: Record<string, { description: string }> = {
 
 // Removed theme system - using standard CSS variables from globals.css
 const useConfetti = (color?: string) => {
-  return () => {
+  return async () => {
+    // canvas-confetti (~40 KB) is loaded on demand — only when the card reveal
+    // animation fires — so it never enters the initial landing-page bundle.
+    const confetti = (await import("canvas-confetti")).default;
+
     const end = Date.now() + 1200;
     (function frame() {
       confetti({
@@ -239,7 +242,7 @@ export default function ArchetypeReveal(): JSX.Element {
     });
 
     setIsFlipped(true);
-    triggerConfetti();
+    await triggerConfetti();
 
     await controls.start({
       rotateY: 180,
