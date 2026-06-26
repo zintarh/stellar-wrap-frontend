@@ -6,12 +6,14 @@ import { useTransactionStore } from "../store/transactionStore";
 import { NETWORKS } from "../../src/config";
 import { withStore } from "../../.storybook/withStore";
 
+type ShareCardStoryProps = Omit<ComponentProps<typeof ShareCard>, "shareImageRef">;
+
 /** Supplies the live `shareImageRef` the component needs for image export. */
-function ShareCardWithRef(args: ComponentProps<typeof ShareCard>) {
+function ShareCardWithRef(args: ShareCardStoryProps) {
   const ref = useRef<HTMLDivElement>(null);
   return (
     <div style={{ width: 480 }}>
-      <ShareCard {...args} shareImageRef={ref} />
+      <ShareCard {...args} shareImageRef={ref as RefObject<HTMLDivElement>} />
       <div ref={ref} style={{ position: "absolute", left: -9999, top: -9999 }} />
     </div>
   );
@@ -19,7 +21,7 @@ function ShareCardWithRef(args: ComponentProps<typeof ShareCard>) {
 
 const meta = {
   title: "Share/ShareCard",
-  component: ShareCard,
+  component: ShareCardWithRef,
   parameters: { layout: "centered" },
   args: {
     username: "stellar.eth",
@@ -27,17 +29,14 @@ const meta = {
     persona: "The Wizard",
     topVibe: "DeFi Degen",
     vibePercentage: 64,
-    // Replaced by a live ref in `render`; present to satisfy the prop type.
-    shareImageRef: { current: null } as RefObject<HTMLDivElement>,
   },
-  render: (args) => <ShareCardWithRef {...args} />,
   decorators: [
     withStore(useWrapStore, {
       address: "GAAZI4TCR3TY5OJHCTJC2A4QSY6CJWJH5IAJTGKIN2ER7LBNVKOCCWNA",
       network: NETWORKS.MAINNET,
     }),
   ],
-} satisfies Meta<typeof ShareCard>;
+} satisfies Meta<typeof ShareCardWithRef>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;

@@ -8,7 +8,6 @@ import { ColorToggle } from './ColorToggle';
 import { NetworkToggle } from './NetworkToggle';
 import ParticleField from './ParticleField';
 import { useWrapStore, WrapPeriod } from '../store/wrapStore';
-import ParticleField from './ParticleField';
 
 export function LandingPage() {
   const router = useRouter();
