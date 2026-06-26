@@ -3,6 +3,7 @@
 > **Turn your ledger data into social proof. A shareable, monthly summary of your impact on the Stellar network.**
 
 ![Stellar Wrap Landing Page](./public/stellar-wrap.png)
+[![Lighthouse CI](https://github.com/zintarh/stellar-wrap-frontend/actions/workflows/lighthouse.yml/badge.svg)](https://github.com/zintarh/stellar-wrap-frontend/actions/workflows/lighthouse.yml)
 
 ---
 
@@ -86,6 +87,7 @@ Copy `.env.example` to `.env.local` and set:
 
 Contract addresses are loaded per network; the app uses the selected network (mainnet/testnet) to choose the contract. When you switch networks in the UI, the contract instance is re-loaded for the new network.
 
+```markdown
 ### Running tests
 
 ```bash
@@ -100,7 +102,14 @@ rm -rf node_modules && npm install
 npm test
 ```
 
+### Running Lighthouse locally
+
+```bash
+yarn build
+yarn lhci:local
 ---
+
+See [TESTING.md](./TESTING.md) for full Lighthouse CI documentation, score thresholds, and troubleshooting.
 
 ## 🗺️ Roadmap
 

@@ -10,6 +10,8 @@
     "vitest": "vitest",
     "test:ui": "vitest --ui",
     "test": "npx jest",
+    "lhci": "lhci autorun",
+    "lhci:local": "lhci autorun --config=./lighthouserc.json",
     "prepare": "husky install"
   },
   "dependencies": {
@@ -34,6 +36,7 @@
     "zustand": "^5.0.10"
   },
   "devDependencies": {
+    "@lhci/cli": "^0.14.0",
     "@tailwindcss/postcss": "^4",
     "@types/canvas-confetti": "^1.9.0",
     "@types/jest": "^29.5.14",
