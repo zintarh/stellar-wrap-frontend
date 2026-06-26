@@ -196,6 +196,23 @@ export default function ArchetypeReveal(): JSX.Element {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [result]);
 
+  const handleShareKeyDown = (platform: string) => (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      handleShare(platform);
+    }
+  };
+
+  const toggleShareKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      setShareOpen(!shareOpen);
+    }
+    if (e.key === "Escape" && shareOpen) {
+      setShareOpen(false);
+    }
+  };
+
   // click-outside to close share menu
   useEffect(() => {
     const onDocClick = (e: MouseEvent) => {
@@ -211,8 +228,17 @@ export default function ArchetypeReveal(): JSX.Element {
         setShareOpen(false);
       }
     };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && shareOpen) {
+        setShareOpen(false);
+      }
+    };
     document.addEventListener("mousedown", onDocClick);
-    return () => document.removeEventListener("mousedown", onDocClick);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", onDocClick);
+      document.removeEventListener("keydown", onKeyDown);
+    };
   }, [shareOpen]);
 
   const triggerConfetti = useConfetti();
@@ -339,12 +365,19 @@ export default function ArchetypeReveal(): JSX.Element {
           {/* Home Button - Absolute positioned like share page */}
           <Link href="/">
             <motion.button
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  window.location.href = "/";
+                }
+              }}
               className="absolute top-6 left-6 md:top-8 md:left-8 z-30 group"
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.2 }}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
+              aria-label="Go home"
             >
               <div
                 className="flex items-center gap-2 px-3 py-2 md:px-4 md:py-3 rounded-xl backdrop-blur-xl border border-white/20"
@@ -539,7 +572,9 @@ export default function ArchetypeReveal(): JSX.Element {
                     {/* X / Twitter */}{" "}
                     <button
                       onClick={() => handleShare("x")}
-                      className=" flex cursor-pointer items-center pl-6 w-42 h-15 gap-3 p-2 rounded-xl bg-[#0F0F10] hover:bg-[#1a1a1c] transition-colors group"
+                      onKeyDown={handleShareKeyDown("x")}
+                      className="flex cursor-pointer items-center pl-6 w-42 h-15 gap-3 p-2 rounded-xl bg-[#0F0F10] hover:bg-[#1a1a1c] transition-colors group"
+                      role="menuitem"
                     >
                       {" "}
                       <div className="flex items-center gap-3 relative left-5">
@@ -557,7 +592,9 @@ export default function ArchetypeReveal(): JSX.Element {
                     {/* WhatsApp */}{" "}
                     <button
                       onClick={() => handleShare("whatsapp")}
+                      onKeyDown={handleShareKeyDown("whatsapp")}
                       className="flex items-center cursor-pointer justify-center gap-3 p-2 w-42 h-15 rounded-xl bg-[#0F0F10] hover:bg-[#1a1a1c] transition-colors"
+                      role="menuitem"
                     >
                       {" "}
                       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#25D366]">
@@ -572,7 +609,9 @@ export default function ArchetypeReveal(): JSX.Element {
                     {/* Facebook */}{" "}
                     <button
                       onClick={() => handleShare("facebook")}
+                      onKeyDown={handleShareKeyDown("facebook")}
                       className="flex items-center cursor-pointer justify-center gap-3 p-2 w-42 h-15 rounded-xl bg-[#0F0F10] hover:bg-[#1a1a1c] transition-colors"
+                      role="menuitem"
                     >
                       {" "}
                       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#1877F2]">
@@ -587,7 +626,9 @@ export default function ArchetypeReveal(): JSX.Element {
                     {/* LinkedIn */}{" "}
                     <button
                       onClick={() => handleShare("linkedin")}
+                      onKeyDown={handleShareKeyDown("linkedin")}
                       className="flex items-center justify-center cursor-pointer gap-3 p-2 w-42 h-15 rounded-xl bg-[#0F0F10] hover:bg-[#1a1a1c] transition-colors"
+                      role="menuitem"
                     >
                       {" "}
                       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#0077B5]">
@@ -602,7 +643,9 @@ export default function ArchetypeReveal(): JSX.Element {
                     {/* Telegram */}{" "}
                     <button
                       onClick={() => handleShare("telegram")}
+                      onKeyDown={handleShareKeyDown("telegram")}
                       className="flex items-center cursor-pointer justify-center gap-3 p-2 w-42 h-15 rounded-xl bg-[#0F0F10] hover:bg-[#1a1a1c] transition-colors"
+                      role="menuitem"
                     >
                       {" "}
                       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#229ED9]">
@@ -621,7 +664,10 @@ export default function ArchetypeReveal(): JSX.Element {
               <button
                 ref={shareBtnRef}
                 onClick={() => setShareOpen(!shareOpen)}
+                onKeyDown={toggleShareKeyDown}
                 className="flex h-12 w-12 sm:h-16 sm:w-16 items-center justify-center rounded-full border border-white/10 bg-black/60 text-white backdrop-blur-md transition hover:bg-white/5"
+                aria-label="Share"
+                aria-expanded={shareOpen}
               >
                 <motion.div
                   animate={{ rotate: shareOpen ? 50 : 0 }}
@@ -636,12 +682,19 @@ export default function ArchetypeReveal(): JSX.Element {
           {/* Skip/Next Button - Absolute positioned like share page */}
           <Link href="/share">
             <motion.button
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  window.location.href = "/share";
+                }
+              }}
               className="absolute bottom-6 right-6 md:bottom-8 md:right-8 z-30 group"
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 1 }}
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.95 }}
+              aria-label="Next step"
             >
               <div className="flex h-12 w-12 sm:h-16 sm:w-16 items-center justify-center rounded-full border border-white/10 bg-black/60 text-white backdrop-blur-md transition hover:bg-white/5">
                 <ChevronRight className="h-6 w-6 sm:h-9 sm:w-9" />

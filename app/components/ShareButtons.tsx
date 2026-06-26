@@ -68,6 +68,23 @@ export function ShareButtons({
     }
   };
 
+  const handleKeyDown = (platform: keyof typeof shareLinks) => (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      handleShare(platform);
+    }
+  };
+
+  const toggleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      setIsOpen(!isOpen);
+    }
+    if (e.key === "Escape" && isOpen) {
+      setIsOpen(false);
+    }
+  };
+
   const handleCopyLink = async () => {
     if (typeof window === 'undefined' || !shareUrl) return;
     try {
@@ -75,7 +92,6 @@ export function ShareButtons({
       setCopied(true);
       window.setTimeout(() => setCopied(false), 2000);
     } catch {
-      // Fallback for older browsers
       const textarea = document.createElement('textarea');
       textarea.value = shareUrl;
       textarea.style.position = 'fixed';
@@ -121,14 +137,18 @@ export function ShareButtons({
               backgroundColor: 'rgba(0, 0, 0, 0.8)',
               borderColor: 'rgba(138, 180, 248, 0.3)',
             }}
+            role="menu"
+            aria-label="Share options"
           >
             {/* X/Twitter */}
             <motion.button
               whileHover={{ scale: 1.05, x: 5 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => handleShare('twitter')}
+              onKeyDown={handleKeyDown('twitter')}
               className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all group"
               style={{ backgroundColor: 'rgba(138, 180, 248, 0.1)' }}
+              role="menuitem"
             >
               <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: '#000000' }}>
                 <X className="w-5 h-5 text-white" />
@@ -141,8 +161,10 @@ export function ShareButtons({
               whileHover={{ scale: 1.05, x: 5 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => handleShare('farcaster')}
+              onKeyDown={handleKeyDown('farcaster')}
               className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all group"
               style={{ backgroundColor: 'rgba(138, 180, 248, 0.1)' }}
+              role="menuitem"
             >
               <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: '#7959FF' }}>
                 <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 1000 1000" aria-hidden="true">
@@ -157,8 +179,10 @@ export function ShareButtons({
               whileHover={{ scale: 1.05, x: 5 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => handleShare('whatsapp')}
+              onKeyDown={handleKeyDown('whatsapp')}
               className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all group"
               style={{ backgroundColor: 'rgba(138, 180, 248, 0.1)' }}
+              role="menuitem"
             >
               <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: '#25D366' }}>
                 <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
@@ -173,8 +197,10 @@ export function ShareButtons({
               whileHover={{ scale: 1.05, x: 5 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => handleShare('facebook')}
+              onKeyDown={handleKeyDown('facebook')}
               className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all group"
               style={{ backgroundColor: 'rgba(138, 180, 248, 0.1)' }}
+              role="menuitem"
             >
               <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: '#1877F2' }}>
                 <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
@@ -189,8 +215,10 @@ export function ShareButtons({
               whileHover={{ scale: 1.05, x: 5 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => handleShare('linkedin')}
+              onKeyDown={handleKeyDown('linkedin')}
               className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all group"
               style={{ backgroundColor: 'rgba(138, 180, 248, 0.1)' }}
+              role="menuitem"
             >
               <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: '#0A66C2' }}>
                 <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
@@ -205,8 +233,10 @@ export function ShareButtons({
               whileHover={{ scale: 1.05, x: 5 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => handleShare('telegram')}
+              onKeyDown={handleKeyDown('telegram')}
               className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all group"
               style={{ backgroundColor: 'rgba(138, 180, 248, 0.1)' }}
+              role="menuitem"
             >
               <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: '#26A5E4' }}>
                 <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
@@ -242,8 +272,15 @@ export function ShareButtons({
                 whileHover={{ scale: 1.05, x: 5 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={handleNativeShare}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    handleNativeShare();
+                  }
+                }}
                 className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all group"
                 style={{ backgroundColor: 'rgba(138, 180, 248, 0.1)' }}
+                role="menuitem"
               >
                 <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: '#8AB4F8' }}>
                   <Share2 className="w-5 h-5 text-white" />
@@ -257,6 +294,7 @@ export function ShareButtons({
         {/* Main share button */}
         <motion.button
           onClick={() => setIsOpen(!isOpen)}
+          onKeyDown={toggleKeyDown}
           className="w-14 h-14 sm:w-16 sm:h-16 rounded-full flex items-center justify-center backdrop-blur-xl border group relative overflow-hidden"
           style={{
             backgroundColor: isOpen ? 'rgba(0, 0, 0, 0.9)' : 'rgba(0, 0, 0, 0.8)',
@@ -264,6 +302,8 @@ export function ShareButtons({
           }}
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.95 }}
+          aria-label="Share options"
+          aria-expanded={isOpen}
         >
           <motion.div
             className="absolute inset-0  from-transparent via-white/10 to-transparent"
