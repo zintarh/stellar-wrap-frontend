@@ -7,6 +7,7 @@ import { Toaster } from "sonner";
 import { SoundManager } from "./components/SoundManager";
 import { RateLimitBanner } from "./components/RateLimitBanner";
 import { AppNavbar } from "./components/AppNavbar";
+import { SkipNavigation } from "./components/SkipNavigation";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -34,9 +35,12 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         suppressHydrationWarning
       >
+        <SkipNavigation />
         <Providers>
           <AppNavbar />
-          {children}
+          <main id="main-content" tabIndex={-1}>
+            {children}
+          </main>
           <SoundManager />
           <RateLimitBanner />
         </Providers>

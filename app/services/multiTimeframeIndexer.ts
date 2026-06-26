@@ -7,7 +7,7 @@
  * Issue #46
  */
 
-import { IndexerResult, PERIODS, WrapPeriod } from "@/app/utils/indexer";
+import { IndexerResult, WrapPeriod } from "@/app/utils/indexer";
 import { indexAccount } from "./indexerService";
 import { IndexerEventEmitter } from "@/app/utils/indexerEventEmitter";
 
@@ -221,7 +221,6 @@ export async function indexAccountMultiTimeframe(
     let accumulatedWeight = 0;
 
     const stepChangeHandler = (step: string) => {
-      const weight = stepWeights[step] ?? 0;
       accumulatedWeight = Object.entries(stepWeights)
         .filter(([s]) => {
           const steps = Object.keys(stepWeights);

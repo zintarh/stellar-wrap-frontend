@@ -24,12 +24,14 @@ export const ColorToggle = () => {
         }}
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.95 }}
-        aria-label="Toggle color picker"
+        aria-label={`Theme picker. Current theme: ${themeColors[color].name}`}
+        aria-expanded={isOpen}
+        aria-haspopup="menu"
       >
         {isOpen ? (
-          <X className="w-6 h-6 text-white" />
+          <X className="w-6 h-6 text-white" aria-hidden="true" />
         ) : (
-          <Palette className="w-6 h-6 text-white" />
+          <Palette className="w-6 h-6 text-white" aria-hidden="true" />
         )}
       </motion.button>
 
@@ -42,6 +44,8 @@ export const ColorToggle = () => {
             exit={{ opacity: 0, y: -20, scale: 0.95 }}
             transition={{ duration: 0.2 }}
             className="absolute top-16 right-0 bg-black/90 backdrop-blur-lg rounded-2xl p-4 border border-white/20 shadow-2xl"
+            role="menu"
+            aria-label="Theme colors"
             style={{
               minWidth: '200px',
             }}
@@ -76,10 +80,14 @@ export const ColorToggle = () => {
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     aria-label={`Select ${theme.name} theme`}
+                    aria-current={isActive ? "true" : undefined}
+                    role="menuitemradio"
+                    aria-checked={isActive}
                   >
                     {/* Color Circle */}
                     <div
                       className="w-8 h-8 rounded-full flex-shrink-0"
+                      aria-hidden="true"
                       style={{
                         background: theme.gradient,
                         boxShadow: `0 0 15px ${theme.primary}60`,

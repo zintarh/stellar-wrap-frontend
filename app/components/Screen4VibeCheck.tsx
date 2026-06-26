@@ -88,19 +88,25 @@ export function Screen4VibeCheck({ vibes, dapps = [] }: Screen4VibeCheckProps) {
               transition={{ delay: 0.2 }}
               className="mb-8 sm:mb-12 md:mb-16"
             >
-              <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-white/90 tracking-tight mb-2 md:mb-3 leading-none">
-                VIBE
-              </h2>
-              <h2 
-                className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-tight leading-none"
-                style={{
-                  background: `linear-gradient(to right, #ffffff, var(--color-theme-primary))`,
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                }}
+              <h1
+                data-story-heading="true"
+                tabIndex={-1}
+                className="font-black tracking-tight leading-none focus:outline-none"
               >
-                CHECK
-              </h2>
+                <span className="block text-4xl sm:text-5xl md:text-6xl lg:text-7xl text-white/90 mb-2 md:mb-3">
+                  VIBE
+                </span>
+                <span
+                  className="block text-5xl sm:text-6xl md:text-7xl lg:text-8xl"
+                  style={{
+                    background: `linear-gradient(to right, #ffffff, var(--color-theme-primary))`,
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                  }}
+                >
+                  CHECK
+                </span>
+              </h1>
             </motion.div>
 
             <div className="space-y-3 sm:space-y-4 md:space-y-6">
@@ -140,7 +146,10 @@ export function Screen4VibeCheck({ vibes, dapps = [] }: Screen4VibeCheckProps) {
                               delay: index * 0.3,
                             }}
                           >
-                            <Icon className="w-5 h-5 sm:w-6 sm:h-6 text-black" />
+                            <Icon
+                              className="w-5 h-5 sm:w-6 sm:h-6 text-black"
+                              aria-hidden="true"
+                            />
                           </motion.div>
                           <span className="text-lg sm:text-xl md:text-2xl font-black text-white">
                             {vibe.label}
@@ -198,7 +207,10 @@ export function Screen4VibeCheck({ vibes, dapps = [] }: Screen4VibeCheckProps) {
                             className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center shrink-0 border border-white/20"
                             style={{ backgroundColor: 'rgba(var(--color-theme-primary-rgb), 0.15)' }}
                           >
-                            <AppWindow className="w-4 h-4 text-white/80" />
+                            <AppWindow
+                              className="w-4 h-4 text-white/80"
+                              aria-hidden="true"
+                            />
                           </div>
                           <span
                             className="text-sm sm:text-base font-bold text-white truncate"
@@ -296,7 +308,10 @@ export function Screen4VibeCheck({ vibes, dapps = [] }: Screen4VibeCheckProps) {
                           height: blob.size * 0.3,
                         }}
                       >
-                        <Icon className="text-white w-full h-full" />
+                        <Icon
+                          className="text-white w-full h-full"
+                          aria-hidden="true"
+                        />
                       </div>
                     </motion.div>
                   </motion.div>

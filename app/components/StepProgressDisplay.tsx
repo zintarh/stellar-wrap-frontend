@@ -113,6 +113,11 @@ export function StepProgressDisplay({
             aria-valuenow={currentStep ? stepProgress[currentStep] : 0}
             aria-valuemin={0}
             aria-valuemax={100}
+            aria-label={
+              currentStep
+                ? `${INDEXING_STEPS[currentStep].label} progress`
+                : "Step progress"
+            }
           >
             <motion.div
               className="h-full bg-linear-to-r from-(--color-theme-primary) to-(--color-theme-primary) rounded-full"
@@ -148,6 +153,7 @@ export function StepProgressDisplay({
             aria-valuenow={overallProgress}
             aria-valuemin={0}
             aria-valuemax={100}
+            aria-label="Overall indexing progress"
           >
             <motion.div
               className="h-full bg-linear-to-r from-(--color-theme-primary) to-(--color-theme-primary)"

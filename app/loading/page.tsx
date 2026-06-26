@@ -244,6 +244,7 @@ export default function LoadingScreen() {
       <motion.button
         onClick={() => router.push("/")}
         className="absolute top-6 left-6 md:top-8 md:left-8 z-30 group"
+        aria-label="Go to home page"
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ delay: 0.2 }}
@@ -254,7 +255,10 @@ export default function LoadingScreen() {
           className="flex items-center gap-2 px-3 py-2 md:px-4 md:py-3 rounded-xl backdrop-blur-xl border border-white/20"
           style={{ backgroundColor: "rgba(0, 0, 0, 0.5)" }}
         >
-          <Home className="w-4 h-4 md:w-5 md:h-5 text-white/80 group-hover:text-white transition-colors" />
+          <Home
+            className="w-4 h-4 md:w-5 md:h-5 text-white/80 group-hover:text-white transition-colors"
+            aria-hidden="true"
+          />
           <span className="text-xs md:text-sm font-black text-white/80 group-hover:text-white transition-colors hidden sm:inline">
             HOME
           </span>
@@ -276,6 +280,7 @@ export default function LoadingScreen() {
           handleComplete();
         }}
         className="absolute bottom-8 right-8 md:bottom-12 md:right-12 z-30 group"
+        aria-label="Skip loading and go to persona step"
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ delay: 1 }}
@@ -302,7 +307,10 @@ export default function LoadingScreen() {
                 borderColor: "rgba(255, 255, 255, 0.3)",
               }}
             >
-              <ChevronRight className="w-6 h-6 md:w-7 md:h-7 text-white" />
+              <ChevronRight
+                className="w-6 h-6 md:w-7 md:h-7 text-white"
+                aria-hidden="true"
+              />
             </div>
           </div>
           <span className="text-xs font-black text-white/60 group-hover:text-white/80 transition-colors">
