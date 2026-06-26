@@ -78,8 +78,9 @@ export function Screen4VibeCheck({ vibes, dapps = [] }: Screen4VibeCheckProps) {
       </div>
 
       {/* Content container */}
-      <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-12 py-8 sm:py-12 md:py-16 flex items-center">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12 lg:gap-16 w-full items-center">
+      <div className="relative z-10 w-full px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8 lg:py-12">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 md:gap-10 lg:gap-16 w-full items-center">
           {/* Left: Title and Stats */}
           <div>
             <motion.div
@@ -219,7 +220,7 @@ export function Screen4VibeCheck({ vibes, dapps = [] }: Screen4VibeCheckProps) {
           </div>
 
           {/* Right: Visualization */}
-          <div className="relative h-[400px] sm:h-[500px] md:h-[600px] flex items-center justify-center mt-8 lg:mt-0">
+          <div className="relative w-full h-[300px] sm:h-[400px] md:h-[500px] lg:h-[600px] flex items-center justify-center mt-6 sm:mt-8 md:mt-10 lg:mt-0 mx-auto max-w-md sm:max-w-lg">
             {/* Outer ring */}
             <motion.div
               className="absolute inset-0 rounded-full border"

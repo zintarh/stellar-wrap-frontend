@@ -187,147 +187,149 @@ export function ShareCard({
       />
 
       {/* Content */}
-      <div className="relative z-10 w-full max-w-6xl mx-auto px-12 flex items-center gap-16">
+      <div className="relative z-10 w-full px-3 sm:px-4 md:px-6 lg:px-12 py-4 sm:py-6 md:py-8 flex flex-col lg:flex-row items-center justify-center gap-6 sm:gap-8 md:gap-12 lg:gap-16 max-w-7xl mx-auto">
         {/* Left: Share card preview */}
-        <div className="flex-1">
-          <motion.div
-            initial={{ scale: 0.9, opacity: 0, rotateY: -20 }}
-            animate={{ scale: 1, opacity: 1, rotateY: 0 }}
-            transition={{
-              type: "spring",
-              stiffness: 100,
-              delay: 0.2,
-            }}
-            style={{ perspective: 2000 }}
-          >
-            <div className="relative">
+        <div className="w-full lg:flex-1 flex flex-col items-center">
+            <div className="relative w-full max-w-sm mx-auto">
               <motion.div
-                className="absolute -inset-4 rounded-[48px] blur-2xl"
-                style={{
-                  backgroundColor: "rgba(var(--color-theme-primary-rgb), 0.4)",
-                }}
-                animate={{
-                  opacity: [0.5, 0.8, 0.5],
-                }}
+                initial={{ scale: 0.9, opacity: 0, rotateY: -20 }}
+                animate={{ scale: 1, opacity: 1, rotateY: 0 }}
                 transition={{
-                  duration: 3,
-                  repeat: Infinity,
+                  type: "spring",
+                  stiffness: 100,
+                  delay: 0.2,
                 }}
-              />
-
-              <div
-                className="relative aspect-square rounded-[40px] overflow-hidden border border-white/20 backdrop-blur-xl"
-                style={{
-                  background: `linear-gradient(to bottom right, rgba(var(--color-theme-primary-rgb), 0.2), rgba(0, 0, 0, 0.8))`,
-                }}
+                style={{ perspective: 2000 }}
               >
-                {/* Card header */}
-                <div className="p-8">
-                  <div className="flex items-center gap-3 mb-6">
-                    <motion.div
-                      className="w-3 h-3 rounded-full"
-                      style={{ backgroundColor: "var(--color-theme-primary)" }}
-                      animate={{
-                        opacity: [0.5, 1, 0.5],
-                      }}
-                      transition={{
-                        duration: 2,
-                        repeat: Infinity,
-                      }}
-                    />
-                    <span className="text-sm font-black text-white/70 tracking-[0.2em]">
-                      STELLAR WRAPPED 2026
-                    </span>
-                  </div>
-                  <h2 className="text-3xl font-black text-white mb-2">
-                    @{username}
-                  </h2>
-                </div>
-
-                {/* Stats */}
-                <div className="px-8 space-y-4">
+                <div className="relative">
                   <motion.div
-                    className="backdrop-blur-sm rounded-2xl p-6 border border-white/10"
-                    style={{ backgroundColor: "rgba(255, 255, 255, 0.05)" }}
-                    initial={{ x: -50, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    transition={{ delay: 0.5 }}
-                  >
-                    <p className="text-sm font-bold text-white/60 mb-2">
-                      Total Transactions
-                    </p>
-                    <p className="text-6xl font-black text-white">
-                      {transactions}
-                    </p>
-                  </motion.div>
-
-                  <motion.div
-                    className="backdrop-blur-sm rounded-2xl p-6 border border-white/10"
-                    style={{ backgroundColor: "rgba(255, 255, 255, 0.05)" }}
-                    initial={{ x: -50, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    transition={{ delay: 0.6 }}
-                  >
-                    <p className="text-sm font-bold text-white/60 mb-2">
-                      Persona
-                    </p>
-                    <p
-                      className="text-3xl font-black"
-                      style={{
-                        background: `linear-gradient(to right, #ffffff, var(--color-theme-primary))`,
-                        WebkitBackgroundClip: "text",
-                        WebkitTextFillColor: "transparent",
-                      }}
-                    >
-                      {persona}
-                    </p>
-                  </motion.div>
-
-                  <motion.div
-                    className="backdrop-blur-sm rounded-2xl p-6 border border-white/10"
-                    style={{ backgroundColor: "rgba(255, 255, 255, 0.05)" }}
-                    initial={{ x: -50, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    transition={{ delay: 0.7 }}
-                  >
-                    <p className="text-sm font-bold text-white/60 mb-2">
-                      Top Vibe
-                    </p>
-                    <p className="text-2xl font-black text-white">
-                      {vibePercentage}% {topVibe}
-                    </p>
-                  </motion.div>
-                </div>
-
-                {/* Footer */}
-                <div className="absolute bottom-8 left-8 right-8 flex items-center justify-between">
-                  <div className="text-xs font-black text-white/50">
-                    stellar.org/wrapped
-                  </div>
-                  <motion.div
-                    className="w-10 h-10 rounded-xl backdrop-blur-sm flex items-center justify-center border border-white/20"
-                    style={{ backgroundColor: "rgba(255, 255, 255, 0.1)" }}
+                    className="absolute -inset-4 rounded-[48px] blur-2xl"
+                    style={{
+                      backgroundColor: "rgba(var(--color-theme-primary-rgb), 0.4)",
+                    }}
                     animate={{
-                      boxShadow: [
-                        `0 0 20px rgba(var(--color-theme-primary-rgb), 0)`,
-                        `0 0 30px rgba(var(--color-theme-primary-rgb), 0.5)`,
-                        `0 0 20px rgba(var(--color-theme-primary-rgb), 0)`,
-                      ],
+                      opacity: [0.5, 0.8, 0.5],
                     }}
                     transition={{
-                      duration: 2,
+                      duration: 3,
                       repeat: Infinity,
                     }}
+                  />
+
+                  <div
+                    className="relative w-full aspect-square rounded-[40px] overflow-hidden border border-white/20 backdrop-blur-xl"
+                    style={{
+                      background: `linear-gradient(to bottom right, rgba(var(--color-theme-primary-rgb), 0.2), rgba(0, 0, 0, 0.8))`,
+                    }}
                   >
-                    <div
-                      className="w-5 h-5 rounded-lg"
-                      style={{ backgroundColor: "var(--color-theme-primary)" }}
-                    />
-                  </motion.div>
+                    {/* Card header */}
+                    <div className="p-6 sm:p-8">
+                      <div className="flex items-center gap-3 mb-6">
+                        <motion.div
+                          className="w-3 h-3 rounded-full"
+                          style={{ backgroundColor: "var(--color-theme-primary)" }}
+                          animate={{
+                            opacity: [0.5, 1, 0.5],
+                          }}
+                          transition={{
+                            duration: 2,
+                            repeat: Infinity,
+                          }}
+                        />
+                        <span className="text-xs sm:text-sm font-black text-white/70 tracking-[0.2em] truncate">
+                          STELLAR WRAPPED 2026
+                        </span>
+                      </div>
+                      <h2 className="text-2xl sm:text-3xl font-black text-white mb-2 truncate">
+                        @{username}
+                      </h2>
+                    </div>
+
+                    {/* Stats */}
+                    <div className="px-6 sm:px-8 space-y-4">
+                      <motion.div
+                        className="backdrop-blur-sm rounded-2xl p-4 sm:p-6 border border-white/10"
+                        style={{ backgroundColor: "rgba(255, 255, 255, 0.05)" }}
+                        initial={{ x: -50, opacity: 0 }}
+                        animate={{ x: 0, opacity: 1 }}
+                        transition={{ delay: 0.5 }}
+                      >
+                        <p className="text-xs sm:text-sm font-bold text-white/60 mb-2">
+                          Total Transactions
+                        </p>
+                        <p className="text-4xl sm:text-6xl font-black text-white break-words">
+                          {transactions}
+                        </p>
+                      </motion.div>
+
+                      <motion.div
+                        className="backdrop-blur-sm rounded-2xl p-4 sm:p-6 border border-white/10"
+                        style={{ backgroundColor: "rgba(255, 255, 255, 0.05)" }}
+                        initial={{ x: -50, opacity: 0 }}
+                        animate={{ x: 0, opacity: 1 }}
+                        transition={{ delay: 0.6 }}
+                      >
+                        <p className="text-xs sm:text-sm font-bold text-white/60 mb-2">
+                          Persona
+                        </p>
+                        <p
+                          className="text-2xl sm:text-3xl font-black truncate"
+                          style={{
+                            background: `linear-gradient(to right, #ffffff, var(--color-theme-primary))`,
+                            WebkitBackgroundClip: "text",
+                            WebkitTextFillColor: "transparent",
+                          }}
+                        >
+                          {persona}
+                        </p>
+                      </motion.div>
+
+                      <motion.div
+                        className="backdrop-blur-sm rounded-2xl p-4 sm:p-6 border border-white/10"
+                        style={{ backgroundColor: "rgba(255, 255, 255, 0.05)" }}
+                        initial={{ x: -50, opacity: 0 }}
+                        animate={{ x: 0, opacity: 1 }}
+                        transition={{ delay: 0.7 }}
+                      >
+                        <p className="text-xs sm:text-sm font-bold text-white/60 mb-2">
+                          Top Vibe
+                        </p>
+                        <p className="text-xl sm:text-2xl font-black text-white break-words">
+                          {vibePercentage}% {topVibe}
+                        </p>
+                      </motion.div>
+                    </div>
+
+                    {/* Footer */}
+                    <div className="absolute bottom-6 sm:bottom-8 left-4 sm:left-8 right-4 sm:right-8 flex items-center justify-between gap-2">
+                      <div className="text-xs font-black text-white/50 truncate">
+                        stellar.org/wrapped
+                      </div>
+                      <motion.div
+                        className="w-10 h-10 rounded-xl backdrop-blur-sm flex items-center justify-center border border-white/20 shrink-0"
+                        style={{ backgroundColor: "rgba(255, 255, 255, 0.1)" }}
+                        animate={{
+                          boxShadow: [
+                            `0 0 20px rgba(var(--color-theme-primary-rgb), 0)`,
+                            `0 0 30px rgba(var(--color-theme-primary-rgb), 0.5)`,
+                            `0 0 20px rgba(var(--color-theme-primary-rgb), 0)`,
+                          ],
+                        }}
+                        transition={{
+                          duration: 2,
+                          repeat: Infinity,
+                        }}
+                      >
+                        <div
+                          className="w-5 h-5 rounded-lg"
+                          style={{ backgroundColor: "var(--color-theme-primary)" }}
+                        />
+                      </motion.div>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              </motion.div>
             </div>
-          </motion.div>
 
           {/* Mint Button below the card */}
           <motion.button
@@ -339,7 +341,7 @@ export function ShareCard({
               transition: { duration: 0.2 },
             }}
             whileTap={{ scale: isMinting || !!mintSuccess ? 1 : 0.98 }}
-            className={`w-full group relative mt-8 ${mintFailed ? "animate-pulse" : ""}`}
+            className={`w-full group relative mt-6 sm:mt-8 ${mintFailed ? "animate-pulse" : ""}`}
             onClick={handleMint}
             disabled={isMinting || !!mintSuccess}
           >
@@ -348,20 +350,20 @@ export function ShareCard({
               style={{ backgroundColor: mintFailed ? "rgba(239, 68, 68, 0.5)" : "var(--color-theme-primary)" }}
             />
             <div
-              className="relative flex items-center justify-center gap-4 backdrop-blur-sm text-white px-8 py-6 rounded-2xl border border-white/20 transition-colors"
+              className="relative flex items-center justify-center gap-3 sm:gap-4 backdrop-blur-sm text-white px-6 sm:px-8 py-4 sm:py-6 rounded-2xl border border-white/20 transition-colors"
               style={{
                 backgroundColor: mintFailed ? "rgba(239, 68, 68, 0.2)" : "rgba(var(--color-theme-primary-rgb), 0.2)",
                 borderColor: mintFailed ? "rgba(239, 68, 68, 0.5)" : "rgba(255, 255, 255, 0.2)"
               }}
             >
               {isMinting ? (
-                <Loader2 className="w-6 h-6 animate-spin" />
+                <Loader2 className="w-5 h-5 sm:w-6 sm:h-6 animate-spin shrink-0" />
               ) : mintFailed ? (
-                <AlertCircle className="w-6 h-6 text-red-500" />
+                <AlertCircle className="w-5 h-5 sm:w-6 sm:h-6 text-red-500 shrink-0" />
               ) : (
-                <Sparkles className="w-6 h-6" />
+                <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 shrink-0" />
               )}
-              <span className={`text-2xl font-black tracking-tight ${mintFailed ? "text-red-100" : ""}`}>
+              <span className={`text-lg sm:text-2xl font-black tracking-tight ${mintFailed ? "text-red-100" : ""} truncate`}>
                 {getMintButtonText()}
               </span>
             </div>
@@ -373,7 +375,7 @@ export function ShareCard({
               href={`https://stellar.expert/explorer/${network === "mainnet" ? "public" : "testnet"}/account/${address}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="block mt-4 text-center text-sm font-bold text-white/40 hover:text-white/60 transition-colors"
+              className="block mt-3 sm:mt-4 text-center text-xs sm:text-sm font-bold text-white/40 hover:text-white/60 transition-colors break-words"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 1.1 }}

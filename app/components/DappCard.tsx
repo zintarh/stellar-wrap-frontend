@@ -24,7 +24,7 @@ export function DappCard({
         delay,
         ease: [0.23, 1, 0.32, 1],
       }}
-      className="group relative aspect-square rounded-[24px] overflow-hidden flex flex-col justify-end p-6 md:p-8 cursor-pointer border border-[#1DB954]/20 hover:border-[#1DB954]/50 transition-all duration-300 hover:shadow-[0_0_50px_rgba(29,185,84,0.25)] will-change-transform"
+      className="group relative aspect-square rounded-[24px] overflow-hidden flex flex-col justify-end p-4 sm:p-5 md:p-6 lg:p-8 cursor-pointer border border-[#1DB954]/20 hover:border-[#1DB954]/50 transition-all duration-300 hover:shadow-[0_0_50px_rgba(29,185,84,0.25)] will-change-transform"
       style={{
         background:
           "linear-gradient(145deg, rgba(29,185,84,0.08) 0%, rgba(10,20,10,0.95) 100%)",
@@ -47,21 +47,21 @@ export function DappCard({
     
       <div className="absolute inset-0 rounded-[24px] shadow-[inset_0_0_60px_rgba(29,185,84,0.05)] group-hover:shadow-[inset_0_0_40px_rgba(255,255,255,0.05)] transition-all duration-500" />
 
-      <div className="absolute top-5 left-5">
-        <div className="w-11 h-11 rounded-xl bg-black/80 backdrop-blur-sm flex items-center justify-center border border-white/10 shadow-lg">
-          <span className="text-lg font-black text-white">{rank}</span>
+      <div className="absolute top-3 sm:top-4 md:top-5 left-3 sm:left-4 md:left-5">
+        <div className="w-9 h-9 sm:w-10 sm:h-10 md:w-11 md:h-11 rounded-xl bg-black/80 backdrop-blur-sm flex items-center justify-center border border-white/10 shadow-lg">
+          <span className="text-base sm:text-lg font-black text-white">{rank}</span>
         </div>
       </div>
 
-      <div className="relative z-10 space-y-1.5">
-        <h3 className="text-[28px] md:text-[32px] font-black tracking-tight leading-none text-white drop-shadow-lg group-hover:drop-shadow-xl transition-all">
+      <div className="relative z-10 space-y-1 sm:space-y-1.5">
+        <h3 className="text-xl sm:text-2xl md:text-[28px] lg:text-[32px] font-black tracking-tight leading-none text-white drop-shadow-lg group-hover:drop-shadow-xl transition-all truncate">
           {name}
         </h3>
         <div className="flex items-baseline gap-2">
-          <span className="text-[20px] md:text-[22px] font-black text-[#1DB954] group-hover:text-white transition-colors duration-300">
+          <span className="text-lg sm:text-xl md:text-[20px] lg:text-[22px] font-black text-[#1DB954] group-hover:text-white transition-colors duration-300 tabular-nums">
             {interactions}
           </span>
-          <span className="text-[13px] md:text-[14px] font-semibold text-white/40 group-hover:text-white/60 transition-colors duration-300">
+          <span className="text-xs sm:text-sm md:text-[13px] lg:text-[14px] font-semibold text-white/40 group-hover:text-white/60 transition-colors duration-300 truncate">
             transactions
           </span>
         </div>
