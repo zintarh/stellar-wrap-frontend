@@ -204,6 +204,11 @@ export function calculateAchievements(
     assetMap,
   );
 
+  const dailyActivity: Record<string, number> = {};
+  dailyTransactions.forEach((count, date) => {
+    dailyActivity[date] = count;
+  });
+
   return {
     accountId: "",
     totalTransactions: transactions.length,
@@ -215,6 +220,7 @@ export function calculateAchievements(
       (a, b) => b.transactionCount - a.transactionCount || b.volume - a.volume,
     ),
     vibes,
+    dailyActivity,
   };
 }
 

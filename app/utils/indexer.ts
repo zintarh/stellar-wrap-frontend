@@ -25,6 +25,8 @@ export interface IndexerResult {
   gasSpent: number;
   dapps: DappInfo[];
   vibes: VibeTag[];
+  /** Daily transaction counts keyed by YYYY-MM-DD */
+  dailyActivity?: Record<string, number>;
 }
 
 /** Cache entry version for schema migrations and validation */

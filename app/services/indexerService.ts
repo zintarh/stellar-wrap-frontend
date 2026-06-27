@@ -31,6 +31,10 @@ import { getCacheEntry, setCacheEntry } from "@/app/utils/indexedDbCache";
 import { calculateAchievements } from "./achievementCalculator";
 import { IndexerEventEmitter } from "@/app/utils/indexerEventEmitter";
 import { INDEXING_STEPS, IndexingStep } from "@/app/types/indexing";
+import {
+  getIndexingAbortSignal,
+  isAbortError,
+} from "@/app/utils/indexingAbort";
 
 const MAX_CONCURRENT_REQUESTS = 5;
 
@@ -125,12 +129,11 @@ async function runIndexingInternal(
 
   try {
     currentEmittedStep = "initializing";
-    emit(() => console.log("Emitting step change: initializing"));
     emit(() => emitter.emitStepChange("initializing"));
     await animateStep("initializing", emitter, () => {
       getHorizonServer(network);
     }, background);
-    emit(() => console.log("Step complete: initializing"));
+    emit(() => emitter.emitStepComplete("initializing"));
 
     currentEmittedStep = "fetching-transactions";
     emit(() => emitter.emitStepChange("fetching-transactions"));
@@ -145,6 +148,11 @@ async function runIndexingInternal(
     let pageCount = 0;
 
     while (hasMore) {
+      const signal = getIndexingAbortSignal();
+      if (signal?.aborted) {
+        throw new DOMException("Indexing cancelled", "AbortError");
+      }
+
       let response: unknown;
       try {
         response = await concurrencyManager.run(async () => {
@@ -158,6 +166,9 @@ async function runIndexingInternal(
           return builder.call();
         });
       } catch (error: unknown) {
+        if (isAbortError(error)) {
+          throw new DOMException("Indexing cancelled", "AbortError");
+        }
         const errorObj = error as {
           response?: { status?: number };
           code?: string;
@@ -380,6 +391,9 @@ async function runIndexingInternal(
     await setCacheEntry(cacheKey, { result, timestamp: Date.now() });
     return result;
   } catch (error) {
+    if (isAbortError(error)) {
+      throw error;
+    }
     const errorMessage =
       error instanceof Error ? error.message : "Unknown error during indexing";
     console.error(`Error indexing account ${accountId}:`, error);

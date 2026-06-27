@@ -4,6 +4,8 @@ import { motion } from 'framer-motion';
 import { useMemo } from 'react';
 import { TrendingUp, Palette, Code, AppWindow } from 'lucide-react';
 import { formatDappDisplayName } from '@/app/utils/formatDappLabel';
+import { TransactionHeatmap } from '@/app/components/TransactionHeatmap';
+import type { WrapPeriod } from '@/app/store/wrapStore';
 
 type VibeIconKey = 'defi' | 'nft' | 'dev';
 
@@ -22,6 +24,8 @@ interface TopDappItem {
 interface Screen4VibeCheckProps {
   vibes: VibeData[];
   dapps?: TopDappItem[];
+  dailyActivity?: Record<string, number>;
+  period?: WrapPeriod;
 }
 
 const TOP_DAPPS_LIMIT = 5;
@@ -33,7 +37,12 @@ const vibeIcons: Record<VibeIconKey, React.ComponentType<{ className?: string }>
   dev: Code,
 };
 
-export function Screen4VibeCheck({ vibes, dapps = [] }: Screen4VibeCheckProps) {
+export function Screen4VibeCheck({
+  vibes,
+  dapps = [],
+  dailyActivity = {},
+  period = "monthly",
+}: Screen4VibeCheckProps) {
   const topDapps = useMemo(
     () => [...dapps].sort((a, b) => b.interactions - a.interactions).slice(0, TOP_DAPPS_LIMIT),
     [dapps],
@@ -216,6 +225,8 @@ export function Screen4VibeCheck({ vibes, dapps = [] }: Screen4VibeCheckProps) {
                 </div>
               </motion.div>
             )}
+
+            <TransactionHeatmap dailyActivity={dailyActivity} period={period} />
           </div>
 
           {/* Right: Visualization */}

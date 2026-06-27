@@ -1,7 +1,13 @@
 import { motion } from "motion/react";
-import { Share2, Download, Twitter, Loader2, Sparkles, AlertCircle } from "lucide-react";
+import { Share2, Download, Twitter, Loader2, Sparkles, AlertCircle, Film, ImagePlay } from "lucide-react";
 import { useState, RefObject, useEffect } from "react";
 import { downloadShareImage } from "../utils/imageExport";
+import {
+  downloadAnimatedGif,
+  downloadAnimatedVideo,
+  type AnimationExportProgress,
+  type ShareAnimationData,
+} from "../utils/animationExport";
 import { mintWrap } from "../utils/walletKit";
 import { useWrapStore } from "@/app/store/wrapStore";
 import { useTransactionStore } from "@/app/store/transactionStore";
@@ -15,6 +21,7 @@ interface ShareCardProps {
   topVibe: string;
   vibePercentage: number;
   shareImageRef: RefObject<HTMLDivElement>;
+  themeColor?: string;
 }
 
 export function ShareCard({
@@ -24,8 +31,11 @@ export function ShareCard({
   topVibe,
   vibePercentage,
   shareImageRef,
+  themeColor = "rgb(5, 64, 32)",
 }: ShareCardProps) {
   const [isDownloading, setIsDownloading] = useState(false);
+  const [exportProgress, setExportProgress] = useState<AnimationExportProgress | null>(null);
+  const [exportLabel, setExportLabel] = useState<string | null>(null);
   const { address, network } = useWrapStore();
   const { playSound } = useSound();
   
@@ -75,6 +85,53 @@ export function ShareCard({
       console.error("Download failed:", error);
     } finally {
       setIsDownloading(false);
+    }
+  };
+
+  const animationData: ShareAnimationData = {
+    username,
+    transactions,
+    persona,
+    topVibe,
+    vibePercentage,
+    themeColor,
+  };
+
+  const handleAnimatedExport = async (
+    type: "gif" | "video",
+    label: string,
+  ) => {
+    setExportLabel(label);
+    setExportProgress({ phase: "capturing", progress: 0, message: "Starting..." });
+    setIsDownloading(true);
+    try {
+      const onProgress = (p: AnimationExportProgress) => setExportProgress(p);
+      const fallback = shareImageRef.current ?? undefined;
+      if (type === "gif") {
+        await downloadAnimatedGif(animationData, onProgress, fallback);
+        toast.success("GIF downloaded", {
+          description: "Optimized for Twitter, WhatsApp, and Telegram.",
+        });
+      } else {
+        await downloadAnimatedVideo(animationData, onProgress, fallback);
+        toast.success("Video downloaded", {
+          description: "MP4/WebM — best for Discord and rich embeds.",
+        });
+      }
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : "Export failed";
+      if (msg.includes("PNG")) {
+        toast.info("Fell back to static PNG", { description: msg });
+      } else {
+        toast.error("Animation export failed", { description: msg });
+        if (shareImageRef.current) {
+          await downloadShareImage(shareImageRef.current);
+        }
+      }
+    } finally {
+      setIsDownloading(false);
+      setExportProgress(null);
+      setExportLabel(null);
     }
   };
 
@@ -457,6 +514,91 @@ export function ShareCard({
                   </span>
                 </div>
               </motion.button>
+
+              <motion.button
+                initial={{ opacity: 0, x: 50 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.95 }}
+                whileHover={{
+                  scale: 1.05,
+                  x: 10,
+                  transition: { duration: 0.2 },
+                }}
+                whileTap={{ scale: 0.98 }}
+                className="w-full group relative"
+                onClick={() => handleAnimatedExport("gif", "GIF")}
+                disabled={isDownloading}
+              >
+                <motion.div
+                  className="absolute -inset-1 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity"
+                  style={{ backgroundColor: "var(--color-theme-primary)" }}
+                />
+                <div
+                  className="relative flex items-center gap-4 backdrop-blur-sm text-white px-8 py-6 rounded-2xl border border-white/20"
+                  style={{ backgroundColor: "rgba(255, 255, 255, 0.1)" }}
+                >
+                  {isDownloading && exportLabel === "GIF" ? (
+                    <Loader2 className="w-6 h-6 animate-spin" />
+                  ) : (
+                    <ImagePlay className="w-6 h-6" />
+                  )}
+                  <span className="text-2xl font-black tracking-tight">
+                    {isDownloading && exportLabel === "GIF"
+                      ? exportProgress?.message ?? "Encoding GIF..."
+                      : "Download as GIF"}
+                  </span>
+                </div>
+              </motion.button>
+
+              <motion.button
+                initial={{ opacity: 0, x: 50 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 1.0 }}
+                whileHover={{
+                  scale: 1.05,
+                  x: 10,
+                  transition: { duration: 0.2 },
+                }}
+                whileTap={{ scale: 0.98 }}
+                className="w-full group relative"
+                onClick={() => handleAnimatedExport("video", "Video")}
+                disabled={isDownloading}
+              >
+                <motion.div
+                  className="absolute -inset-1 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity"
+                  style={{ backgroundColor: "var(--color-theme-primary)" }}
+                />
+                <div
+                  className="relative flex items-center gap-4 backdrop-blur-sm text-white px-8 py-6 rounded-2xl border border-white/20"
+                  style={{ backgroundColor: "rgba(255, 255, 255, 0.1)" }}
+                >
+                  {isDownloading && exportLabel === "Video" ? (
+                    <Loader2 className="w-6 h-6 animate-spin" />
+                  ) : (
+                    <Film className="w-6 h-6" />
+                  )}
+                  <span className="text-2xl font-black tracking-tight">
+                    {isDownloading && exportLabel === "Video"
+                      ? exportProgress?.message ?? "Recording..."
+                      : "Download as Video"}
+                  </span>
+                </div>
+              </motion.button>
+
+              {exportProgress && (
+                <div className="rounded-xl border border-white/10 bg-black/40 p-4">
+                  <div className="flex justify-between text-xs text-white/60 mb-2">
+                    <span>{exportProgress.message}</span>
+                    <span>{exportProgress.progress}%</span>
+                  </div>
+                  <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-[var(--color-theme-primary)] transition-all duration-300"
+                      style={{ width: `${exportProgress.progress}%` }}
+                    />
+                  </div>
+                </div>
+              )}
 
               <motion.button
                 initial={{ opacity: 0, x: 50 }}

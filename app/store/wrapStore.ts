@@ -44,6 +44,7 @@ export interface WrapResult {
   vibes: VibeSlice[];
   persona: string;
   personaDescription: string;
+  dailyActivity?: Record<string, number>;
 }
 
 type WrapStatus = "idle" | "loading" | "ready" | "error";
@@ -308,9 +309,12 @@ export const useWrapStore = create<WrapStoreState>()(
 
       cancelIndexing: () => {
         set({
+          ...initialIndexingState,
           isCancelled: true,
           isLoading: false,
-          currentStep: null,
+          status: "idle",
+          result: null,
+          cacheMeta: null,
         });
         get().clearPersistedIndexingState();
       },

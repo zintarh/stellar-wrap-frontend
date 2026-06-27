@@ -1,242 +1,96 @@
-"use client";
+import type { Metadata } from "next";
+import SharePageClient from "./SharePageClient";
 
-import React, { useEffect, useRef, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { ExternalLink, Share2 } from "lucide-react";
-import { mockData } from "@/app/data/mockData";
-import { GOLDEN_USER } from "@/src/data/mockData";
-import { ProgressIndicator } from "@/app/components/ProgressIndicator";
-import { MuteToggle } from "../components/MuteToggle";
-import { ShareCard } from "../components/ShareCard";
-import { ShareImageCard } from "../components/ShareImageCard";
-import { useTheme, themeColors } from "../context/ThemeContext";
-import { useWrapStore } from "../store/wrapStore";
-import {
-  XIcon,
-  WhatsAppIcon,
-  FacebookIcon,
-  LinkedInIcon,
-  TelegramIcon,
-} from "../components/SocialIcons";
-
-const SocialIcons = {
-  X: XIcon,
-  WhatsApp: WhatsAppIcon,
-  Facebook: FacebookIcon,
-  LinkedIn: LinkedInIcon,
-  Telegram: TelegramIcon,
+type ShareSearchParams = {
+  address?: string;
+  period?: string;
+  persona?: string;
+  transactions?: string;
+  username?: string;
+  topVibe?: string;
+  vibePercentage?: string;
 };
 
-export default function ShareCardPage() {
-  const [shareOpen, setShareOpen] = useState<boolean>(false);
-  const shareMenuRef = useRef<HTMLDivElement | null>(null);
-  const shareBtnRef = useRef<HTMLButtonElement | null>(null);
-  const shareImageRef = useRef<HTMLDivElement>(null!);
-  const { color } = useTheme();
-  const { address: walletAddress, network } = useWrapStore();
+type PageProps = {
+  searchParams: Promise<ShareSearchParams>;
+};
 
-  const stellarExpertUrl = walletAddress
-    ? network === "testnet"
-      ? `https://stellar.expert/explorer/testnet/account/${walletAddress}`
-      : `https://stellar.expert/explorer/public/account/${walletAddress}`
-    : null;
+function buildShareUrl(
+  origin: string,
+  params: ShareSearchParams,
+): string {
+  const qs = new URLSearchParams();
+  if (params.address) qs.set("address", params.address);
+  if (params.period) qs.set("period", params.period);
+  if (params.persona) qs.set("persona", params.persona);
+  if (params.transactions) qs.set("transactions", params.transactions);
+  if (params.username) qs.set("username", params.username);
+  if (params.topVibe) qs.set("topVibe", params.topVibe);
+  if (params.vibePercentage) qs.set("vibePercentage", params.vibePercentage);
+  const query = qs.toString();
+  return query ? `${origin}/share?${query}` : `${origin}/share`;
+}
 
-  // Get computed theme color from CSS variable
-  const [themeColor] = useState<string>(() => {
-    if (typeof window === "undefined") return themeColors.green.primary;
+export async function generateMetadata({
+  searchParams,
+}: PageProps): Promise<Metadata> {
+  const params = await searchParams;
+  const origin =
+    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ||
+    "https://stellar.org/wrapped";
 
-    const tempDiv = document.createElement("div");
-    tempDiv.style.color = "var(--color-theme-primary)";
-    document.body.appendChild(tempDiv);
+  const persona = params.persona || "Network Pioneer";
+  const transactions = params.transactions || "0";
+  const username = params.username || "StellarUser";
+  const topVibe = params.topVibe || "DeFi";
+  const vibePercentage = params.vibePercentage || "0";
+  const address = params.address;
 
-    const computedColor = window.getComputedStyle(tempDiv).color;
-    document.body.removeChild(tempDiv);
+  const title = `My Stellar Wrapped 2026 — ${persona}`;
+  const description = `${transactions} transactions | ${persona} | Stellar Wrapped`;
 
-    return computedColor || themeColors[color].primary;
+  const ogParams = new URLSearchParams({
+    username,
+    transactions,
+    persona,
+    topVibe,
+    vibePercentage,
   });
+  if (address) ogParams.set("address", address);
 
-  // --- Share Functionality ---
-  const handleShare = (platform: string) => {
-    const url = window.location.href;
-    const text = `Check out my Stellar Wrapped 2026! ${mockData.transactions} transactions, ${mockData.persona} persona, ${mockData.vibes[0].percentage}% ${mockData.vibes[0].label}! 🎉 #StellarWrapped`;
-    let shareUrl = "";
+  const ogImage = `${origin}/api/og?${ogParams.toString()}`;
+  const canonicalUrl = buildShareUrl(origin, params);
 
-    switch (platform) {
-      case "x":
-        shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
-        break;
-      case "whatsapp":
-        shareUrl = `https://wa.me/?text=${encodeURIComponent(text + " " + url)}`;
-        break;
-      case "facebook":
-        shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
-        break;
-      case "linkedin":
-        shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`;
-        break;
-      case "telegram":
-        shareUrl = `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`;
-        break;
-    }
-
-    if (shareUrl) {
-      window.open(shareUrl, "_blank", "width=600,height=500");
-    }
-    setShareOpen(false);
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      url: canonicalUrl,
+      siteName: "Stellar Wrapped 2026",
+      images: [
+        {
+          url: ogImage,
+          width: 1200,
+          height: 1200,
+          alt: `${persona} — Stellar Wrapped 2026`,
+        },
+      ],
+      type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [ogImage],
+    },
+    alternates: {
+      canonical: canonicalUrl,
+    },
   };
+}
 
-  useEffect(() => {
-    const onDocClick = (e: MouseEvent) => {
-      const target = e.target as Node | null;
-      if (!target) return;
-      if (
-        shareOpen &&
-        !shareMenuRef.current?.contains(target) &&
-        !shareBtnRef.current?.contains(target)
-      ) {
-        setShareOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", onDocClick);
-    return () => document.removeEventListener("mousedown", onDocClick);
-  }, [shareOpen]);
-
-  return (
-    <div className="relative w-full h-screen overflow-hidden">
-      {/* Off-screen ShareImageCard for html2canvas export */}
-      <div
-        ref={shareImageRef}
-        className="absolute"
-        style={{ left: "-9999px", top: 0 }}
-      >
-        <ShareImageCard themeColor={themeColor} archetypeImage={GOLDEN_USER.archetype.image} />
-      </div>
-
-      <ShareCard
-        username={mockData.username}
-        transactions={mockData.transactions}
-        persona={mockData.persona}
-        topVibe={mockData.vibes[0].label}
-        vibePercentage={mockData.vibes[0].percentage}
-        shareImageRef={shareImageRef}
-      />
-
-      <ProgressIndicator currentStep={6} totalSteps={6} showNext={false} />
-
-      <motion.div
-        className="absolute top-6 right-6 md:top-8 md:right-8 z-30"
-        initial={{ opacity: 0, x: 20 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ delay: 0.2 }}
-      >
-        <MuteToggle />
-      </motion.div>
-
-      {stellarExpertUrl && (
-        <motion.a
-          href={stellarExpertUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="absolute bottom-6 right-6 md:bottom-8 md:right-8 z-30 flex items-center gap-2 px-4 py-3 rounded-xl backdrop-blur-xl border border-white/10 text-white/60 hover:text-white/90 hover:border-white/30 transition-all text-xs font-medium"
-          style={{ backgroundColor: "rgba(0, 0, 0, 0.5)" }}
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.4 }}
-        >
-          <ExternalLink className="w-3.5 h-3.5" />
-          View full history on Stellar.expert
-        </motion.a>
-      )}
-
-      <div className="absolute bottom-6 left-6 z-30">
-        <div className="relative">
-          <AnimatePresence>
-            {shareOpen && (
-              <motion.div
-                ref={shareMenuRef}
-                initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                transition={{ duration: 0.2 }}
-                className="absolute bottom-18 left-0 w-[200px] h-[350px] bg-[#060607] border border-[#232325] rounded-2xl shadow-2xl p-2 z-50 flex flex-col items-center justify-center gap-2"
-                style={{ boxShadow: "0 10px 40px rgba(0,0,0,0.8)" }}
-              >
-                {/* X / Twitter */}
-                <button
-                  onClick={() => handleShare("x")}
-                  className="flex cursor-pointer items-center pl-4 w-42 h-15 gap-3 p-2 rounded-xl bg-[#0F0F10] hover:bg-[#1a1a1c] transition-colors group"
-                >
-                  <div className="h-10 w-10 flex items-center justify-center rounded-full bg-black border border-white/10">
-                    <SocialIcons.X />
-                  </div>
-                  <span className="font-bold text-white tracking-wide">x</span>
-                </button>
-
-                <button
-                  onClick={() => handleShare("x")}
-                  className="flex cursor-pointer items-center pl-4 w-42 h-15 gap-3 p-2 rounded-xl bg-[#0F0F10] hover:bg-[#1a1a1c] transition-colors group"
-                >
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#25D366]">
-                    <SocialIcons.WhatsApp />
-                  </div>
-                  <span className="font-bold text-white tracking-wide">
-                    WhatsApp
-                  </span>
-                </button>
-
-                <button
-                  onClick={() => handleShare("facebook")}
-                  className="flex items-center cursor-pointer pl-4 gap-3 p-2 w-42 h-15 rounded-xl bg-[#0F0F10] hover:bg-[#1a1a1c] transition-colors"
-                >
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#1877F2]">
-                    <SocialIcons.Facebook />
-                  </div>
-                  <span className="font-bold text-white tracking-wide">
-                    Facebook
-                  </span>
-                </button>
-
-                <button
-                  onClick={() => handleShare("linkedin")}
-                  className="flex items-center pl-4 cursor-pointer gap-3 p-2 w-42 h-15 rounded-xl bg-[#0F0F10] hover:bg-[#1a1a1c] transition-colors"
-                >
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#0077B5]">
-                    <SocialIcons.LinkedIn />
-                  </div>
-                  <span className="font-bold text-white tracking-wide">
-                    LinkedIn
-                  </span>
-                </button>
-
-                <button
-                  onClick={() => handleShare("telegram")}
-                  className="flex items-center cursor-pointer pl-4 gap-3 p-2 w-42 h-15 rounded-xl bg-[#0F0F10] hover:bg-[#1a1a1c] transition-colors"
-                >
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#229ED9]">
-                    <SocialIcons.Telegram />
-                  </div>
-                  <span className="font-bold text-white tracking-wide">
-                    Telegram
-                  </span>
-                </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          <button
-            ref={shareBtnRef}
-            onClick={() => setShareOpen(!shareOpen)}
-            className="flex h-12 w-12 sm:h-16 sm:w-16 items-center justify-center rounded-full border border-white/10 bg-black/60 text-white backdrop-blur-md transition hover:bg-white/5"
-          >
-            <motion.div
-              animate={{ rotate: shareOpen ? 50 : 0 }}
-              transition={{ type: "spring", stiffness: 260, damping: 20 }}
-            >
-              <Share2 className="h-5 w-5 sm:h-7 sm:w-7 cursor-pointer" />
-            </motion.div>
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+export default function SharePage() {
+  return <SharePageClient />;
 }

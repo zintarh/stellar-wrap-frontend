@@ -16,6 +16,14 @@ import { SOUND_NAMES } from "../utils/soundManager";
 import { indexAccount } from "../services/indexerService";
 import { IndexerEventEmitter } from "../utils/indexerEventEmitter";
 import type { DappInfo } from "../utils/indexer";
+import {
+  beginIndexingAbortScope,
+  abortIndexingRequests,
+  clearIndexingAbortScope,
+  isAbortError,
+} from "../utils/indexingAbort";
+import { generateMockDailyActivity } from "../data/fixtures/dailyActivity";
+import { toast } from "sonner";
 
 function mapIndexerDapps(dapps: DappInfo[]) {
   return dapps.map((dapp) => ({
@@ -46,8 +54,10 @@ export default function LoadingScreen() {
   }, [router, playSound]);
 
   const handleCancel = useCallback(() => {
+    abortIndexingRequests();
     cancelIndexing();
-    router.push("/");
+    toast.info("Indexing cancelled");
+    router.push("/connect");
   }, [cancelIndexing, router]);
 
   const handleRetry = useCallback(() => {
@@ -58,13 +68,9 @@ export default function LoadingScreen() {
 
   useEffect(() => {
     let isMounted = true;
+    const abortSignal = beginIndexingAbortScope();
 
-    // CRITICAL: Connect emitter to store BEFORE starting indexing to catch all events
-    console.log("Connecting event emitter to store");
     IndexerEventEmitter.getInstance().connectToStore();
-
-    // Always set isLoading to true at the start to guarantee progress display
-    console.log("Starting indexing");
     startIndexing();
 
     // Helper to emit progress through all indexing steps (for fallback/demo mode)
@@ -105,14 +111,14 @@ export default function LoadingScreen() {
 
         if (address) {
           try {
-            console.log("Starting real indexer with address:", address);
+            if (abortSignal.aborted) return;
             const indexerResponse = await indexAccount(
               address,
               network as "mainnet" | "testnet",
               period as "weekly" | "monthly" | "yearly",
             );
+            if (abortSignal.aborted || !isMounted) return;
             const indexerResult = indexerResponse.result;
-            console.log("Indexer completed, result:", indexerResult, "fromCache:", indexerResponse.fromCache);
 
             setCacheMeta({
               fromCache: indexerResponse.fromCache,
@@ -132,8 +138,15 @@ export default function LoadingScreen() {
               vibes: mockData.vibes,
               persona: mockData.persona,
               personaDescription: mockData.personaDescription,
+              dailyActivity:
+                indexerResult.dailyActivity ??
+                generateMockDailyActivity(
+                  indexerResult.totalTransactions || mockData.transactions,
+                  period,
+                ),
             };
           } catch (indexerError) {
+            if (isAbortError(indexerError)) return;
             // Fallback to mock data if real indexer fails
             console.warn("Real indexer failed, using mock data:", indexerError);
             await emitProgressThroughSteps();
@@ -145,6 +158,10 @@ export default function LoadingScreen() {
               vibes: mockData.vibes,
               persona: mockData.persona,
               personaDescription: mockData.personaDescription,
+              dailyActivity: generateMockDailyActivity(
+                mockData.transactions,
+                period,
+              ),
             };
           }
         } else {
@@ -158,10 +175,14 @@ export default function LoadingScreen() {
             vibes: mockData.vibes,
             persona: mockData.persona,
             personaDescription: mockData.personaDescription,
+            dailyActivity: generateMockDailyActivity(
+              mockData.transactions,
+              period,
+            ),
           };
         }
 
-        if (!isMounted) return;
+        if (!isMounted || abortSignal.aborted || useWrapStore.getState().isCancelled) return;
 
         setResult(result);
         setStatus("ready");
@@ -173,7 +194,7 @@ export default function LoadingScreen() {
           }
         }, 1500);
       } catch (error: unknown) {
-        if (!isMounted) return;
+        if (isAbortError(error) || !isMounted) return;
         setStatus("error");
         if (error instanceof Error) {
           setError(error.message);
@@ -193,6 +214,8 @@ export default function LoadingScreen() {
 
     return () => {
       isMounted = false;
+      abortIndexingRequests();
+      clearIndexingAbortScope();
       IndexerEventEmitter.getInstance().reset();
     };
   }, [
