@@ -1,10 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { ColorToggle } from "./ColorToggle";
 import { motion } from "framer-motion";
 import { useWrapStore } from "@/app/store/wrapStore";
-import { LogOut } from "lucide-react";
+import { Bell, LogOut } from "lucide-react";
 
 function truncate(addr: string) {
   return `${addr.slice(0, 4)}…${addr.slice(-4)}`;
@@ -37,6 +38,13 @@ export function Navbar() {
 
         {address && (
           <>
+            <Link
+              href="/notifications"
+              aria-label="Notification preferences"
+              className="p-2 rounded-full text-neutral-400 hover:text-white hover:bg-white/5 border border-white/10 transition-colors"
+            >
+              <Bell size={14} />
+            </Link>
             <span className="text-xs font-mono text-neutral-300 bg-white/5 border border-white/10 rounded-full px-3 py-1">
               {truncate(address)}
             </span>
