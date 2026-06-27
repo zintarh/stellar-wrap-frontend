@@ -102,7 +102,7 @@ export default function ShareCardPage() {
   }, [shareOpen]);
 
   return (
-    <div className="relative w-full h-screen overflow-hidden">
+    <div className="relative w-full h-screen overflow-hidden" style={{ touchAction: "pan-y" }}>
       {/* Off-screen ShareImageCard for html2canvas export */}
       <div
         ref={shareImageRef}

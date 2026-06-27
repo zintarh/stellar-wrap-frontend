@@ -5,14 +5,17 @@ import { Box, Database } from 'lucide-react';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ColorToggle } from './ColorToggle';
+import { DarkLightToggle } from './DarkLightToggle';
 import { NetworkToggle } from './NetworkToggle';
 import ParticleField from './ParticleField';
 import { useWrapStore, WrapPeriod } from '../store/wrapStore';
+import { useTheme } from '../context/ThemeContext';
 import ParticleField from './ParticleField';
 
 export function LandingPage() {
   const router = useRouter();
   const { period, setPeriod, reset } = useWrapStore();
+  const { mode } = useTheme();
   const [selectedPeriod, setSelectedPeriod] = useState<WrapPeriod>(period);
   
   const handleStart = () => {
@@ -24,7 +27,7 @@ export function LandingPage() {
   };
 
   return (
-    <div className="relative w-full min-h-screen h-screen overflow-hidden bg-theme-background">
+    <div className="relative w-full min-h-screen h-screen overflow-hidden bg-theme-background" style={{ touchAction: "pan-y" }}>
       {/* Particle field background */}
       <ParticleField />
 
@@ -275,8 +278,11 @@ export function LandingPage() {
           </div>
         </motion.div>
 
-        {/* Color Toggle - Fixed Position */}
-        <ColorToggle />
+        {/* Dark/Light and Color Toggles */}
+        <div className="absolute top-4 right-4 flex items-center gap-3 z-50">
+          <DarkLightToggle />
+          <ColorToggle />
+        </div>
 
         {/* Network Toggle - Fixed Position */}
         <NetworkToggle />
