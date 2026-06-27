@@ -100,6 +100,23 @@ rm -rf node_modules && npm install
 npm test
 ```
 
+### Bundle size budgets
+
+Bundle budgets are enforced in CI and can be inspected locally with:
+
+```bash
+npm run build:size-limit
+npm run bundle-size
+```
+
+To inspect the production bundle visually, run:
+
+```bash
+ANALYZE=true npm run build
+```
+
+The analyzer uses `ANALYZE=true` and opens the bundle report in your browser after the build finishes.
+
 ---
 
 ## 🗺️ Roadmap

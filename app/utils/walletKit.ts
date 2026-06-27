@@ -174,13 +174,19 @@ export async function mintWrap(params: MintWrapParams): Promise<string> {
         case "confirmed":
           setTransactionState("confirmed");
           if (data && typeof data === 'object' && 'transactionHash' in data) {
-            setTransactionHash((data as any).transactionHash as string);
+            const transactionData = data as { transactionHash?: string };
+            if (transactionData.transactionHash) {
+              setTransactionHash(transactionData.transactionHash);
+            }
           }
           break;
         case "failed":
           setTransactionState("failed");
           if (data && typeof data === 'object' && 'error' in data) {
-            setTransactionError((data as any).error as string);
+            const errorData = data as { error?: string };
+            if (errorData.error) {
+              setTransactionError(errorData.error);
+            }
           }
           break;
       }

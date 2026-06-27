@@ -33,3 +33,56 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Check bundle size budgets
+        run: npm run build:size-limit && npm run bundle-size
+
+      - name: Comment bundle budget results on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+
+            const reportPath = path.join(process.cwd(), '.size-limit-results.json');
+            if (!fs.existsSync(reportPath)) {
+              core.info('No bundle budget report found.');
+              return;
+            }
+
+            const results = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
+            const lines = results.map((entry) => {
+              const status = entry.status === 'exceeded' ? '❌' : '✅';
+              return `${status} ${entry.name}: ${entry.deltaLabel} (${(entry.actualBytes / 1024).toFixed(1)} KB / ${(entry.budgetBytes / 1024).toFixed(1)} KB)`;
+            });
+
+            const body = [
+              '## Bundle size budget check',
+              '',
+              ...lines,
+              '',
+              'The workflow failed if any budget was exceeded.'
+            ].join('\n');
+
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+
+            const comments = await github.rest.issues.listComments({ owner, repo, issue_number });
+            const existing = comments.data.find((comment) => comment.body?.includes('## Bundle size budget check'));
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner,
+                repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number,
+                body,
+              });
+            }
+
