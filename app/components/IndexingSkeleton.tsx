@@ -248,14 +248,10 @@ export function IndexingSkeleton({
             aria-valuemin={0}
             aria-valuemax={100}
           >
-            <motion.div
-              className="h-full rounded-full"
-              initial={{ width: "0%" }}
-              animate={{
-                width: `${currentStep ? stepProgress[currentStep] : 0}%`,
-              }}
-              transition={{ duration: 0.3, ease: "easeOut" }}
+            <div
+              className="h-full rounded-full transition-[width] duration-300 ease-out"
               style={{
+                width: `${currentStep ? stepProgress[currentStep] : 0}%`,
                 backgroundColor: stepViz?.color || "var(--color-theme-primary)",
                 boxShadow: `0 0 10px ${stepViz?.color || "var(--color-theme-primary)"}`,
               }}
@@ -284,12 +280,10 @@ export function IndexingSkeleton({
             aria-valuemin={0}
             aria-valuemax={100}
           >
-            <motion.div
-              className="h-full"
-              initial={{ width: "0%" }}
-              animate={{ width: `${overallProgress}%` }}
-              transition={{ duration: 0.3, ease: "easeOut" }}
+            <div
+              className="h-full transition-[width] duration-300 ease-out"
               style={{
+                width: `${overallProgress}%`,
                 background: `linear-gradient(90deg, #00D4FF, #6BCF7F, #FFD93D)`,
                 boxShadow: "0 0 15px rgba(0, 212, 255, 0.5)",
               }}
