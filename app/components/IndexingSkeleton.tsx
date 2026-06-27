@@ -100,17 +100,21 @@ export function IndexingSkeleton({
   };
 
   const stepViz = getStepVisualization(currentStep);
-  const [showCancel, setShowCancel] = useState(false);
+  const [cancelDelayMet, setCancelDelayMet] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState(false);
 
   useEffect(() => {
     if (!isLoading || indexingError) {
-      setShowCancel(false);
       return;
     }
-    const timer = setTimeout(() => setShowCancel(true), 3000);
-    return () => clearTimeout(timer);
+    const timer = setTimeout(() => setCancelDelayMet(true), 3000);
+    return () => {
+      clearTimeout(timer);
+      setCancelDelayMet(false);
+    };
   }, [isLoading, indexingError]);
+
+  const showCancel = cancelDelayMet && isLoading && !indexingError;
 
   const handleCancelClick = () => {
     setConfirmCancel(true);

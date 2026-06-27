@@ -265,7 +265,10 @@ export async function downloadAnimatedGif(
     }
 
     onProgress({ phase: "encoding", progress: 90, message: "Finalizing..." });
-    downloadBlob(new Blob([gifBytes], { type: "image/gif" }), "stellar-wrapped-2026.gif");
+    downloadBlob(
+      new Blob([new Uint8Array(gifBytes)], { type: "image/gif" }),
+      "stellar-wrapped-2026.gif",
+    );
     onProgress({ phase: "done", progress: 100, message: "Done" });
   };
 
