@@ -132,6 +132,8 @@ export default function LoadingScreen() {
               vibes: mockData.vibes,
               persona: mockData.persona,
               personaDescription: mockData.personaDescription,
+              dexTradingSummary: indexerResult.dexTradingSummary,
+              sorobanBuilderSummary: indexerResult.sorobanBuilderSummary,
             };
           } catch (indexerError) {
             // Fallback to mock data if real indexer fails
@@ -145,6 +147,30 @@ export default function LoadingScreen() {
               vibes: mockData.vibes,
               persona: mockData.persona,
               personaDescription: mockData.personaDescription,
+              dexTradingSummary: {
+                totalVolume: 12345.67,
+                tradeCount: 42,
+                mostTradedPair: "XLM/USDC",
+                buyCount: 23,
+                sellCount: 19,
+              },
+              sorobanBuilderSummary: {
+                deployments: [
+                  {
+                    contractId: "CA2VJ6J7F6Z5VJ2U6X5Y4Z3W2V1U0T9S8R7Q6P5O4N3M2L1K0J9I8H7G6F5E4D3C2B1A0",
+                    deploymentDate: new Date(Date.now() - 86400000 * 7).toISOString(),
+                    transactionHash: "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
+                  },
+                  {
+                    contractId: "CB0A1B2C3D4E5F6G7H8I9J0K1L2M3N4O5P6Q7R8S9T0U1V2W3X4Y5Z6A7B8C9D0E1F2",
+                    deploymentDate: new Date(Date.now() - 86400000 * 3).toISOString(),
+                    transactionHash: "0987654321fedcba0987654321fedcba0987654321fedcba0987654321fedcba",
+                  },
+                ],
+                deploymentCount: 2,
+                contractCallCount: 156,
+                builderScore: 215,
+              },
             };
           }
         } else {
@@ -158,6 +184,30 @@ export default function LoadingScreen() {
             vibes: mockData.vibes,
             persona: mockData.persona,
             personaDescription: mockData.personaDescription,
+            dexTradingSummary: {
+              totalVolume: 12345.67,
+              tradeCount: 42,
+              mostTradedPair: "XLM/USDC",
+              buyCount: 23,
+              sellCount: 19,
+            },
+            sorobanBuilderSummary: {
+              deployments: [
+                {
+                  contractId: "CA2VJ6J7F6Z5VJ2U6X5Y4Z3W2V1U0T9S8R7Q6P5O4N3M2L1K0J9I8H7G6F5E4D3C2B1A0",
+                  deploymentDate: new Date(Date.now() - 86400000 * 7).toISOString(),
+                  transactionHash: "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
+                },
+                {
+                  contractId: "CB0A1B2C3D4E5F6G7H8I9J0K1L2M3N4O5P6Q7R8S9T0U1V2W3X4Y5Z6A7B8C9D0E1F2",
+                  deploymentDate: new Date(Date.now() - 86400000 * 3).toISOString(),
+                  transactionHash: "0987654321fedcba0987654321fedcba0987654321fedcba0987654321fedcba",
+                },
+              ],
+              deploymentCount: 2,
+              contractCallCount: 156,
+              builderScore: 215,
+            },
           };
         }
 

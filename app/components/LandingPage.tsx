@@ -7,13 +7,15 @@ import { useRouter } from 'next/navigation';
 import { ColorToggle } from './ColorToggle';
 import { NetworkToggle } from './NetworkToggle';
 import ParticleField from './ParticleField';
+import { LiveWrapCounter } from './LiveWrapCounter';
 import { useWrapStore, WrapPeriod } from '../store/wrapStore';
-import ParticleField from './ParticleField';
 
 export function LandingPage() {
   const router = useRouter();
-  const { period, setPeriod, reset } = useWrapStore();
+  const { period, setPeriod, reset, network } = useWrapStore();
   const [selectedPeriod, setSelectedPeriod] = useState<WrapPeriod>(period);
+  
+  const isMainnet = network === 'mainnet';
   
   const handleStart = () => {
     // Reset any existing wrap data when starting a new session,
@@ -275,6 +277,26 @@ export function LandingPage() {
           </div>
         </motion.div>
 
+        {/* Testnet Banner */}
+        {!isMainnet && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25 }}
+            className="absolute top-20 md:top-28 left-1/2 -translate-x-1/2 z-50"
+          >
+            <div className="backdrop-blur-xl px-4 py-2 md:px-6 md:py-3 rounded-xl border border-orange-500/30"
+              style={{ backgroundColor: 'rgba(255, 165, 0, 0.1)' }}
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-xs md:text-sm font-black text-orange-400">
+                  ⚠️ YOU'RE VIEWING TESTNET DATA
+                </span>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
         {/* Color Toggle - Fixed Position */}
         <ColorToggle />
 
@@ -400,6 +422,9 @@ export function LandingPage() {
           </p>
         </motion.div>
 
+        {/* Live Wrap Counter */}
+        <LiveWrapCounter />
+
         {/* Period selection */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -483,7 +508,9 @@ export function LandingPage() {
                 <div className="flex items-center justify-between gap-2 sm:gap-4 md:gap-6">
                   <div className="flex flex-col items-start min-w-0">
                     <span className="text-[10px] sm:text-xs font-black tracking-[0.12em] sm:tracking-[0.2em] mb-0.5 sm:mb-1 text-white/50">INITIALIZE</span>
-                    <span className="text-lg sm:text-2xl md:text-4xl font-black tracking-tight text-white whitespace-nowrap">START WRAP</span>
+                    <span className="text-lg sm:text-2xl md:text-4xl font-black tracking-tight text-white whitespace-nowrap">
+                      START WRAP ({isMainnet ? 'MAINNET' : 'TESTNET'})
+                    </span>
                   </div>
                   <motion.div
                     animate={{ x: [0, 5, 0] }}

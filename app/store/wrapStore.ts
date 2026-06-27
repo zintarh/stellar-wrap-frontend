@@ -36,6 +36,8 @@ export interface VibeSlice {
   label: string;
 }
 
+import type { DexTradingSummary as DexTradingSummaryType, SorobanBuilderSummary as SorobanBuilderSummaryType } from "@/app/utils/indexer";
+
 export interface WrapResult {
   username: string;
   totalTransactions: number;
@@ -44,6 +46,8 @@ export interface WrapResult {
   vibes: VibeSlice[];
   persona: string;
   personaDescription: string;
+  dexTradingSummary?: DexTradingSummaryType;
+  sorobanBuilderSummary?: SorobanBuilderSummaryType;
 }
 
 type WrapStatus = "idle" | "loading" | "ready" | "error";
