@@ -112,6 +112,9 @@ export interface IndexingError {
 export interface PersistedIndexingState {
   currentStep: IndexingStep | null;
   completedSteps: number;
+  stepProgress: Record<IndexingStep, number>;
+  overallProgress: number;
+  completedStepRecord: Record<IndexingStep, boolean>;
   stepTimings: Record<IndexingStep, number>; // time taken per step
   startTime: number | null;
   timestamp: number; // when state was saved
