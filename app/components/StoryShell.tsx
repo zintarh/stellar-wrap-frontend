@@ -15,7 +15,7 @@ export function StoryShell({ children, activeSegment = 1 }: StoryShellProps) {
   const router = useRouter();
 
   return (
-    <div className="relative min-h-screen bg-[#0a0a0a] text-white overflow-hidden flex flex-col font-sans">
+    <div className="relative min-h-screen bg-[#0a0a0a] text-white overflow-hidden flex flex-col font-sans" style={{ touchAction: "pan-y" }}>
       {/* Deep space gradient - like landing page */}
       <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/40" />
 

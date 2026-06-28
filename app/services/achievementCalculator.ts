@@ -7,7 +7,7 @@
  * Groups transactions by timeframe for analysis
  */
 
-import { IndexerResult, DappInfo, VibeTag } from "@/app/utils/indexer";
+import { IndexerResult, DappInfo, VibeTag, DexTradingSummary, SorobanDeployment, SorobanBuilderSummary } from "@/app/utils/indexer";
 
 /**
  * Raw transaction from Horizon API
@@ -90,6 +90,18 @@ export function calculateAchievements(
       gasSpent: 0,
       dapps: [],
       vibes: [{ tag: "Getting Started", count: 0 }],
+      dexTradingSummary: {
+        totalVolume: 0,
+        tradeCount: 0,
+        buyCount: 0,
+        sellCount: 0,
+      },
+      sorobanBuilderSummary: {
+        deployments: [],
+        deploymentCount: 0,
+        contractCallCount: 0,
+        builderScore: 0,
+      }
     };
   }
 
@@ -107,6 +119,21 @@ export function calculateAchievements(
     offers: 0,
     trustlines: 0,
     other: 0,
+  };
+
+  // DEX trading summary trackers
+  const dexTrackers = {
+    totalVolume: 0,
+    tradeCount: 0,
+    buyCount: 0,
+    sellCount: 0,
+    pairMap: new Map<string, number>(), // pair -> trade count
+  };
+
+  // Soroban builder summary trackers
+  const sorobanTrackers = {
+    deployments: [] as SorobanDeployment[],
+    contractCallCount: 0,
   };
 
   // Additional metrics tracking
@@ -144,14 +171,27 @@ export function calculateAchievements(
         case "path_payment_strict_receive":
         case "path_payment_strict_send":
           categories.swaps++;
-          processPathPaymentOperation(op, assetMap, assetVolumeMap, vibeMap);
+          processPathPaymentOperation(op, assetMap, assetVolumeMap, vibeMap, dexTrackers);
           break;
 
         case "invoke_host_function":
+          categories.contractCalls++;
+          // Check if this is a contract deployment (HostFunctionTypeCreateContract)
+          // We'll assume the function field or asset/contract field indicates deployment
+          const isDeployment = op.function === "HostFunctionTypeCreateContract" || 
+                               (typeof op === "object" && (op as any).function?.includes("CreateContract"));
+          processContractOperation(op, dappMap, isDeployment, sorobanTrackers, tx);
+          if (isDeployment) {
+            vibeMap.set("soroban-user", (vibeMap.get("soroban-user") || 0) + 5); // Boost for deployments
+          } else {
+            vibeMap.set("soroban-user", (vibeMap.get("soroban-user") || 0) + 1);
+          }
+          break;
+
         case "extend_footprint_ttl":
         case "restore_footprint":
           categories.contractCalls++;
-          processContractOperation(op, dappMap);
+          sorobanTrackers.contractCallCount++;
           vibeMap.set("soroban-user", (vibeMap.get("soroban-user") || 0) + 1);
           break;
 
@@ -159,7 +199,7 @@ export function calculateAchievements(
         case "manage_sell_offer":
         case "create_passive_sell_offer":
           categories.offers++;
-          processOfferOperation(op, assetMap, vibeMap);
+          processOfferOperation(op, assetMap, vibeMap, dexTrackers);
           break;
 
         case "change_trust":
@@ -204,6 +244,35 @@ export function calculateAchievements(
     assetMap,
   );
 
+  // Compute most traded pair
+  let mostTradedPair: string | undefined = undefined;
+  let maxPairCount = 0;
+  dexTrackers.pairMap.forEach((count, pair) => {
+    if (count > maxPairCount) {
+      maxPairCount = count;
+      mostTradedPair = pair;
+    }
+  });
+
+  const dexTradingSummary: DexTradingSummary = {
+    totalVolume: dexTrackers.totalVolume,
+    tradeCount: dexTrackers.tradeCount,
+    mostTradedPair,
+    buyCount: dexTrackers.buyCount,
+    sellCount: dexTrackers.sellCount,
+  };
+
+  // Compute builder score
+  const deploymentCount = sorobanTrackers.deployments.length;
+  const builderScore = deploymentCount * 100 + Math.floor(sorobanTrackers.contractCallCount / 10);
+
+  const sorobanBuilderSummary: SorobanBuilderSummary = {
+    deployments: sorobanTrackers.deployments,
+    deploymentCount,
+    contractCallCount: sorobanTrackers.contractCallCount,
+    builderScore,
+  };
+
   return {
     accountId: "",
     totalTransactions: transactions.length,
@@ -215,6 +284,8 @@ export function calculateAchievements(
       (a, b) => b.transactionCount - a.transactionCount || b.volume - a.volume,
     ),
     vibes,
+    dexTradingSummary,
+    sorobanBuilderSummary,
   };
 }
 
@@ -224,9 +295,15 @@ export function calculateAchievements(
 function processContractOperation(
   op: Operation,
   dappMap: Map<string, DappInfo>,
+  isDeployment: boolean,
+  sorobanTrackers: { deployments: SorobanDeployment[], contractCallCount: number },
+  tx: Transaction,
 ): void {
   const contractId = op.contract_id || op.contract;
-  if (!contractId) return;
+  if (!contractId) {
+    if (!isDeployment) sorobanTrackers.contractCallCount++;
+    return;
+  }
 
   const existing = dappMap.get(contractId) || {
     name: contractId,
@@ -236,6 +313,16 @@ function processContractOperation(
   };
   existing.transactionCount += 1;
   dappMap.set(contractId, existing);
+
+  if (isDeployment) {
+    sorobanTrackers.deployments.push({
+      contractId: contractId,
+      deploymentDate: tx.created_at,
+      transactionHash: tx.id || "",
+    });
+  } else {
+    sorobanTrackers.contractCallCount++;
+  }
 }
 
 /**
@@ -288,6 +375,7 @@ function processPathPaymentOperation(
   assetMap: Map<string, number>,
   assetVolumeMap: Map<string, number>,
   vibeMap: Map<string, number>,
+  dexTrackers: { totalVolume: number; tradeCount: number; buyCount: number; sellCount: number; pairMap: Map<string, number> },
 ): void {
   const sourceAmount = op.source_amount ? parseFloat(op.source_amount) : 0;
   const destAmount = op.destination_amount ? parseFloat(op.destination_amount) : 0;
@@ -300,6 +388,15 @@ function processPathPaymentOperation(
   assetVolumeMap.set(sourceAsset, (assetVolumeMap.get(sourceAsset) || 0) + sourceAmount);
   assetVolumeMap.set(destAsset, (assetVolumeMap.get(destAsset) || 0) + destAmount);
 
+  // Track DEX summary
+  const pair = [sourceAsset, destAsset].sort().join("/");
+  dexTrackers.pairMap.set(pair, (dexTrackers.pairMap.get(pair) || 0) + 1);
+  // For simplicity, we'll use sourceAmount as part of volume (assume source asset is XLM if possible)
+  dexTrackers.totalVolume += sourceAmount;
+  dexTrackers.tradeCount += 1;
+  dexTrackers.buyCount += 1;
+  dexTrackers.sellCount += 1;
+
   vibeMap.set("bridge-warrior", (vibeMap.get("bridge-warrior") || 0) + 1);
 }
 
@@ -310,10 +407,20 @@ function processOfferOperation(
   op: Operation,
   assetMap: Map<string, number>,
   vibeMap: Map<string, number>,
+  dexTrackers: { totalVolume: number; tradeCount: number; buyCount: number; sellCount: number; pairMap: Map<string, number> },
 ): void {
   const asset = op.asset_code || "XLM";
   assetMap.set(asset, (assetMap.get(asset) || 0) + 1);
   vibeMap.set("defi-trader", (vibeMap.get("defi-trader") || 0) + 1);
+
+  // Track DEX summary
+  dexTrackers.tradeCount += 1;
+  if (op.type === "manage_buy_offer") {
+    dexTrackers.buyCount += 1;
+  } else {
+    dexTrackers.sellCount += 1;
+  }
+  // Since we don't have counter asset or price data for offers, skip volume and pair tracking for now
 }
 
 /**

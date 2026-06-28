@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
@@ -21,6 +21,16 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Stellar Wrap | Reveal Your On-Chain Persona",
   description: "Your Stellar Year in Review",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Stellar Wrap",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#1DB954",
 };
 
 export default function RootLayout({
@@ -32,6 +42,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        style={{ touchAction: "pan-y" }}
         suppressHydrationWarning
       >
         <Providers>

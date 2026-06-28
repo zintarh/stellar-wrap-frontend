@@ -11,11 +11,13 @@ import { MuteToggle } from "../components/MuteToggle";
 import { useStellarAddressValidation } from "../../src/hooks/useStellarAddressValidation";
 import { useSound } from "../hooks/useSound";
 import { SOUND_NAMES } from "../utils/soundManager";
+import { useOnlineStatus } from "../hooks/useOnlineStatus";
 
 export default function ConnectPage() {
   const router = useRouter();
   const { setAddress, setError, setStatus, network } = useWrapStore();
   const { playSound } = useSound();
+  const isOnline = useOnlineStatus();
 
   const {
     address: walletAddress,
@@ -45,6 +47,11 @@ export default function ConnectPage() {
   }, []);
 
   const handleFreighterConnect = async () => {
+    if (!isOnline) {
+      setLocalError("Wallet connect is unavailable offline.");
+      return;
+    }
+
     setIsConnecting(true);
     setLocalError(null);
     setStatus("loading");
@@ -67,6 +74,11 @@ export default function ConnectPage() {
   };
 
   const handleAlbedoConnect = async () => {
+    if (!isOnline) {
+      setLocalError("Wallet connect is unavailable offline.");
+      return;
+    }
+
     setIsConnecting(true);
     setLocalError(null);
     setStatus("loading");
@@ -90,6 +102,11 @@ export default function ConnectPage() {
 
   const handleManualSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
+
+    if (!isOnline) {
+      setLocalError("Indexing is unavailable offline.");
+      return;
+    }
 
     if (!walletAddress.trim()) {
       setLocalError("Please enter a wallet address");
@@ -134,6 +151,11 @@ export default function ConnectPage() {
   };
 
   const handleDemoMode = () => {
+    if (!isOnline) {
+      setLocalError("Demo indexing is unavailable offline.");
+      return;
+    }
+
     const demoAddress = "GDEMOADDRESSFORSTELLARWRAPDEMOPURPOSES12345678";
     handleRawAddressChange(demoAddress);
     setTimeout(() => {
@@ -240,7 +262,7 @@ export default function ConnectPage() {
       ref={mainContentRef}
       tabIndex={-1}
       onKeyDown={handlePageKeyDown}
-      className="relative w-full min-h-screen h-screen overflow-hidden flex items-center justify-center bg-theme-background focus:outline-none"
+      className="relative w-full min-h-screen h-screen overflow-hidden flex items-center justify-center bg-theme-background focus:outline-none" style={{ touchAction: "pan-y" }}
     >
       {/* Progress Indicator */}
       <ProgressIndicator currentStep={2} totalSteps={6} showNext={false} />
@@ -549,25 +571,39 @@ export default function ConnectPage() {
                   ⚠️ {localError}
                 </motion.div>
               )}
+              {!isOnline && !localError && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="mb-6 p-4 bg-yellow-500/10 border-2 border-yellow-500/50 rounded-xl text-yellow-400 text-sm text-center font-medium"
+                >
+                  You&apos;re offline — wallet connect and indexing are disabled.
+                </motion.div>
+              )}
             </AnimatePresence>
 
             <motion.button
               ref={connectButtonRef}
               onClick={handleConnect}
               onKeyDown={handleConnectKeyDown}
-              disabled={!walletAddress.trim() || isConnecting || !isValid}
+              disabled={!isOnline || !walletAddress.trim() || isConnecting || !isValid}
               className="w-full relative group disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none"
               whileHover={{
-                scale: !walletAddress.trim() || isConnecting || !isValid ? 1 : 1.02,
+                scale: !isOnline || !walletAddress.trim() || isConnecting || !isValid ? 1 : 1.02,
               }}
               whileTap={{
-                scale: !walletAddress.trim() || isConnecting || !isValid ? 1 : 0.98,
+                scale: !isOnline || !walletAddress.trim() || isConnecting || !isValid ? 1 : 0.98,
               }}
               tabIndex={0}
               aria-label={
-                isConnecting ? "Connecting wallet" : "Start wrapping process"
+                !isOnline
+                  ? "Indexing unavailable offline"
+                  : isConnecting
+                    ? "Connecting wallet"
+                    : "Start wrapping process"
               }
-              aria-disabled={!walletAddress.trim() || isConnecting || !isValid}
+              aria-disabled={!isOnline || !walletAddress.trim() || isConnecting || !isValid}
               role="button"
             >
               <motion.div
@@ -592,12 +628,14 @@ export default function ConnectPage() {
                     : "var(--color-theme-primary)",
                   color: "#000000",
                   cursor:
-                    !walletAddress.trim() || isConnecting || !isValid
+                    !isOnline || !walletAddress.trim() || isConnecting || !isValid
                       ? "not-allowed"
                       : "pointer",
                 }}
               >
-                {isConnecting ? (
+                {!isOnline ? (
+                  "OFFLINE"
+                ) : isConnecting ? (
                   <>
                     <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
                     <span>CONNECTING...</span>
@@ -617,16 +655,16 @@ export default function ConnectPage() {
                 ref={freighterButtonRef}
                 onClick={handleFreighterConnect}
                 onKeyDown={handleFreighterKeyDown}
-                disabled={isConnecting}
+                disabled={!isOnline || isConnecting}
                 className="w-full px-6 py-4 bg-transparent border-2 rounded-xl font-bold text-white/70 hover:text-white transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-theme-primary focus:ring-offset-2 focus:ring-offset-black"
                 style={{
                   borderColor: "rgba(var(--color-theme-primary-rgb), 0.3)",
                 }}
-                whileHover={{ scale: isConnecting ? 1 : 1.02 }}
-                whileTap={{ scale: isConnecting ? 1 : 0.98 }}
+                whileHover={{ scale: !isOnline || isConnecting ? 1 : 1.02 }}
+                whileTap={{ scale: !isOnline || isConnecting ? 1 : 0.98 }}
                 tabIndex={0}
                 aria-label="Connect with Freighter wallet"
-                aria-disabled={isConnecting}
+                aria-disabled={!isOnline || isConnecting}
                 role="button"
               >
                 {isConnecting ? (
@@ -648,16 +686,16 @@ export default function ConnectPage() {
               <motion.button
                 onClick={handleAlbedoConnect}
                 onKeyDown={handleAlbedoKeyDown}
-                disabled={isConnecting}
+                disabled={!isOnline || isConnecting}
                 className="w-full px-6 py-4 bg-transparent border-2 rounded-xl font-bold text-white/70 hover:text-white transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-theme-primary focus:ring-offset-2 focus:ring-offset-black"
                 style={{
                   borderColor: "rgba(var(--color-theme-primary-rgb), 0.3)",
                 }}
-                whileHover={{ scale: isConnecting ? 1 : 1.02 }}
-                whileTap={{ scale: isConnecting ? 1 : 0.98 }}
+                whileHover={{ scale: !isOnline || isConnecting ? 1 : 1.02 }}
+                whileTap={{ scale: !isOnline || isConnecting ? 1 : 0.98 }}
                 tabIndex={0}
                 aria-label="Connect with Albedo wallet"
-                aria-disabled={isConnecting}
+                aria-disabled={!isOnline || isConnecting}
                 role="button"
               >
                 {isConnecting ? (
