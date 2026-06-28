@@ -5,6 +5,7 @@ import { Box, Database } from 'lucide-react';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ColorToggle } from './ColorToggle';
+import { DarkLightToggle } from './DarkLightToggle';
 import { NetworkToggle } from './NetworkToggle';
 import { CommunityWrapsCarousel } from './CommunityWrapsCarousel';
 import ParticleField from './ParticleField';

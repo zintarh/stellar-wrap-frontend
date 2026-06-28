@@ -3,10 +3,14 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 export type ThemeColor = 'green' | 'pink' | 'yellow' | 'red' | 'purple';
+export type ThemeMode = 'dark' | 'light';
 
 interface ThemeContextType {
   color: ThemeColor;
   setColor: (color: ThemeColor) => void;
+  mode: ThemeMode;
+  setMode: (mode: ThemeMode) => void;
+  toggleMode: () => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -59,9 +63,30 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return 'green';
   });
 
+  const [mode, setModeState] = useState<ThemeMode>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('stellar-theme-mode');
+      if (saved === 'dark' || saved === 'light') {
+        return saved;
+      }
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      return prefersDark ? 'dark' : 'light';
+    }
+    return 'dark';
+  });
+
   const setColor = (newColor: ThemeColor) => {
     setColorState(newColor);
     localStorage.setItem('stellar-theme-color', newColor);
+  };
+
+  const setMode = (newMode: ThemeMode) => {
+    setModeState(newMode);
+    localStorage.setItem('stellar-theme-mode', newMode);
+  };
+
+  const toggleMode = () => {
+    setMode(mode === 'dark' ? 'light' : 'dark');
   };
 
   useEffect(() => {
@@ -72,8 +97,18 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     document.documentElement.style.setProperty('--color-theme-gradient', theme.gradient);
   }, [color]);
 
+  useEffect(() => {
+    if (mode === 'dark') {
+      document.documentElement.classList.add('dark');
+      document.documentElement.classList.remove('light');
+    } else {
+      document.documentElement.classList.add('light');
+      document.documentElement.classList.remove('dark');
+    }
+  }, [mode]);
+
   return (
-    <ThemeContext.Provider value={{ color, setColor }}>
+    <ThemeContext.Provider value={{ color, setColor, mode, setMode, toggleMode }}>
       {children}
     </ThemeContext.Provider>
   );
