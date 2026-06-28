@@ -35,7 +35,7 @@ function mapMockDapps() {
 
 export default function LoadingScreen() {
   const router = useRouter();
-  const { address, period, network, setStatus, setResult, setError, setCacheMeta, startIndexing, cancelIndexing, loadIndexingState } =
+  const { address, period, network, setStatus, setResult, setError, setCacheMeta, startIndexing, cancelIndexing, completeIndexing, syncIndexingProgress } =
     useWrapStore();
 
   const { playSound } = useSound();
@@ -55,6 +55,24 @@ export default function LoadingScreen() {
     // (useEffect cleanup + re-mount is the cleanest way without prop-drilling)
     window.location.reload();
   }, []);
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState !== "visible") return;
+
+      syncIndexingProgress();
+
+      const state = useWrapStore.getState();
+      if (state.status === "ready") {
+        handleComplete();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [handleComplete, syncIndexingProgress]);
 
   useEffect(() => {
     let isMounted = true;
@@ -165,6 +183,7 @@ export default function LoadingScreen() {
 
         setResult(result);
         setStatus("ready");
+        completeIndexing();
 
         // Give progress display time to be visible (minimum 1.5 seconds)
         setTimeout(() => {
@@ -205,7 +224,7 @@ export default function LoadingScreen() {
     setCacheMeta,
     handleComplete,
     startIndexing,
-    loadIndexingState,
+    completeIndexing,
   ]);
 
   const starConfigs = useMemo(

@@ -26,6 +26,8 @@ export function ShareCard({
   shareImageRef,
 }: ShareCardProps) {
   const [isDownloading, setIsDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
+  const [usedMainThreadFallback, setUsedMainThreadFallback] = useState(false);
   const { address, network } = useWrapStore();
   const { playSound } = useSound();
   
@@ -66,12 +68,25 @@ export function ShareCard({
   }, [transactionState, transactionHash, transactionError, playSound]);
 
   const handleDownload = async () => {
-    if (!shareImageRef.current) return;
+    if (!shareImageRef.current || isDownloading) return;
 
     setIsDownloading(true);
+    setDownloadError(null);
+    setUsedMainThreadFallback(false);
+
     try {
-      await downloadShareImage(shareImageRef.current);
+      const result = await downloadShareImage(shareImageRef.current, {
+        onFallbackWarning: () => setUsedMainThreadFallback(true),
+      });
+      console.info(
+        `Share image generated in ${result.durationMs}ms (scale: ${result.scale}x, worker: ${result.usedWorker})`,
+      );
     } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Failed to generate share image";
+      setDownloadError(message);
       console.error("Download failed:", error);
     } finally {
       setIsDownloading(false);
@@ -486,10 +501,39 @@ export function ShareCard({
                     <Download className="w-6 h-6" />
                   )}
                   <span className="text-2xl font-black tracking-tight">
-                    {isDownloading ? "Generating..." : "Download Image"}
+                    {isDownloading
+                      ? "Generating your card..."
+                      : "Download Image"}
                   </span>
                 </div>
               </motion.button>
+
+              {downloadError && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 space-y-3"
+                >
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+                    <p className="text-sm text-red-200/90">{downloadError}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleDownload}
+                    disabled={isDownloading}
+                    className="text-sm font-bold text-red-200 hover:text-white transition-colors"
+                  >
+                    Retry download
+                  </button>
+                </motion.div>
+              )}
+
+              {usedMainThreadFallback && !downloadError && (
+                <p className="text-sm text-white/50">
+                  Using main-thread encoding because worker support is unavailable.
+                </p>
+              )}
             </div>
 
             <motion.p
