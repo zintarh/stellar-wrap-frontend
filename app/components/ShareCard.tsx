@@ -8,6 +8,7 @@ import { useTransactionStore } from "@/app/store/transactionStore";
 import { toast } from "sonner";
 import { useSound } from "../hooks/useSound";
 import { SOUND_NAMES } from "../utils/soundManager";
+import { useOnlineStatus } from "../hooks/useOnlineStatus";
 interface ShareCardProps {
   username: string;
   transactions: number;
@@ -26,8 +27,11 @@ export function ShareCard({
   shareImageRef,
 }: ShareCardProps) {
   const [isDownloading, setIsDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
+  const [usedMainThreadFallback, setUsedMainThreadFallback] = useState(false);
   const { address, network } = useWrapStore();
   const { playSound } = useSound();
+  const isOnline = useOnlineStatus();
   
   const { transactionState, transactionHash, transactionError, resetTransaction } = useTransactionStore();
 
@@ -66,12 +70,25 @@ export function ShareCard({
   }, [transactionState, transactionHash, transactionError, playSound]);
 
   const handleDownload = async () => {
-    if (!shareImageRef.current) return;
+    if (!shareImageRef.current || isDownloading) return;
 
     setIsDownloading(true);
+    setDownloadError(null);
+    setUsedMainThreadFallback(false);
+
     try {
-      await downloadShareImage(shareImageRef.current);
+      const result = await downloadShareImage(shareImageRef.current, {
+        onFallbackWarning: () => setUsedMainThreadFallback(true),
+      });
+      console.info(
+        `Share image generated in ${result.durationMs}ms (scale: ${result.scale}x, worker: ${result.usedWorker})`,
+      );
     } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Failed to generate share image";
+      setDownloadError(message);
       console.error("Download failed:", error);
     } finally {
       setIsDownloading(false);
@@ -87,6 +104,11 @@ export function ShareCard({
 
   const handleMint = async () => {
     console.log("Mint attempt - Address:", address);
+
+    if (!isOnline) {
+      toast.error("Minting is unavailable offline");
+      return;
+    }
 
     if (!address) {
       toast.error("Please connect your wallet first", {
@@ -148,7 +170,7 @@ export function ShareCard({
       case "failed":
         return "Retry Mint";
       default:
-        return "Mint My Wrap";
+        return isOnline ? "Mint My Wrap" : "Mint unavailable offline";
     }
   };
   return (
@@ -335,13 +357,15 @@ export function ShareCard({
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 1.0 }}
             whileHover={{
-              scale: isMinting || !!mintSuccess ? 1 : 1.02,
+              scale: !isOnline || isMinting || !!mintSuccess ? 1 : 1.02,
               transition: { duration: 0.2 },
             }}
-            whileTap={{ scale: isMinting || !!mintSuccess ? 1 : 0.98 }}
+            whileTap={{
+              scale: !isOnline || isMinting || !!mintSuccess ? 1 : 0.98,
+            }}
             className={`w-full group relative mt-8 ${mintFailed ? "animate-pulse" : ""}`}
             onClick={handleMint}
-            disabled={isMinting || !!mintSuccess}
+            disabled={!isOnline || isMinting || !!mintSuccess}
           >
             <motion.div
               className={`absolute -inset-1 rounded-2xl blur-xl transition-opacity ${mintFailed ? "opacity-50" : "opacity-0 group-hover:opacity-100"}`}
@@ -486,10 +510,39 @@ export function ShareCard({
                     <Download className="w-6 h-6" />
                   )}
                   <span className="text-2xl font-black tracking-tight">
-                    {isDownloading ? "Generating..." : "Download Image"}
+                    {isDownloading
+                      ? "Generating your card..."
+                      : "Download Image"}
                   </span>
                 </div>
               </motion.button>
+
+              {downloadError && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 space-y-3"
+                >
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+                    <p className="text-sm text-red-200/90">{downloadError}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleDownload}
+                    disabled={isDownloading}
+                    className="text-sm font-bold text-red-200 hover:text-white transition-colors"
+                  >
+                    Retry download
+                  </button>
+                </motion.div>
+              )}
+
+              {usedMainThreadFallback && !downloadError && (
+                <p className="text-sm text-white/50">
+                  Using main-thread encoding because worker support is unavailable.
+                </p>
+              )}
             </div>
 
             <motion.p

@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from 'motion/react';
-import { Share2, X } from 'lucide-react';
+import { Share2, X, Link2, Check } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 interface ShareButtonsProps {
@@ -38,6 +38,7 @@ export function ShareButtons({
   const [shareUrl, setShareUrl] = useState('');
   const [appUrl, setAppUrl] = useState('');
   const [shareOgUrl, setShareOgUrl] = useState('');
+  const [copied, setCopied] = useState(false);
   
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -64,6 +65,27 @@ export function ShareButtons({
   const handleShare = (platform: keyof typeof shareLinks) => {
     if (typeof window !== 'undefined' && shareLinks[platform]) {
       window.open(shareLinks[platform], '_blank', 'width=600,height=400');
+    }
+  };
+
+  const handleCopyLink = async () => {
+    if (typeof window === 'undefined' || !shareUrl) return;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Fallback for older browsers
+      const textarea = document.createElement('textarea');
+      textarea.value = shareUrl;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
     }
   };
 
@@ -192,6 +214,26 @@ export function ShareButtons({
                 </svg>
               </div>
               <span className="text-white font-bold text-sm">Telegram</span>
+            </motion.button>
+
+            {/* Copy link */}
+            <motion.button
+              whileHover={{ scale: 1.05, x: 5 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={handleCopyLink}
+              className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all group"
+              style={{ backgroundColor: 'rgba(138, 180, 248, 0.1)' }}
+            >
+              <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: copied ? '#22c55e' : '#6366f1' }}>
+                {copied ? (
+                  <Check className="w-5 h-5 text-white" />
+                ) : (
+                  <Link2 className="w-5 h-5 text-white" />
+                )}
+              </div>
+              <span className="text-white font-bold text-sm">
+                {copied ? 'Copied!' : 'Copy link'}
+              </span>
             </motion.button>
 
             {/* Native Share (Mobile) */}

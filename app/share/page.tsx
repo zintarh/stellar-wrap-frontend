@@ -9,6 +9,7 @@ import { ProgressIndicator } from "@/app/components/ProgressIndicator";
 import { MuteToggle } from "../components/MuteToggle";
 import { ShareCard } from "../components/ShareCard";
 import { ShareImageCard } from "../components/ShareImageCard";
+import { PersonaEvolutionTimeline } from "../components/PersonaEvolutionTimeline";
 import { useTheme, themeColors } from "../context/ThemeContext";
 import { useWrapStore } from "../store/wrapStore";
 import {
@@ -120,6 +121,10 @@ export default function ShareCardPage() {
         vibePercentage={mockData.vibes[0].percentage}
         shareImageRef={shareImageRef}
       />
+
+      <div className="absolute bottom-24 left-0 right-0 z-20 pointer-events-auto">
+        <PersonaEvolutionTimeline useDemo={process.env.NODE_ENV === "development"} />
+      </div>
 
       <ProgressIndicator currentStep={6} totalSteps={6} showNext={false} />
 
