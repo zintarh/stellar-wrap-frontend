@@ -8,6 +8,7 @@ import { useTransactionStore } from "@/app/store/transactionStore";
 import { toast } from "sonner";
 import { useSound } from "../hooks/useSound";
 import { SOUND_NAMES } from "../utils/soundManager";
+import { useOnlineStatus } from "../hooks/useOnlineStatus";
 interface ShareCardProps {
   username: string;
   transactions: number;
@@ -26,8 +27,11 @@ export function ShareCard({
   shareImageRef,
 }: ShareCardProps) {
   const [isDownloading, setIsDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
+  const [usedMainThreadFallback, setUsedMainThreadFallback] = useState(false);
   const { address, network } = useWrapStore();
   const { playSound } = useSound();
+  const isOnline = useOnlineStatus();
   
   const { transactionState, transactionHash, transactionError, resetTransaction } = useTransactionStore();
 
@@ -66,12 +70,25 @@ export function ShareCard({
   }, [transactionState, transactionHash, transactionError, playSound]);
 
   const handleDownload = async () => {
-    if (!shareImageRef.current) return;
+    if (!shareImageRef.current || isDownloading) return;
 
     setIsDownloading(true);
+    setDownloadError(null);
+    setUsedMainThreadFallback(false);
+
     try {
-      await downloadShareImage(shareImageRef.current);
+      const result = await downloadShareImage(shareImageRef.current, {
+        onFallbackWarning: () => setUsedMainThreadFallback(true),
+      });
+      console.info(
+        `Share image generated in ${result.durationMs}ms (scale: ${result.scale}x, worker: ${result.usedWorker})`,
+      );
     } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Failed to generate share image";
+      setDownloadError(message);
       console.error("Download failed:", error);
     } finally {
       setIsDownloading(false);
@@ -87,6 +104,11 @@ export function ShareCard({
 
   const handleMint = async () => {
     console.log("Mint attempt - Address:", address);
+
+    if (!isOnline) {
+      toast.error("Minting is unavailable offline");
+      return;
+    }
 
     if (!address) {
       toast.error("Please connect your wallet first", {
@@ -148,16 +170,20 @@ export function ShareCard({
       case "failed":
         return "Retry Mint";
       default:
-        return "Mint My Wrap";
+        return isOnline ? "Mint My Wrap" : "Mint unavailable offline";
     }
   };
   return (
     <div
-      className="relative w-full h-full overflow-hidden flex items-center justify-center"
-      style={{ backgroundColor: "var(--color-theme-background)" }}
+      className="relative w-full h-full overflow-hidden flex items-center justify-center transition-colors duration-200"
+      style={{ backgroundColor: mode === 'dark' ? "var(--color-theme-background)" : "#ffffff" }}
     >
-      {/* Dark gradient background */}
-      <div className="absolute inset-0 bg-linear-to-br from-black via-black to-black opacity-60" />
+      {/* Gradient background */}
+      <div className="absolute inset-0" style={{ 
+        background: mode === 'dark'
+          ? 'rgba(0,0,0,0.6)'
+          : 'rgba(255,255,255,0.8)'
+      }} />
 
       {/* Diagonal lines pattern */}
       <div className="absolute inset-0 opacity-5">
@@ -216,9 +242,12 @@ export function ShareCard({
               />
 
               <div
-                className="relative aspect-square rounded-[40px] overflow-hidden border border-white/20 backdrop-blur-xl"
+                className="relative aspect-square rounded-[40px] overflow-hidden border backdrop-blur-xl"
                 style={{
-                  background: `linear-gradient(to bottom right, rgba(var(--color-theme-primary-rgb), 0.2), rgba(0, 0, 0, 0.8))`,
+                  borderColor: mode === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)',
+                  background: mode === 'dark' 
+                    ? `linear-gradient(to bottom right, rgba(var(--color-theme-primary-rgb), 0.2), rgba(0, 0, 0, 0.8))`
+                    : `linear-gradient(to bottom right, rgba(var(--color-theme-primary-rgb), 0.1), rgba(255, 255, 255, 0.95))`,
                 }}
               >
                 {/* Card header */}
@@ -235,11 +264,11 @@ export function ShareCard({
                         repeat: Infinity,
                       }}
                     />
-                    <span className="text-sm font-black text-white/70 tracking-[0.2em]">
+                    <span className="text-sm font-black tracking-[0.2em]" style={{ color: mode === 'dark' ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.6)' }}>
                       STELLAR WRAPPED 2026
                     </span>
                   </div>
-                  <h2 className="text-3xl font-black text-white mb-2">
+                  <h2 className="text-3xl font-black mb-2" style={{ color: mode === 'dark' ? '#ffffff' : '#1a1a1a' }}>
                     @{username}
                   </h2>
                 </div>
@@ -247,34 +276,42 @@ export function ShareCard({
                 {/* Stats */}
                 <div className="px-8 space-y-4">
                   <motion.div
-                    className="backdrop-blur-sm rounded-2xl p-6 border border-white/10"
-                    style={{ backgroundColor: "rgba(255, 255, 255, 0.05)" }}
+                    className="backdrop-blur-sm rounded-2xl p-6 border"
+                    style={{ 
+                      backgroundColor: mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+                      borderColor: mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'
+                    }}
                     initial={{ x: -50, opacity: 0 }}
                     animate={{ x: 0, opacity: 1 }}
                     transition={{ delay: 0.5 }}
                   >
-                    <p className="text-sm font-bold text-white/60 mb-2">
+                    <p className="text-sm font-bold mb-2" style={{ color: mode === 'dark' ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.5)' }}>
                       Total Transactions
                     </p>
-                    <p className="text-6xl font-black text-white">
+                    <p className="text-6xl font-black" style={{ color: mode === 'dark' ? '#ffffff' : '#1a1a1a' }}>
                       {transactions}
                     </p>
                   </motion.div>
 
                   <motion.div
-                    className="backdrop-blur-sm rounded-2xl p-6 border border-white/10"
-                    style={{ backgroundColor: "rgba(255, 255, 255, 0.05)" }}
+                    className="backdrop-blur-sm rounded-2xl p-6 border"
+                    style={{ 
+                      backgroundColor: mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+                      borderColor: mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'
+                    }}
                     initial={{ x: -50, opacity: 0 }}
                     animate={{ x: 0, opacity: 1 }}
                     transition={{ delay: 0.6 }}
                   >
-                    <p className="text-sm font-bold text-white/60 mb-2">
+                    <p className="text-sm font-bold mb-2" style={{ color: mode === 'dark' ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.5)' }}>
                       Persona
                     </p>
                     <p
                       className="text-3xl font-black"
                       style={{
-                        background: `linear-gradient(to right, #ffffff, var(--color-theme-primary))`,
+                        background: mode === 'dark'
+                          ? `linear-gradient(to right, #ffffff, var(--color-theme-primary))`
+                          : `linear-gradient(to right, #1a1a1a, var(--color-theme-primary))`,
                         WebkitBackgroundClip: "text",
                         WebkitTextFillColor: "transparent",
                       }}
@@ -284,16 +321,19 @@ export function ShareCard({
                   </motion.div>
 
                   <motion.div
-                    className="backdrop-blur-sm rounded-2xl p-6 border border-white/10"
-                    style={{ backgroundColor: "rgba(255, 255, 255, 0.05)" }}
+                    className="backdrop-blur-sm rounded-2xl p-6 border"
+                    style={{ 
+                      backgroundColor: mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+                      borderColor: mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'
+                    }}
                     initial={{ x: -50, opacity: 0 }}
                     animate={{ x: 0, opacity: 1 }}
                     transition={{ delay: 0.7 }}
                   >
-                    <p className="text-sm font-bold text-white/60 mb-2">
+                    <p className="text-sm font-bold mb-2" style={{ color: mode === 'dark' ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.5)' }}>
                       Top Vibe
                     </p>
-                    <p className="text-2xl font-black text-white">
+                    <p className="text-2xl font-black" style={{ color: mode === 'dark' ? '#ffffff' : '#1a1a1a' }}>
                       {vibePercentage}% {topVibe}
                     </p>
                   </motion.div>
@@ -301,12 +341,15 @@ export function ShareCard({
 
                 {/* Footer */}
                 <div className="absolute bottom-8 left-8 right-8 flex items-center justify-between">
-                  <div className="text-xs font-black text-white/50">
+                  <div className="text-xs font-black" style={{ color: mode === 'dark' ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.4)' }}>
                     stellar.org/wrapped
                   </div>
                   <motion.div
-                    className="w-10 h-10 rounded-xl backdrop-blur-sm flex items-center justify-center border border-white/20"
-                    style={{ backgroundColor: "rgba(255, 255, 255, 0.1)" }}
+                    className="w-10 h-10 rounded-xl backdrop-blur-sm flex items-center justify-center border"
+                    style={{ 
+                      backgroundColor: mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+                      borderColor: mode === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)'
+                    }}
                     animate={{
                       boxShadow: [
                         `0 0 20px rgba(var(--color-theme-primary-rgb), 0)`,
@@ -335,13 +378,15 @@ export function ShareCard({
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 1.0 }}
             whileHover={{
-              scale: isMinting || !!mintSuccess ? 1 : 1.02,
+              scale: !isOnline || isMinting || !!mintSuccess ? 1 : 1.02,
               transition: { duration: 0.2 },
             }}
-            whileTap={{ scale: isMinting || !!mintSuccess ? 1 : 0.98 }}
+            whileTap={{
+              scale: !isOnline || isMinting || !!mintSuccess ? 1 : 0.98,
+            }}
             className={`w-full group relative mt-8 ${mintFailed ? "animate-pulse" : ""}`}
             onClick={handleMint}
-            disabled={isMinting || !!mintSuccess}
+            disabled={!isOnline || isMinting || !!mintSuccess}
           >
             <motion.div
               className={`absolute -inset-1 rounded-2xl blur-xl transition-opacity ${mintFailed ? "opacity-50" : "opacity-0 group-hover:opacity-100"}`}
@@ -390,13 +435,15 @@ export function ShareCard({
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.5 }}
           >
-            <h3 className="text-7xl font-black text-white/90 mb-1 tracking-tight leading-none">
+            <h3 className="text-7xl font-black mb-1 tracking-tight leading-none" style={{ color: mode === 'dark' ? 'rgba(255,255,255,0.9)' : 'rgba(0,0,0,0.8)' }}>
               SHARE
             </h3>
             <h3
               className="text-8xl font-black mb-6 tracking-tight leading-none"
               style={{
-                background: `linear-gradient(to right, #ffffff, var(--color-theme-primary))`,
+                background: mode === 'dark'
+                  ? `linear-gradient(to right, #ffffff, var(--color-theme-primary))`
+                  : `linear-gradient(to right, #1a1a1a, var(--color-theme-primary))`,
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
               }}
@@ -448,8 +495,12 @@ export function ShareCard({
                   style={{ backgroundColor: "var(--color-theme-primary)" }}
                 />
                 <div
-                  className="relative flex items-center gap-4 backdrop-blur-sm text-white px-8 py-6 rounded-2xl border border-white/20"
-                  style={{ backgroundColor: "rgba(255, 255, 255, 0.1)" }}
+                  className="relative flex items-center gap-4 backdrop-blur-sm px-8 py-6 rounded-2xl border"
+                  style={{ 
+                    backgroundColor: mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+                    color: mode === 'dark' ? '#ffffff' : '#1a1a1a',
+                    borderColor: mode === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)'
+                  }}
                 >
                   <Twitter className="w-6 h-6" />
                   <span className="text-2xl font-black tracking-tight">
@@ -477,8 +528,12 @@ export function ShareCard({
                   style={{ backgroundColor: "var(--color-theme-primary)" }}
                 />
                 <div
-                  className="relative flex items-center gap-4 backdrop-blur-sm text-white px-8 py-6 rounded-2xl border border-white/20"
-                  style={{ backgroundColor: "rgba(255, 255, 255, 0.1)" }}
+                  className="relative flex items-center gap-4 backdrop-blur-sm px-8 py-6 rounded-2xl border"
+                  style={{ 
+                    backgroundColor: mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+                    color: mode === 'dark' ? '#ffffff' : '#1a1a1a',
+                    borderColor: mode === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)'
+                  }}
                 >
                   {isDownloading ? (
                     <Loader2 className="w-6 h-6 animate-spin" />
@@ -486,17 +541,46 @@ export function ShareCard({
                     <Download className="w-6 h-6" />
                   )}
                   <span className="text-2xl font-black tracking-tight">
-                    {isDownloading ? "Generating..." : "Download Image"}
+                    {isDownloading
+                      ? "Generating your card..."
+                      : "Download Image"}
                   </span>
                 </div>
               </motion.button>
+
+              {downloadError && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 space-y-3"
+                >
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+                    <p className="text-sm text-red-200/90">{downloadError}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleDownload}
+                    disabled={isDownloading}
+                    className="text-sm font-bold text-red-200 hover:text-white transition-colors"
+                  >
+                    Retry download
+                  </button>
+                </motion.div>
+              )}
+
+              {usedMainThreadFallback && !downloadError && (
+                <p className="text-sm text-white/50">
+                  Using main-thread encoding because worker support is unavailable.
+                </p>
+              )}
             </div>
 
             <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 1.2 }}
-              className="mt-8 text-white/50 text-lg font-bold"
+              className="mt-8 text-lg font-bold" style={{ color: mode === 'dark' ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)' }}
             >
               Show the world your Stellar journey
             </motion.p>

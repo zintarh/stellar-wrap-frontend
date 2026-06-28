@@ -68,7 +68,7 @@ const TransactionsOfFury: React.FC = () => {
 
   return (
     <StoryShell>
-      <div className="relative w-full h-screen overflow-hidden bg-[#030b0a]">
+      <div className="relative w-full h-screen overflow-hidden bg-[#030b0a]" style={{ touchAction: "pan-y" }}>
         <div className="absolute inset-0">
           {[...Array(80)].map((_, i) => (
             <motion.div

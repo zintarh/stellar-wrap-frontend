@@ -36,6 +36,8 @@ export interface VibeSlice {
   label: string;
 }
 
+import type { DexTradingSummary as DexTradingSummaryType, SorobanBuilderSummary as SorobanBuilderSummaryType } from "@/app/utils/indexer";
+
 export interface WrapResult {
   username: string;
   totalTransactions: number;
@@ -44,6 +46,8 @@ export interface WrapResult {
   vibes: VibeSlice[];
   persona: string;
   personaDescription: string;
+  dexTradingSummary?: DexTradingSummaryType;
+  sorobanBuilderSummary?: SorobanBuilderSummaryType;
 }
 
 type WrapStatus = "idle" | "loading" | "ready" | "error";
@@ -52,6 +56,7 @@ export interface CacheMeta {
   fromCache: boolean;
   cacheTimestamp?: number;
   refreshingInBackground?: boolean;
+  offline?: boolean;
 }
 
 export type ContractAddressesByNetwork = Partial<Record<Network, string>>;
@@ -152,6 +157,8 @@ interface WrapStoreState {
   completeStep: (step: IndexingStep) => void;
   cancelIndexing: () => void;
   resetIndexing: () => void;
+  completeIndexing: () => void;
+  syncIndexingProgress: () => void;
   saveIndexingState: () => void;
   loadIndexingState: () => boolean;
   clearPersistedIndexingState: () => void;
@@ -320,6 +327,30 @@ export const useWrapStore = create<WrapStoreState>()(
         get().clearPersistedIndexingState();
       },
 
+      completeIndexing: () => {
+        set((state) => {
+          const stepProgress = { ...state.stepProgress };
+          const completedStepRecord = { ...state.completedStepRecord };
+          STEP_ORDER.forEach((step) => {
+            stepProgress[step] = 100;
+            completedStepRecord[step] = true;
+          });
+          return {
+            stepProgress,
+            completedStepRecord,
+            completedSteps: STEP_ORDER.length,
+            overallProgress: 100,
+            isLoading: false,
+            estimatedTimeRemaining: 0,
+          };
+        });
+        get().clearPersistedIndexingState();
+      },
+
+      syncIndexingProgress: () => {
+        get().updateOverallProgress();
+      },
+
       saveIndexingState: () => {
         const state = get();
         if (!state.isLoading || state.isCancelled) return;
@@ -335,6 +366,9 @@ export const useWrapStore = create<WrapStoreState>()(
         const persistedState: PersistedIndexingState = {
           currentStep: state.currentStep,
           completedSteps: state.completedSteps,
+          stepProgress: state.stepProgress,
+          overallProgress: state.overallProgress,
+          completedStepRecord: state.completedStepRecord,
           stepTimings,
           startTime: state.startTime,
           timestamp: Date.now(),
@@ -367,10 +401,16 @@ export const useWrapStore = create<WrapStoreState>()(
           set({
             currentStep: persistedState.currentStep,
             completedSteps: persistedState.completedSteps,
+            stepProgress: persistedState.stepProgress ?? get().stepProgress,
+            overallProgress: persistedState.overallProgress ?? 0,
+            completedStepRecord:
+              persistedState.completedStepRecord ?? get().completedStepRecord,
             startTime: persistedState.startTime,
             isLoading: persistedState.currentStep !== null,
             isCancelled: false,
           });
+
+          get().updateOverallProgress();
 
           return true;
         } catch (error) {
@@ -400,7 +440,14 @@ export const useWrapStore = create<WrapStoreState>()(
     }),
     {
       name: "stellar-wrap-store",
-      partialize: (state) => ({ network: state.network }),
+      partialize: (state) => ({
+        address: state.address,
+        period: state.period,
+        network: state.network,
+        result: state.result,
+        status: state.status,
+        cacheMeta: state.cacheMeta,
+      }),
       storage: createJSONStorage(() =>
         typeof window !== "undefined"
           ? localStorage

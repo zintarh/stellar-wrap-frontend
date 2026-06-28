@@ -4,6 +4,7 @@ import { useWrapStore } from "@/app/store/wrapStore";
 import { useCallback } from "react";
 import { Database, RefreshCw, Loader2 } from "lucide-react";
 import { invalidateCache, getCachedDataKey } from "@/app/services/cacheService";
+import { useOnlineStatus } from "@/app/hooks/useOnlineStatus";
 
 function formatCacheAge(timestamp: number): string {
   const ageMs = Date.now() - timestamp;
@@ -19,9 +20,10 @@ function formatCacheAge(timestamp: number): string {
 
 export function CacheStatusBadge() {
   const { cacheMeta, address, network, period } = useWrapStore();
+  const isOnline = useOnlineStatus();
 
   const handleRefresh = useCallback(async () => {
-    if (!address) return;
+    if (!address || !isOnline) return;
     const key = getCachedDataKey(
       address,
       network as "mainnet" | "testnet",
@@ -29,7 +31,7 @@ export function CacheStatusBadge() {
     );
     await invalidateCache(key);
     window.location.reload();
-  }, [address, network, period]);
+  }, [address, isOnline, network, period]);
 
   if (!cacheMeta?.fromCache) return null;
 
@@ -37,7 +39,9 @@ export function CacheStatusBadge() {
     <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-xl p-4 space-y-2">
       <div className="flex items-center gap-2 text-sm">
         <Database className="w-4 h-4 text-emerald-400 shrink-0" />
-        <span className="font-medium text-white/90">Using cached data</span>
+        <span className="font-medium text-white/90">
+          {cacheMeta.offline ? "Using offline cached data" : "Using cached data"}
+        </span>
       </div>
       {cacheMeta.cacheTimestamp != null && (
         <p className="text-xs text-neutral-400">
@@ -53,10 +57,11 @@ export function CacheStatusBadge() {
       <button
         type="button"
         onClick={handleRefresh}
-        className="flex items-center gap-2 mt-2 px-3 py-1.5 rounded-lg border border-white/20 bg-white/5 hover:bg-white/10 text-white/80 hover:text-white text-xs font-medium transition-colors"
+        disabled={!isOnline}
+        className="flex items-center gap-2 mt-2 px-3 py-1.5 rounded-lg border border-white/20 bg-white/5 hover:bg-white/10 text-white/80 hover:text-white text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50"
       >
         <RefreshCw className="w-3.5 h-3.5" />
-        Refresh data
+        {isOnline ? "Refresh data" : "Refresh unavailable offline"}
       </button>
     </div>
   );
