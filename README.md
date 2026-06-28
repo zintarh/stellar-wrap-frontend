@@ -40,6 +40,164 @@ In Web3, your on-chain history is your resume, your identity, and your reputatio
 
 ---
 
+## User Journey Diagrams
+
+These Mermaid diagrams are intentionally GitHub-compatible so new contributors can preview the full app journey directly in the README.
+
+### User Flow
+
+```mermaid
+flowchart TD
+  Landing["Landing<br/>/"]
+  Connect["Connect<br/>/connect"]
+  Manual["Manual address entry"]
+  Freighter["Freighter wallet"]
+  Albedo["Albedo wallet"]
+  WalletConnect["WalletConnect wallet"]
+  InvalidAddress["Invalid address error"]
+  WalletDisconnected["Wallet disconnect or rejected connection"]
+  Demo["Demo mode shortcut<br/>mock address + mock data"]
+  Loading["Loading / Indexing<br/>/loading"]
+  RateLimited["Horizon rate limiting<br/>retry / wait state"]
+  IndexingFailure["Indexing failure<br/>fallback or recovery"]
+  TopDapps["Top Dapps<br/>/top-daps"]
+  Transactions["Transactions of Fury<br/>/transactions-of-fury"]
+  VibeCheck["Vibe Check<br/>/vibe-check"]
+  Persona["Persona Reveal<br/>/persona"]
+  Share["Share<br/>/share"]
+  Mint["Mint wrapped card<br/>wallet signing"]
+
+  Landing --> Connect
+  Connect --> Manual
+  Connect --> Freighter
+  Connect --> Albedo
+  Connect --> WalletConnect
+  Connect --> Demo
+
+  Manual -->|valid Stellar address| Loading
+  Manual -->|invalid format or failed validation| InvalidAddress
+  Freighter -->|public key granted| Loading
+  Freighter -->|rejected / unavailable| WalletDisconnected
+  Albedo -->|public key granted| Loading
+  Albedo -->|rejected / unavailable| WalletDisconnected
+  WalletConnect -->|session approved| Loading
+  WalletConnect -->|disconnect / rejection| WalletDisconnected
+  Demo --> Loading
+
+  Loading -->|7 indexing steps complete| TopDapps
+  Loading -->|HTTP 429 from Horizon| RateLimited
+  RateLimited -->|retry after reset| Loading
+  Loading -->|step error| IndexingFailure
+  IndexingFailure -->|retry / fallback mock data| Loading
+
+  TopDapps --> Transactions
+  Transactions --> VibeCheck
+  VibeCheck --> Persona
+  Persona --> Share
+  Share --> Mint
+
+  classDef connect fill:#dbeafe,stroke:#2563eb,color:#0f172a
+  classDef loading fill:#fef3c7,stroke:#d97706,color:#0f172a
+  classDef stats fill:#dcfce7,stroke:#16a34a,color:#0f172a
+  classDef share fill:#ede9fe,stroke:#7c3aed,color:#0f172a
+  classDef error fill:#fee2e2,stroke:#dc2626,color:#0f172a
+
+  class Connect,Manual,Freighter,Albedo,WalletConnect,Demo connect
+  class Loading,RateLimited,IndexingFailure loading
+  class TopDapps,Transactions,VibeCheck,Persona stats
+  class Share,Mint share
+  class InvalidAddress,WalletDisconnected error
+```
+
+### Data Flow
+
+```mermaid
+flowchart LR
+  ConnectPage["Connect page<br/>/connect"]
+  LoadingPage["Loading page<br/>/loading"]
+  StatsPages["Stats pages<br/>/top-daps, /transactions-of-fury, /vibe-check"]
+  PersonaPage["Persona page<br/>/persona"]
+  SharePage["Share page<br/>/share"]
+  MintAction["Mint action<br/>wallet signing"]
+
+  WrapStore[("useWrapStore<br/>address, period, network, status, error, result, cacheMeta, indexing progress")]
+  RateLimitStore[("useRateLimitStore<br/>isRateLimited, resetTime, retryAttempt, message")]
+  TransactionStore[("useTransactionStore<br/>transactionState, transactionHash, transactionError")]
+  MockData[("mockData / GOLDEN_USER<br/>demo and fallback data")]
+  Indexer["indexAccount + IndexerEventEmitter<br/>Horizon indexing events"]
+  PersonaAction["generatePersonaDescription<br/>streamed persona copy"]
+
+  ConnectPage -->|writes address, status, error| WrapStore
+  ConnectPage -->|demo shortcut reads| MockData
+
+  LoadingPage -->|reads address, period, network| WrapStore
+  LoadingPage -->|writes status, result, cacheMeta, indexing progress, indexingError| WrapStore
+  LoadingPage -->|calls| Indexer
+  Indexer -->|step progress and completion| WrapStore
+  Indexer -->|429 metadata| RateLimitStore
+  LoadingPage -->|fallback / demo result| MockData
+
+  StatsPages -->|read result.dapps, transactions, vibes| WrapStore
+  PersonaPage -->|reads result persona metrics| WrapStore
+  PersonaPage -->|streams description from| PersonaAction
+  SharePage -->|reads wallet address and network| WrapStore
+  SharePage -->|reads display fallbacks| MockData
+  MintAction -->|reads address and network| WrapStore
+  MintAction -->|writes transaction lifecycle| TransactionStore
+  SharePage -->|renders mint status| TransactionStore
+
+  classDef connect fill:#dbeafe,stroke:#2563eb,color:#0f172a
+  classDef loading fill:#fef3c7,stroke:#d97706,color:#0f172a
+  classDef stats fill:#dcfce7,stroke:#16a34a,color:#0f172a
+  classDef share fill:#ede9fe,stroke:#7c3aed,color:#0f172a
+  classDef store fill:#f8fafc,stroke:#64748b,color:#0f172a
+
+  class ConnectPage connect
+  class LoadingPage,Indexer,RateLimitStore loading
+  class StatsPages,PersonaPage,PersonaAction stats
+  class SharePage,MintAction,TransactionStore share
+  class WrapStore,MockData store
+```
+
+### Indexing State Machine
+
+```mermaid
+stateDiagram-v2
+  [*] --> Idle
+  Idle --> Initializing: startIndexing()
+  Initializing --> FetchingTransactions: complete initializing
+  FetchingTransactions --> FilteringTimeframes: complete fetching-transactions
+  FilteringTimeframes --> CalculatingVolume: complete filtering-timeframes
+  CalculatingVolume --> IdentifyingAssets: complete calculating-volume
+  IdentifyingAssets --> CountingContracts: complete identifying-assets
+  CountingContracts --> Finalizing: complete counting-contracts
+  Finalizing --> Ready: complete finalizing
+  Ready --> [*]
+
+  Initializing --> IndexingError: step error
+  FetchingTransactions --> RateLimited: Horizon 429
+  FetchingTransactions --> IndexingError: step error
+  FilteringTimeframes --> IndexingError: step error
+  CalculatingVolume --> IndexingError: step error
+  IdentifyingAssets --> IndexingError: step error
+  CountingContracts --> IndexingError: step error
+  Finalizing --> IndexingError: step error
+
+  RateLimited --> FetchingTransactions: retry after reset
+  IndexingError --> Initializing: retry from start
+  IndexingError --> Ready: fallback mock data
+  Initializing --> Cancelled: cancelIndexing()
+  FetchingTransactions --> Cancelled: cancelIndexing()
+  FilteringTimeframes --> Cancelled: cancelIndexing()
+  CalculatingVolume --> Cancelled: cancelIndexing()
+  IdentifyingAssets --> Cancelled: cancelIndexing()
+  CountingContracts --> Cancelled: cancelIndexing()
+  Finalizing --> Cancelled: cancelIndexing()
+  Cancelled --> Idle: resetIndexing()
+```
+
+---
+
 ## 🎯 Key Metrics Tracked
 
 We look beyond simple payments to capture the full spectrum of Stellar's vibrant ecosystem:

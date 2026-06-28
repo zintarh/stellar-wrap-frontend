@@ -8,34 +8,27 @@ import { ProgressIndicator } from "../components/ProgressIndicator";
 import { IndexingSkeleton } from "../components/IndexingSkeleton";
 import { CacheStatusBadge } from "../components/CacheStatusBadge";
 import { MuteToggle } from "../components/MuteToggle";
-import { useWrapStore } from "../store/wrapStore";
+import { useWrapStore, type WrapResult } from "../store/wrapStore";
 
-import { mockData } from "../data/mockData";
 import { useSound } from "../hooks/useSound";
 import { SOUND_NAMES } from "../utils/soundManager";
 import { indexAccount } from "../services/indexerService";
 import { IndexerEventEmitter } from "../utils/indexerEventEmitter";
-import type { DappInfo } from "../utils/indexer";
-
-function mapIndexerDapps(dapps: DappInfo[]) {
-  return dapps.map((dapp) => ({
-    name: dapp.name,
-    interactions: dapp.transactionCount,
-  }));
-}
-
-function mapMockDapps() {
-  return mockData.dapps.map((dapp) => ({
-    name: dapp.name,
-    interactions: dapp.transactions,
-    color: dapp.color,
-    gradient: dapp.gradient,
-  }));
-}
+import type { IndexerResult } from "../utils/indexer";
+import {
+  getCachedData,
+  getCachedDataKey,
+  getMostRecentCachedData,
+  parseCachedDataKey,
+} from "../services/cacheService";
+import {
+  getMockWrapResult,
+  mapIndexerResultToWrapResult,
+} from "../utils/wrapResultMapper";
 
 export default function LoadingScreen() {
   const router = useRouter();
-  const { address, period, network, setStatus, setResult, setError, setCacheMeta, startIndexing, cancelIndexing, loadIndexingState } =
+  const { address, period, network, setStatus, setResult, setError, setCacheMeta, startIndexing, cancelIndexing, completeIndexing, syncIndexingProgress } =
     useWrapStore();
 
   const { playSound } = useSound();
@@ -55,6 +48,24 @@ export default function LoadingScreen() {
     // (useEffect cleanup + re-mount is the cleanest way without prop-drilling)
     window.location.reload();
   }, []);
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState !== "visible") return;
+
+      syncIndexingProgress();
+
+      const state = useWrapStore.getState();
+      if (state.status === "ready") {
+        handleComplete();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [handleComplete, syncIndexingProgress]);
 
   useEffect(() => {
     let isMounted = true;
@@ -91,6 +102,31 @@ export default function LoadingScreen() {
       }
     };
 
+    const buildCachedWrapResult = async (cached: {
+      key?: string;
+      result: IndexerResult;
+      timestamp: number;
+    }): Promise<WrapResult> => {
+      if (cached.key) {
+        const parsed = parseCachedDataKey(cached.key);
+        if (parsed) {
+          useWrapStore.getState().setAddress(parsed.accountAddress);
+          useWrapStore.getState().setNetwork(parsed.network);
+          if (parsed.timeframe !== "biweekly") {
+            useWrapStore.getState().setPeriod(parsed.timeframe);
+          }
+        }
+      }
+
+      setCacheMeta({
+        fromCache: true,
+        cacheTimestamp: cached.timestamp,
+        offline: true,
+      });
+      await emitProgressThroughSteps();
+      return mapIndexerResultToWrapResult(cached.result);
+    };
+
     const loadWrap = async () => {
       try {
         setStatus("loading");
@@ -101,70 +137,82 @@ export default function LoadingScreen() {
         // The startIndexing() call above already set isLoading, which is what matters
 
         // Call real indexer service - will emit step progress events
-        let result;
+        let result: WrapResult | null = null;
 
         if (address) {
           try {
-            console.log("Starting real indexer with address:", address);
-            const indexerResponse = await indexAccount(
-              address,
-              network as "mainnet" | "testnet",
-              period as "weekly" | "monthly" | "yearly",
-            );
-            const indexerResult = indexerResponse.result;
-            console.log("Indexer completed, result:", indexerResult, "fromCache:", indexerResponse.fromCache);
+            if (!navigator.onLine) {
+              const cacheKey = getCachedDataKey(
+                address,
+                network as "mainnet" | "testnet",
+                period as "weekly" | "monthly" | "yearly",
+              );
+              const cached =
+                (await getCachedData(cacheKey)) ||
+                (await getMostRecentCachedData());
 
-            setCacheMeta({
-              fromCache: indexerResponse.fromCache,
-              cacheTimestamp: indexerResponse.cacheTimestamp,
-              refreshingInBackground: indexerResponse.refreshingInBackground,
-            });
+              if (!cached) {
+                throw new Error("No cached wrap available offline.");
+              }
 
-            // Map indexer result to wrap result format
-            result = {
-              username: mockData.username,
-              totalTransactions:
-                indexerResult.totalTransactions || mockData.transactions,
-              percentile: mockData.percentile,
-              dapps: indexerResult.dapps?.length
-                ? mapIndexerDapps(indexerResult.dapps)
-                : mapMockDapps(),
-              vibes: mockData.vibes,
-              persona: mockData.persona,
-              personaDescription: mockData.personaDescription,
-            };
+              result = await buildCachedWrapResult(cached);
+            } else {
+              console.log("Starting real indexer with address:", address);
+              const indexerResponse = await indexAccount(
+                address,
+                network as "mainnet" | "testnet",
+                period as "weekly" | "monthly" | "yearly",
+              );
+              const indexerResult = indexerResponse.result;
+              console.log("Indexer completed, result:", indexerResult, "fromCache:", indexerResponse.fromCache);
+
+              setCacheMeta({
+                fromCache: indexerResponse.fromCache,
+                cacheTimestamp: indexerResponse.cacheTimestamp,
+                refreshingInBackground: indexerResponse.refreshingInBackground,
+              });
+
+              result = mapIndexerResultToWrapResult(indexerResult);
+            }
           } catch (indexerError) {
-            // Fallback to mock data if real indexer fails
-            console.warn("Real indexer failed, using mock data:", indexerError);
-            await emitProgressThroughSteps();
-            result = {
-              username: mockData.username,
-              totalTransactions: mockData.transactions,
-              percentile: mockData.percentile,
-              dapps: mapMockDapps(),
-              vibes: mockData.vibes,
-              persona: mockData.persona,
-              personaDescription: mockData.personaDescription,
-            };
+            if (!navigator.onLine) {
+              const cached = await getMostRecentCachedData();
+              if (cached) {
+                result = await buildCachedWrapResult(cached);
+              } else {
+                throw indexerError;
+              }
+            } else {
+              // Fallback to mock data if real indexer fails
+              console.warn("Real indexer failed, using mock data:", indexerError);
+              await emitProgressThroughSteps();
+              result = getMockWrapResult();
+            }
           }
         } else {
+          if (!navigator.onLine) {
+            const cached = await getMostRecentCachedData();
+            if (cached) {
+              result = await buildCachedWrapResult(cached);
+            }
+          }
+
           // No address provided - emit progress through steps for demo/fallback mode
-          await emitProgressThroughSteps();
-          result = {
-            username: mockData.username,
-            totalTransactions: mockData.transactions,
-            percentile: mockData.percentile,
-            dapps: mapMockDapps(),
-            vibes: mockData.vibes,
-            persona: mockData.persona,
-            personaDescription: mockData.personaDescription,
-          };
+          if (!result) {
+            await emitProgressThroughSteps();
+            result = getMockWrapResult();
+          }
         }
 
         if (!isMounted) return;
 
+        if (!result) {
+          throw new Error("No wrap data available.");
+        }
+
         setResult(result);
         setStatus("ready");
+        completeIndexing();
 
         // Give progress display time to be visible (minimum 1.5 seconds)
         setTimeout(() => {
@@ -179,6 +227,9 @@ export default function LoadingScreen() {
           setError(error.message);
         } else {
           setError("Failed to load wrap data");
+        }
+        if (!navigator.onLine) {
+          return;
         }
         // Fallback: still navigate so user isn’t stuck
         setTimeout(() => {
@@ -205,7 +256,7 @@ export default function LoadingScreen() {
     setCacheMeta,
     handleComplete,
     startIndexing,
-    loadIndexingState,
+    completeIndexing,
   ]);
 
   const starConfigs = useMemo(
