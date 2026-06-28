@@ -114,14 +114,10 @@ export function StepProgressDisplay({
             aria-valuemin={0}
             aria-valuemax={100}
           >
-            <motion.div
-              className="h-full bg-linear-to-r from-(--color-theme-primary) to-(--color-theme-primary) rounded-full"
-              initial={{ width: "0%" }}
-              animate={{
-                width: `${currentStep ? stepProgress[currentStep] : 0}%`,
-              }}
-              transition={{ duration: 0.3, ease: "easeOut" }}
+            <div
+              className="h-full bg-linear-to-r from-(--color-theme-primary) to-(--color-theme-primary) rounded-full transition-[width] duration-300 ease-out"
               style={{
+                width: `${currentStep ? stepProgress[currentStep] : 0}%`,
                 boxShadow: "var(--color-theme-primary) 0 0 10px",
               }}
             />
@@ -149,12 +145,10 @@ export function StepProgressDisplay({
             aria-valuemin={0}
             aria-valuemax={100}
           >
-            <motion.div
-              className="h-full bg-linear-to-r from-(--color-theme-primary) to-(--color-theme-primary)"
-              initial={{ width: "0%" }}
-              animate={{ width: `${overallProgress}%` }}
-              transition={{ duration: 0.3, ease: "easeOut" }}
+            <div
+              className="h-full bg-linear-to-r from-(--color-theme-primary) to-(--color-theme-primary) transition-[width] duration-300 ease-out"
               style={{
+                width: `${overallProgress}%`,
                 boxShadow: "var(--color-theme-primary) 0 0 15px",
               }}
             />

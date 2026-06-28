@@ -11,7 +11,7 @@ import { MuteToggle } from "../components/MuteToggle";
 import { useWrapStore } from "../store/wrapStore";
 import { generatePersonaDescription } from "../actions/generate-persona";
 import { useSound } from "../hooks/useSound";
-import { SOUND_NAMES } from "../utils/soundManager";
+import { PersonaEvolutionTimeline } from "../components/PersonaEvolutionTimeline";
 
 // --- Asset Mapping ---
 const ARCHETYPE_DATA: Record<string, { description: string }> = {
@@ -513,6 +513,11 @@ export default function ArchetypeReveal(): JSX.Element {
               </p>
             </div>
           </motion.div>
+
+          {/* Persona evolution timeline */}
+          <div className="relative z-10 w-full mt-8">
+            <PersonaEvolutionTimeline useDemo={process.env.NODE_ENV === "development"} />
+          </div>
 
           {/* --- BOTTOM ROW --- */}
           {/* Share Popup Implementation - Absolute positioned like share page */}
