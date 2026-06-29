@@ -35,6 +35,7 @@ export function mapIndexerResultToWrapResult(
     biggestDaySummary: indexerResult.biggestDaySummary,
     dexTradingSummary: indexerResult.dexTradingSummary,
     sorobanBuilderSummary: indexerResult.sorobanBuilderSummary,
+    largestTransaction: indexerResult.largestTransaction,
   };
 }
 
@@ -47,5 +48,6 @@ export function getMockWrapResult(): WrapResult {
     vibes: mockData.vibes,
     persona: mockData.persona,
     personaDescription: mockData.personaDescription,
+    largestTransaction: { amount: 4250.5, assetCode: "XLM" },
   };
 }

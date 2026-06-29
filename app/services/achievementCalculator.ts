@@ -158,6 +158,7 @@ export function calculateAchievements(
 
   // Additional metrics tracking
   let largestTransaction = 0;
+  let largestTransactionAsset = "XLM";
   const counterparties = new Set<string>();
   
   const dailyStats = new Map<string, DailyStats>();
@@ -251,6 +252,8 @@ export function calculateAchievements(
       const amount = parseFloat(op.amount || op.source_amount || op.destination_amount || "0");
       if (amount > largestTransaction) {
         largestTransaction = amount;
+        largestTransactionAsset =
+          op.asset_code || op.destination_asset_code || op.source_asset_code || "XLM";
       }
     });
   });

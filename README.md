@@ -3,6 +3,7 @@
 > **Turn your ledger data into social proof. A shareable, monthly summary of your impact on the Stellar network.**
 
 ![Stellar Wrap Landing Page](./public/stellar-wrap.png)
+[![Lighthouse CI](https://github.com/zintarh/stellar-wrap-frontend/actions/workflows/lighthouse.yml/badge.svg)](https://github.com/zintarh/stellar-wrap-frontend/actions/workflows/lighthouse.yml)
 
 ---
 
@@ -231,6 +232,17 @@ This project is designed to support the growth of the Stellar network by:
 
 ## ⚙️ Configuration
 
+### Prerequisites
+
+- **Node.js** >= 18.0.0
+- **pnpm** >= 9.0.0
+
+### Install pnpm globally
+
+```bash
+npm install -g pnpm@9
+```
+
 ### Environment variables
 
 Copy `.env.example` to `.env.local` and set:
@@ -244,21 +256,24 @@ Copy `.env.example` to `.env.local` and set:
 
 Contract addresses are loaded per network; the app uses the selected network (mainnet/testnet) to choose the contract. When you switch networks in the UI, the contract instance is re-loaded for the new network.
 
+```markdown
 ### Running tests
 
 ```bash
-npm install
-npm test
+pnpm install
+pnpm test
 ```
 
-If you see `Cannot find module 'ansi-styles'` when running `npm test`, run a clean install:
+If you see `Cannot find module 'ansi-styles'` when running `pnpm test`, run a clean install:
 
 ```bash
-rm -rf node_modules && npm install
-npm test
+rm -rf node_modules && pnpm install
+pnpm test
 ```
 
 ---
+
+See [TESTING.md](./TESTING.md) for full Lighthouse CI documentation, score thresholds, and troubleshooting.
 
 ## 🗺️ Roadmap
 

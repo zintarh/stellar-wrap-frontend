@@ -4,6 +4,8 @@ import React from "react";
 
 export const runtime = 'edge';
 
+const CACHE_CONTROL = 'public, s-maxage=86400, stale-while-revalidate=604800';
+
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
@@ -12,11 +14,9 @@ export async function GET(req: NextRequest) {
     const persona = searchParams.get('persona') || 'Network Pioneer';
     const topVibe = searchParams.get('topVibe') || 'Steady';
     const vibePercentage = searchParams.get('vibePercentage') || '0';
-    // archetypeImage: relative path e.g. /archetypes/wizard.png
     const archetypeImagePath = searchParams.get('archetypeImage') ||
       `/archetypes/${persona.toLowerCase().replace(/^the\s+/, '').replace(/\s+/g, '-')}.png`;
 
-    // Fetch archetype image for embedding (edge runtime requires absolute URL)
     const baseUrl = req.nextUrl.origin;
     let archetypeImageSrc: string | null = null;
     try {
@@ -24,13 +24,17 @@ export async function GET(req: NextRequest) {
       if (imgRes.ok) {
         const buf = await imgRes.arrayBuffer();
         const mime = imgRes.headers.get('content-type') || 'image/png';
-        archetypeImageSrc = `data:${mime};base64,${Buffer.from(buf).toString('base64')}`;
+        // Use standard binary base64 conversion compatible with standard browser runtimes
+        const base64String = btoa(
+          new Uint8Array(buf).reduce((data, byte) => data + String.fromCharCode(byte), '')
+        );
+        archetypeImageSrc = `data:${mime};base64,${base64String}`;
       }
     } catch {
-      // image not found — render without it
+      // image not found — render fallback layout without it safely
     }
 
-    return new ImageResponse(
+    const imageResponse = new ImageResponse(
       (
         <div
           style={{
@@ -61,19 +65,50 @@ export async function GET(req: NextRequest) {
               justifyContent: 'space-between',
             }}
           >
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
                 <div style={{ display: 'flex', alignItems: 'center', marginBottom: '40px' }}>
-                <div style={{ width: '16px', height: '16px', borderRadius: '50%', backgroundColor: '#054020', marginRight: '24px' }} />
-                <span style={{ fontSize: '24px', fontWeight: 900, letterSpacing: '0.2em', color: 'rgba(255,255,255,0.7)' }}>
+                  <div
+                    style={{
+                      width: '16px',
+                      height: '16px',
+                      borderRadius: '50%',
+                      backgroundColor: '#054020',
+                      marginRight: '24px',
+                    }}
+                  />
+                  <span
+                    style={{
+                      fontSize: '24px',
+                      fontWeight: 900,
+                      letterSpacing: '0.2em',
+                      color: 'rgba(255,255,255,0.7)',
+                    }}
+                  >
                     STELLAR WRAPPED 2026
-                </span>
+                  </span>
                 </div>
-                <h1 style={{ fontSize: '90px', fontWeight: 900, margin: 0, padding: 0, lineHeight: 1.1 }}>
-                @{username}
+                <h1
+                  style={{
+                    fontSize: '90px',
+                    fontWeight: 900,
+                    margin: 0,
+                    padding: 0,
+                    lineHeight: 1.1,
+                  }}
+                >
+                  @{username}
                 </h1>
-            </div>
+              </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '30px', marginTop: '40px', marginBottom: '40px' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '30px',
+                  marginTop: '40px',
+                  marginBottom: '40px',
+                }}
+              >
                 <div style={{
                     display: 'flex',
                     flexDirection: 'column',
@@ -90,7 +125,6 @@ export async function GET(req: NextRequest) {
                     </span>
                 </div>
 
-                {/* Persona — archetype image + bold name */}
                 <div style={{
                     display: 'flex',
                     flexDirection: 'column',
@@ -164,6 +198,9 @@ export async function GET(req: NextRequest) {
         height: 1200,
       }
     );
+
+    imageResponse.headers.set('Cache-Control', CACHE_CONTROL);
+    return imageResponse;
   } catch (e) {
     if (e instanceof Error) {
       console.error(e.message);

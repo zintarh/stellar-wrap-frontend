@@ -1,27 +1,58 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { lazy, Suspense } from 'react';
 import { Home, Share2, ChevronRight, Palette } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { ReactNode } from "react";
-import { MuteToggle } from "./MuteToggle";
 
 interface StoryShellProps {
   children: ReactNode;
   activeSegment?: number;
 }
 
+const SEGMENT_LABELS = [
+  "Connect wallet",
+  "Top dapps",
+  "Transactions of Fury",
+  "Vibe check",
+  "Persona reveal",
+  "Share wrap",
+  "Complete",
+];
+
 export function StoryShell({ children, activeSegment = 1 }: StoryShellProps) {
   const router = useRouter();
+  const segmentLabel =
+    SEGMENT_LABELS[activeSegment] ?? `Story segment ${activeSegment + 1}`;
+
+  useEffect(() => {
+    const id = window.setTimeout(() => {
+      const heading = document.querySelector<HTMLElement>(
+        '[data-story-heading="true"], h1, h2, h3',
+      );
+      if (!heading) return;
+      if (!heading.hasAttribute("tabindex")) {
+        heading.setAttribute("tabindex", "-1");
+      }
+      heading.focus({ preventScroll: true });
+    }, 100);
+
+    return () => window.clearTimeout(id);
+  }, [activeSegment]);
 
   return (
     <div className="relative min-h-screen bg-[#0a0a0a] text-white overflow-hidden flex flex-col font-sans" style={{ touchAction: "pan-y" }}>
       {/* Deep space gradient - like landing page */}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/40" />
+      <div
+        className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/40"
+        aria-hidden="true"
+      />
 
       {/* Hexagonal grid pattern - matching landing page */}
-      <div className="absolute inset-0 opacity-[0.08]">
-        <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+      <div className="absolute inset-0 opacity-[0.08]" aria-hidden="true">
+        <svg
+          className="w-full h-full"
+          xmlns="http://www.w3.org/2000/svg"
+          aria-hidden="true"
+        >
           <defs>
             <pattern
               id="hexagons"
@@ -44,6 +75,7 @@ export function StoryShell({ children, activeSegment = 1 }: StoryShellProps) {
       {/* Animated scan lines */}
       <motion.div
         className="absolute inset-0 pointer-events-none"
+        aria-hidden="true"
         style={{
           backgroundImage:
             "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(29,185,84,0.02) 2px, rgba(29,185,84,0.02) 4px)",
@@ -61,6 +93,7 @@ export function StoryShell({ children, activeSegment = 1 }: StoryShellProps) {
       {/* Animated glow orbs - like landing page */}
       <motion.div
         className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] rounded-full blur-[200px] pointer-events-none"
+        aria-hidden="true"
         style={{ backgroundColor: "rgba(29, 185, 84, 0.08)" }}
         animate={{
           scale: [1, 1.15, 1],
@@ -75,6 +108,7 @@ export function StoryShell({ children, activeSegment = 1 }: StoryShellProps) {
 
       <motion.div
         className="absolute bottom-0 left-1/4 w-[600px] h-[400px] rounded-full blur-[150px] pointer-events-none"
+        aria-hidden="true"
         style={{ backgroundColor: "rgba(29, 185, 84, 0.06)" }}
         animate={{
           scale: [1, 1.2, 1],
@@ -88,17 +122,38 @@ export function StoryShell({ children, activeSegment = 1 }: StoryShellProps) {
       />
 
       {/* Top Controls */}
-      <div className="relative z-50 flex justify-between items-center px-8 md:px-12 py-8">
+      <div className="relative z-50 flex justify-between items-center px-3 sm:px-6 md:px-8 lg:px-12 py-4 sm:py-6 md:py-8 overflow-x-auto">
         {/* Home Button */}
         <motion.button
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.2 }}
           onClick={() => router.push("/")}
-          className="flex items-center gap-2.5 px-5 py-2.5 rounded-xl bg-black/50 border border-white/10 backdrop-blur-xl hover:bg-white/10 hover:border-white/20 transition-all font-black text-[11px] tracking-widest uppercase text-white/80 group"
         >
-          <Home className="w-4 h-4 group-hover:scale-110 transition-transform" />
+          <Home
+            className="w-4 h-4 group-hover:scale-110 transition-transform"
+            aria-hidden="true"
+          />
           <span>Home</span>
+          <AnimatePresence mode="wait">
+            {cards.map((card, index) => (
+              <motion.div 
+                key={card.id}
+                initial={{ opacity: 0, x: 100 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -100 }}
+                className="absolute inset-0"
+              >
+                <LazyStoryCard>
+                  <Suspense fallback={<StorySkeleton />}>
+                    {/* Render your specific lazy component based on the flow */}
+                    {index === 0 && <TopDapps />}
+                    {index === 1 && <TransactionsOfFury />}
+                  </Suspense>
+                </LazyStoryCard>
+              </motion.div>
+            ))}
+        </AnimatePresence>
         </motion.button>
 
         {/* Segmented Progress Bar */}
@@ -106,11 +161,11 @@ export function StoryShell({ children, activeSegment = 1 }: StoryShellProps) {
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="flex gap-2"
         >
           {[...Array(7)].map((_, i) => (
             <motion.div
               key={i}
+              aria-hidden="true"
               initial={{ scaleX: 0 }}
               animate={{ scaleX: 1 }}
               transition={{ delay: 0.4 + i * 0.05 }}
@@ -126,17 +181,19 @@ export function StoryShell({ children, activeSegment = 1 }: StoryShellProps) {
         </motion.div>
 
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
 
             <MuteToggle />
           {/* Palette Button */}
           <motion.button
+            type="button"
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.35 }}
             className="p-3 rounded-full bg-black/50 border border-[#1DB954]/30 backdrop-blur-xl hover:bg-[#1DB954]/10 hover:border-[#1DB954]/50 transition-all shadow-[0_0_20px_rgba(29,185,84,0.15)]"
+            aria-label="Open color theme picker"
           >
-            <Palette className="w-5 h-5 text-[#1DB954]" />
+            <Palette className="w-5 h-5 text-[#1DB954]" aria-hidden="true" />
           </motion.button>
         </div>
 
@@ -144,27 +201,33 @@ export function StoryShell({ children, activeSegment = 1 }: StoryShellProps) {
       </div>
 
       {/* Main Content */}
-      <main className="flex-1 relative z-10 flex flex-col items-center justify-center">
+      <div className="sr-only" aria-live="polite" aria-atomic="true">
+        {segmentLabel}
+      </div>
+
+      <div className="flex-1 relative z-10 flex flex-col items-center justify-center">
         {children}
-      </main>
+      </div>
 
       {/* Bottom Controls */}
-      <div className="relative z-50 flex justify-between items-center px-8 md:px-12 py-8">
+      <div className="relative z-50 flex justify-between items-center px-3 sm:px-6 md:px-8 lg:px-12 py-4 sm:py-6 md:py-8 gap-4">
         <motion.button
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
-          className="p-4 rounded-full bg-black/50 border border-white/10 backdrop-blur-xl hover:bg-white/10 hover:border-white/20 transition-all"
         >
-          <Share2 className="w-5 h-5 text-white/70" />
+          <Share2 className="w-5 h-5 text-white/70" aria-hidden="true" />
         </motion.button>
         <motion.button
+          type="button"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
-          className="p-4 rounded-full bg-black/50 border border-white/10 backdrop-blur-xl hover:bg-white/10 hover:border-white/20 transition-all group"
         >
-          <ChevronRight className="w-6 h-6 group-hover:translate-x-1 transition-transform text-white/70" />
+          <ChevronRight
+            className="w-6 h-6 group-hover:translate-x-1 transition-transform text-white/70"
+            aria-hidden="true"
+          />
         </motion.button>
       </div>
     </div>

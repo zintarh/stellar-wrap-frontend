@@ -2,7 +2,7 @@
 
 
 echo "🔍 Running lint before commit..."
-npm run lint
+pnpm lint
 
 status=$?
 

@@ -4,6 +4,7 @@
   /* Dark mode (default) */
   --background: #191414;
   --foreground: #ededed;
+  --font-sans: Arial, Helvetica, sans-serif;
 
   /* Theme Variables - Default (Green) */
   --color-theme-primary: #054020;
@@ -45,4 +46,24 @@ button:focus:not(:focus-visible),
 a:focus:not(:focus-visible),
 [tabindex]:focus:not(:focus-visible) {
   outline: none !important;
+}
+
+.skip-link {
+  position: fixed;
+  left: 1rem;
+  top: 1rem;
+  z-index: 9999;
+  transform: translateY(-150%);
+  border-radius: 0.75rem;
+  background: #ffffff;
+  color: #000000;
+  padding: 0.75rem 1rem;
+  font-weight: 800;
+  transition: transform 150ms ease;
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+  outline: 3px solid var(--color-theme-primary);
+  outline-offset: 3px;
 }

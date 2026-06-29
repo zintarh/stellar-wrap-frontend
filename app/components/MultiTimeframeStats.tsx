@@ -227,7 +227,7 @@ export function MultiTimeframeStats() {
   const timeframes: Timeframe[] = ["1w", "2w", "1m"];
 
   const showChart =
-    period === "monthly" &&
+    (period === "monthly" || period === "yearly") &&
     isComplete &&
     results["1w"].data !== null &&
     results["2w"].data !== null &&
@@ -277,11 +277,13 @@ export function MultiTimeframeStats() {
       {/* Comparison panel — only shown when at least 2 succeeded */}
       {isComplete && <ComparisonPanel />}
 
-      {/* Weekly comparison chart — monthly period only */}
+      {/* Weekly comparison chart — monthly and yearly periods */}
       {showChart && (
         <div className="rounded-2xl border border-white/10 bg-slate-900/60 p-5">
           <h3 className="text-sm font-semibold text-white mb-4">
-            📊 Weekly Activity (current week vs last 4 weeks)
+            {period === "yearly"
+              ? "📊 Recent Activity (last 4 weeks of your 2026 year)"
+              : "📊 Weekly Activity (current week vs last 4 weeks)"}
           </h3>
           <WeeklyComparisonChart
             tx1w={results["1w"].data!.totalTransactions}

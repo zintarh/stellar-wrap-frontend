@@ -10,8 +10,6 @@
 !.yarn/releases
 !.yarn/versions
 /package-lock.json
-/pnpm-lock.yaml
-/package.json
 /yarn.lock
 /.pnpm-store
 
@@ -22,6 +20,8 @@
 # next.js
 /.next/
 /out/
+/.size-limit-report.json
+/.size-limit-results.json
 
 # production
 /build
@@ -45,3 +45,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Storybook
+storybook-static

@@ -2,6 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { AlertCircle, RotateCcw, X, TrendingUp, Coins, FileText, Zap } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useWrapStore } from "@/app/store/wrapStore";
 import { INDEXING_STEPS, STEP_ORDER, IndexingStep } from "@/app/types/indexing";
 import { StellarFunFacts } from "./StellarFunFacts";
@@ -193,6 +194,7 @@ export function IndexingSkeleton({
                     <stepViz.icon
                       className="w-8 h-8"
                       style={{ color: stepViz.color }}
+                      aria-hidden="true"
                     />
                   </motion.div>
 
@@ -248,6 +250,7 @@ export function IndexingSkeleton({
             aria-valuenow={currentStep ? stepProgress[currentStep] : 0}
             aria-valuemin={0}
             aria-valuemax={100}
+            aria-label={`${currentStepLabel} progress`}
           >
             <div
               className="h-full rounded-full transition-[width] duration-300 ease-out"
@@ -280,6 +283,7 @@ export function IndexingSkeleton({
             aria-valuenow={overallProgress}
             aria-valuemin={0}
             aria-valuemax={100}
+            aria-label="Overall indexing progress"
           >
             <div
               className="h-full transition-[width] duration-300 ease-out"
@@ -359,6 +363,47 @@ export function IndexingSkeleton({
               {formatTime(estimatedTimeRemaining)}
             </span>
           </motion.div>
+        )}
+
+        {/* Cancel — visible after 3s while indexing */}
+        {showCancel && !indexingError && isLoading && (
+          <div className="relative space-y-3 pt-2">
+            {!confirmCancel ? (
+              <motion.button
+                onClick={handleCancelClick}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-white/20 bg-white/5 hover:bg-white/10 text-sm font-bold text-white/80 transition-colors"
+              >
+                <X className="w-4 h-4" />
+                Cancel indexing
+              </motion.button>
+            ) : (
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 space-y-3"
+              >
+                <p className="text-sm text-amber-100 font-medium text-center">
+                  Are you sure? Indexing progress will be lost.
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setConfirmCancel(false)}
+                    className="flex-1 px-4 py-2 rounded-lg border border-white/20 text-sm font-medium text-white/70 hover:bg-white/5"
+                  >
+                    Keep going
+                  </button>
+                  <button
+                    onClick={handleConfirmCancel}
+                    className="flex-1 px-4 py-2 rounded-lg bg-red-500/20 border border-red-500/40 text-sm font-bold text-red-200 hover:bg-red-500/30"
+                  >
+                    Yes, cancel
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </div>
         )}
 
         {/* Error State */}
