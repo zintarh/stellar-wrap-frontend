@@ -40,6 +40,7 @@ interface Operation {
   memo?: string;
   contract?: string;
   contract_id?: string;
+  function?: string;
 }
 
 /**
@@ -52,6 +53,24 @@ interface TransactionCategories {
   offers: number;
   trustlines: number;
   other: number;
+}
+
+export type PersonaArchetype =
+  | "The Architect"
+  | "The Patron"
+  | "The Collector"
+  | "The Trader"
+  | "The Wizard"
+  | "The Explorer";
+
+export interface PersonaAssignmentInput {
+  categories: TransactionCategories;
+  deploymentCount: number;
+  contractCallCount: number;
+  defiTraderCount: number;
+  dexTradeCount: number;
+  totalVolume: number;
+  txCount: number;
 }
 
 /**
@@ -90,6 +109,7 @@ export function calculateAchievements(
       gasSpent: 0,
       dapps: [],
       vibes: [{ tag: "Getting Started", count: 0 }],
+      persona: "The Explorer",
       dexTradingSummary: {
         totalVolume: 0,
         tradeCount: 0,
@@ -179,8 +199,8 @@ export function calculateAchievements(
           categories.contractCalls++;
           // Check if this is a contract deployment (HostFunctionTypeCreateContract)
           // We'll assume the function field or asset/contract field indicates deployment
-          const isDeployment = op.function === "HostFunctionTypeCreateContract" || 
-                               (typeof op === "object" && (op as any).function?.includes("CreateContract"));
+          const isDeployment = op.function === "HostFunctionTypeCreateContract" ||
+                               op.function?.includes("CreateContract");
           processContractOperation(op, dappMap, isDeployment, sorobanTrackers, tx);
           if (isDeployment) {
             vibeMap.set("soroban-user", (vibeMap.get("soroban-user") || 0) + 5); // Boost for deployments
@@ -247,6 +267,16 @@ export function calculateAchievements(
     assetMap,
   );
 
+  const persona = assignPersona({
+    categories,
+    deploymentCount: sorobanTrackers.deployments.length,
+    contractCallCount: sorobanTrackers.contractCallCount,
+    defiTraderCount: vibeMap.get("defi-trader") || 0,
+    dexTradeCount: dexTrackers.tradeCount,
+    totalVolume,
+    txCount: transactions.length,
+  });
+
   return {
     accountId: "",
     totalTransactions: transactions.length,
@@ -258,6 +288,9 @@ export function calculateAchievements(
       (a, b) => b.transactionCount - a.transactionCount || b.volume - a.volume,
     ),
     vibes,
+    persona,
+    dexTradingSummary: buildDexTradingSummary(dexTrackers),
+    sorobanBuilderSummary: buildSorobanBuilderSummary(sorobanTrackers),
   };
 }
 
@@ -396,9 +429,99 @@ function processOfferOperation(
 }
 
 /**
+ * Assign a persona archetype based on dominant on-chain activity patterns.
+ */
+export function assignPersona(input: PersonaAssignmentInput): PersonaArchetype {
+  const {
+    categories,
+    deploymentCount,
+    contractCallCount,
+    defiTraderCount,
+    dexTradeCount,
+    totalVolume,
+    txCount,
+  } = input;
+
+  // Soroban Architect: contract deployments or sustained Soroban builder activity
+  if (deploymentCount > 0 || contractCallCount >= 5) {
+    return "The Architect";
+  }
+
+  // DeFi Patron: sustained liquidity and DEX offer activity
+  if (defiTraderCount > 10 || dexTradeCount > 8) {
+    return "The Patron";
+  }
+
+  // Diamond Hand / Collector: trustline accumulation with minimal trading
+  if (
+    categories.trustlines >= 3 &&
+    categories.swaps + categories.offers < categories.trustlines
+  ) {
+    return "The Collector";
+  }
+
+  // Active swap and offer activity
+  if (categories.swaps + categories.offers >= 5) {
+    return "The Trader";
+  }
+
+  // High-volume or very active accounts
+  if (totalVolume > 100_000 || txCount > 100) {
+    return "The Wizard";
+  }
+
+  return "The Explorer";
+}
+
+function buildDexTradingSummary(
+  dexTrackers: {
+    totalVolume: number;
+    tradeCount: number;
+    buyCount: number;
+    sellCount: number;
+    pairMap: Map<string, number>;
+  },
+): DexTradingSummary {
+  let mostTradedPair: string | undefined;
+  let maxPairCount = 0;
+  dexTrackers.pairMap.forEach((count, pair) => {
+    if (count > maxPairCount) {
+      maxPairCount = count;
+      mostTradedPair = pair;
+    }
+  });
+
+  return {
+    totalVolume: dexTrackers.totalVolume,
+    tradeCount: dexTrackers.tradeCount,
+    buyCount: dexTrackers.buyCount,
+    sellCount: dexTrackers.sellCount,
+    ...(mostTradedPair ? { mostTradedPair } : {}),
+  };
+}
+
+function buildSorobanBuilderSummary(
+  sorobanTrackers: {
+    deployments: SorobanDeployment[];
+    contractCallCount: number;
+  },
+): SorobanBuilderSummary {
+  const deploymentCount = sorobanTrackers.deployments.length;
+  const contractCallCount = sorobanTrackers.contractCallCount;
+  const builderScore = deploymentCount * 100 + Math.floor(contractCallCount / 10);
+
+  return {
+    deployments: sorobanTrackers.deployments,
+    deploymentCount,
+    contractCallCount,
+    builderScore,
+  };
+}
+
+/**
  * Generate vibe tags based on user activity patterns
  */
-function generateVibes(
+export function generateVibes(
   txCount: number,
   totalVolume: number,
   contractCalls: number,

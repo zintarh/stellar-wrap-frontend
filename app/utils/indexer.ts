@@ -46,6 +46,9 @@ export interface IndexerResult {
   gasSpent: number;
   dapps: DappInfo[];
   vibes: VibeTag[];
+  persona: string;
+  dexTradingSummary?: DexTradingSummary;
+  sorobanBuilderSummary?: SorobanBuilderSummary;
 }
 
 /** Cache entry version for schema migrations and validation */
