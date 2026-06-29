@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo } from "react";
 import { Home, ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { ProgressIndicator } from "../components/ProgressIndicator";
-import { IndexingSkeleton } from "../components/IndexingSkeleton";
+import { StepProgressDisplay } from "../components/StepProgressDisplay";
 import { CacheStatusBadge } from "../components/CacheStatusBadge";
 import { MuteToggle } from "../components/MuteToggle";
 import { useWrapStore, type WrapResult } from "../store/wrapStore";
@@ -277,9 +277,9 @@ export default function LoadingScreen() {
       {/* Container for centered layout with progress left and content right */}
       <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-40 w-full max-w-6xl px-4 pointer-events-auto">
         <div className="flex items-center justify-between gap-8">
-          {/* IndexingSkeleton - Enhanced progress display with visualizations */}
+          {/* StepProgressDisplay - Real-time indexing step progress with labels */}
           <div className="w-full md:w-full lg:max-w-3xl pointer-events-auto space-y-4">
-            <IndexingSkeleton
+            <StepProgressDisplay
               onCancel={handleCancel}
               onRetry={handleRetry}
             />
@@ -294,12 +294,19 @@ export default function LoadingScreen() {
 
       <motion.button
         onClick={() => router.push("/")}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            router.push("/");
+          }
+        }}
         className="absolute top-6 left-6 md:top-8 md:left-8 z-30 group"
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ delay: 0.2 }}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
+        aria-label="Go home"
       >
         <div
           className="flex items-center gap-2 px-3 py-2 md:px-4 md:py-3 rounded-xl backdrop-blur-xl border border-white/20"
@@ -326,12 +333,20 @@ export default function LoadingScreen() {
           playSound(SOUND_NAMES.SLIDE_WHOOSH);
           handleComplete();
         }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            playSound(SOUND_NAMES.SLIDE_WHOOSH);
+            handleComplete();
+          }
+        }}
         className="absolute bottom-8 right-8 md:bottom-12 md:right-12 z-30 group"
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ delay: 1 }}
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.95 }}
+        aria-label="Skip"
       >
         <div className="flex flex-col items-center gap-2">
           <div className="relative">
