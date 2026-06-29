@@ -14,6 +14,7 @@ import { useSound } from "../hooks/useSound";
 import { SOUND_NAMES } from "../utils/soundManager";
 import { indexAccount } from "../services/indexerService";
 import { IndexerEventEmitter } from "../utils/indexerEventEmitter";
+import { trackEvent } from "../utils/plausible";
 
 export default function LoadingScreen() {
   const router = useRouter();
@@ -64,6 +65,7 @@ export default function LoadingScreen() {
 
     IndexerEventEmitter.getInstance().connectToStore();
     startIndexing();
+    trackEvent("wrap_started");
 
     // Helper to emit progress through all indexing steps (for fallback/demo mode)
     const emitProgressThroughSteps = async () => {
@@ -155,6 +157,7 @@ export default function LoadingScreen() {
         setStatus("ready");
         completeIndexing();
         playSound(SOUND_NAMES.MINT_SUCCESS);
+        trackEvent("wrap_completed");
 
         // Give progress display time to be visible (minimum 1.5 seconds)
         setTimeout(() => {
