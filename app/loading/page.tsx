@@ -5,37 +5,19 @@ import { useCallback, useEffect, useMemo } from "react";
 import { Home, ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { ProgressIndicator } from "../components/ProgressIndicator";
-import { IndexingSkeleton } from "../components/IndexingSkeleton";
+import { StepProgressDisplay } from "../components/StepProgressDisplay";
 import { CacheStatusBadge } from "../components/CacheStatusBadge";
 import { MuteToggle } from "../components/MuteToggle";
-import { useWrapStore } from "../store/wrapStore";
+import { useWrapStore, type WrapResult } from "../store/wrapStore";
 
-import { mockData } from "../data/mockData";
 import { useSound } from "../hooks/useSound";
 import { SOUND_NAMES } from "../utils/soundManager";
 import { indexAccount } from "../services/indexerService";
 import { IndexerEventEmitter } from "../utils/indexerEventEmitter";
-import type { DappInfo } from "../utils/indexer";
-
-function mapIndexerDapps(dapps: DappInfo[]) {
-  return dapps.map((dapp) => ({
-    name: dapp.name,
-    interactions: dapp.transactionCount,
-  }));
-}
-
-function mapMockDapps() {
-  return mockData.dapps.map((dapp) => ({
-    name: dapp.name,
-    interactions: dapp.transactions,
-    color: dapp.color,
-    gradient: dapp.gradient,
-  }));
-}
 
 export default function LoadingScreen() {
   const router = useRouter();
-  const { address, period, network, setStatus, setResult, setError, setCacheMeta, startIndexing, cancelIndexing, loadIndexingState } =
+  const { address, period, network, setStatus, setResult, setError, setCacheMeta, startIndexing, cancelIndexing, completeIndexing, syncIndexingProgress } =
     useWrapStore();
 
   const { playSound } = useSound();
@@ -46,8 +28,10 @@ export default function LoadingScreen() {
   }, [router, playSound]);
 
   const handleCancel = useCallback(() => {
+    abortIndexingRequests();
     cancelIndexing();
-    router.push("/");
+    toast.info("Indexing cancelled");
+    router.push("/connect");
   }, [cancelIndexing, router]);
 
   const handleRetry = useCallback(() => {
@@ -57,14 +41,28 @@ export default function LoadingScreen() {
   }, []);
 
   useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState !== "visible") return;
+
+      syncIndexingProgress();
+
+      const state = useWrapStore.getState();
+      if (state.status === "ready") {
+        handleComplete();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [handleComplete, syncIndexingProgress]);
+
+  useEffect(() => {
     let isMounted = true;
+    const abortSignal = beginIndexingAbortScope();
 
-    // CRITICAL: Connect emitter to store BEFORE starting indexing to catch all events
-    console.log("Connecting event emitter to store");
     IndexerEventEmitter.getInstance().connectToStore();
-
-    // Always set isLoading to true at the start to guarantee progress display
-    console.log("Starting indexing");
     startIndexing();
 
     // Helper to emit progress through all indexing steps (for fallback/demo mode)
@@ -91,6 +89,31 @@ export default function LoadingScreen() {
       }
     };
 
+    const buildCachedWrapResult = async (cached: {
+      key?: string;
+      result: IndexerResult;
+      timestamp: number;
+    }): Promise<WrapResult> => {
+      if (cached.key) {
+        const parsed = parseCachedDataKey(cached.key);
+        if (parsed) {
+          useWrapStore.getState().setAddress(parsed.accountAddress);
+          useWrapStore.getState().setNetwork(parsed.network);
+          if (parsed.timeframe !== "biweekly") {
+            useWrapStore.getState().setPeriod(parsed.timeframe);
+          }
+        }
+      }
+
+      setCacheMeta({
+        fromCache: true,
+        cacheTimestamp: cached.timestamp,
+        offline: true,
+      });
+      await emitProgressThroughSteps();
+      return mapIndexerResultToWrapResult(cached.result);
+    };
+
     const loadWrap = async () => {
       try {
         setStatus("loading");
@@ -101,70 +124,36 @@ export default function LoadingScreen() {
         // The startIndexing() call above already set isLoading, which is what matters
 
         // Call real indexer service - will emit step progress events
-        let result;
+        let result: WrapResult | null = null;
 
         if (address) {
           try {
-            console.log("Starting real indexer with address:", address);
-            const indexerResponse = await indexAccount(
-              address,
-              network as "mainnet" | "testnet",
-              period as "weekly" | "monthly" | "yearly",
-            );
-            const indexerResult = indexerResponse.result;
-            console.log("Indexer completed, result:", indexerResult, "fromCache:", indexerResponse.fromCache);
 
-            setCacheMeta({
-              fromCache: indexerResponse.fromCache,
-              cacheTimestamp: indexerResponse.cacheTimestamp,
-              refreshingInBackground: indexerResponse.refreshingInBackground,
-            });
+              if (!cached) {
+                throw new Error("No cached wrap available offline.");
+              }
 
-            // Map indexer result to wrap result format
-            result = {
-              username: mockData.username,
-              totalTransactions:
-                indexerResult.totalTransactions || mockData.transactions,
-              percentile: mockData.percentile,
-              dapps: indexerResult.dapps?.length
-                ? mapIndexerDapps(indexerResult.dapps)
-                : mapMockDapps(),
-              vibes: mockData.vibes,
-              persona: mockData.persona,
-              personaDescription: mockData.personaDescription,
-            };
-          } catch (indexerError) {
-            // Fallback to mock data if real indexer fails
-            console.warn("Real indexer failed, using mock data:", indexerError);
-            await emitProgressThroughSteps();
-            result = {
-              username: mockData.username,
-              totalTransactions: mockData.transactions,
-              percentile: mockData.percentile,
-              dapps: mapMockDapps(),
-              vibes: mockData.vibes,
-              persona: mockData.persona,
-              personaDescription: mockData.personaDescription,
-            };
           }
         } else {
+          if (!navigator.onLine) {
+            const cached = await getMostRecentCachedData();
+            if (cached) {
+              result = await buildCachedWrapResult(cached);
+            }
+          }
+
           // No address provided - emit progress through steps for demo/fallback mode
-          await emitProgressThroughSteps();
-          result = {
-            username: mockData.username,
-            totalTransactions: mockData.transactions,
-            percentile: mockData.percentile,
-            dapps: mapMockDapps(),
-            vibes: mockData.vibes,
-            persona: mockData.persona,
-            personaDescription: mockData.personaDescription,
-          };
         }
 
-        if (!isMounted) return;
+        if (!isMounted || abortSignal.aborted || useWrapStore.getState().isCancelled) return;
+
+        if (!result) {
+          throw new Error("No wrap data available.");
+        }
 
         setResult(result);
         setStatus("ready");
+        completeIndexing();
 
         // Give progress display time to be visible (minimum 1.5 seconds)
         setTimeout(() => {
@@ -173,12 +162,15 @@ export default function LoadingScreen() {
           }
         }, 1500);
       } catch (error: unknown) {
-        if (!isMounted) return;
+        if (isAbortError(error) || !isMounted) return;
         setStatus("error");
         if (error instanceof Error) {
           setError(error.message);
         } else {
           setError("Failed to load wrap data");
+        }
+        if (!navigator.onLine) {
+          return;
         }
         // Fallback: still navigate so user isn’t stuck
         setTimeout(() => {
@@ -193,6 +185,8 @@ export default function LoadingScreen() {
 
     return () => {
       isMounted = false;
+      abortIndexingRequests();
+      clearIndexingAbortScope();
       IndexerEventEmitter.getInstance().reset();
     };
   }, [
@@ -205,7 +199,7 @@ export default function LoadingScreen() {
     setCacheMeta,
     handleComplete,
     startIndexing,
-    loadIndexingState,
+    completeIndexing,
   ]);
 
   const starConfigs = useMemo(
@@ -226,9 +220,9 @@ export default function LoadingScreen() {
       {/* Container for centered layout with progress left and content right */}
       <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-40 w-full max-w-6xl px-4 pointer-events-auto">
         <div className="flex items-center justify-between gap-8">
-          {/* IndexingSkeleton - Enhanced progress display with visualizations */}
+          {/* StepProgressDisplay - Real-time indexing step progress with labels */}
           <div className="w-full md:w-full lg:max-w-3xl pointer-events-auto space-y-4">
-            <IndexingSkeleton
+            <StepProgressDisplay
               onCancel={handleCancel}
               onRetry={handleRetry}
             />
@@ -243,18 +237,29 @@ export default function LoadingScreen() {
 
       <motion.button
         onClick={() => router.push("/")}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            router.push("/");
+          }
+        }}
         className="absolute top-6 left-6 md:top-8 md:left-8 z-30 group"
+        aria-label="Go to home page"
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ delay: 0.2 }}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
+        aria-label="Go home"
       >
         <div
           className="flex items-center gap-2 px-3 py-2 md:px-4 md:py-3 rounded-xl backdrop-blur-xl border border-white/20"
           style={{ backgroundColor: "rgba(0, 0, 0, 0.5)" }}
         >
-          <Home className="w-4 h-4 md:w-5 md:h-5 text-white/80 group-hover:text-white transition-colors" />
+          <Home
+            className="w-4 h-4 md:w-5 md:h-5 text-white/80 group-hover:text-white transition-colors"
+            aria-hidden="true"
+          />
           <span className="text-xs md:text-sm font-black text-white/80 group-hover:text-white transition-colors hidden sm:inline">
             HOME
           </span>
@@ -275,12 +280,21 @@ export default function LoadingScreen() {
           playSound(SOUND_NAMES.SLIDE_WHOOSH);
           handleComplete();
         }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            playSound(SOUND_NAMES.SLIDE_WHOOSH);
+            handleComplete();
+          }
+        }}
         className="absolute bottom-8 right-8 md:bottom-12 md:right-12 z-30 group"
+        aria-label="Skip loading and go to persona step"
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ delay: 1 }}
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.95 }}
+        aria-label="Skip"
       >
         <div className="flex flex-col items-center gap-2">
           <div className="relative">
@@ -302,7 +316,10 @@ export default function LoadingScreen() {
                 borderColor: "rgba(255, 255, 255, 0.3)",
               }}
             >
-              <ChevronRight className="w-6 h-6 md:w-7 md:h-7 text-white" />
+              <ChevronRight
+                className="w-6 h-6 md:w-7 md:h-7 text-white"
+                aria-hidden="true"
+              />
             </div>
           </div>
           <span className="text-xs font-black text-white/60 group-hover:text-white/80 transition-colors">

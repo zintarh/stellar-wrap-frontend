@@ -5,14 +5,19 @@ import { Box, Database } from 'lucide-react';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ColorToggle } from './ColorToggle';
+import { DarkLightToggle } from './DarkLightToggle';
 import { NetworkToggle } from './NetworkToggle';
+import { CommunityWrapsCarousel } from './CommunityWrapsCarousel';
 import ParticleField from './ParticleField';
+import { LiveWrapCounter } from './LiveWrapCounter';
 import { useWrapStore, WrapPeriod } from '../store/wrapStore';
 
 export function LandingPage() {
   const router = useRouter();
-  const { period, setPeriod, reset } = useWrapStore();
+  const { period, setPeriod, reset, network } = useWrapStore();
   const [selectedPeriod, setSelectedPeriod] = useState<WrapPeriod>(period);
+  
+  const isMainnet = network === 'mainnet';
   
   const handleStart = () => {
     // Reset any existing wrap data when starting a new session,
@@ -23,15 +28,12 @@ export function LandingPage() {
   };
 
   return (
-    <div className="relative w-full min-h-screen h-screen overflow-hidden bg-theme-background">
+    <div className="relative w-full min-h-screen overflow-x-hidden overflow-y-auto bg-theme-background">
       {/* Particle field background */}
       <ParticleField />
 
       {/* Deep space gradient */}
       <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/20" />
-      
-      <ParticleField />
-
       {/* Hexagonal grid pattern */}
       <div className="absolute inset-0 opacity-20">
         <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
@@ -239,8 +241,8 @@ export function LandingPage() {
         ))}
       </div>
 
-      {/* Main content */}
-      <div className="relative z-10 h-full flex flex-col items-center justify-center px-4 sm:px-8 w-full max-w-full overflow-x-hidden">
+      {/* Main content — hero */}
+      <div className="relative z-10 min-h-screen flex flex-col items-center justify-center px-4 sm:px-8 w-full max-w-full">
         
         {/* Top HUD bar */}
         <motion.div
@@ -273,6 +275,26 @@ export function LandingPage() {
             <span className="text-xs md:text-sm font-black tracking-wider md:tracking-widest text-white/50">2026.WRAPPED</span>
           </div>
         </motion.div>
+
+        {/* Testnet Banner */}
+        {!isMainnet && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25 }}
+            className="absolute top-20 md:top-28 left-1/2 -translate-x-1/2 z-50"
+          >
+            <div className="backdrop-blur-xl px-4 py-2 md:px-6 md:py-3 rounded-xl border border-orange-500/30"
+              style={{ backgroundColor: 'rgba(255, 165, 0, 0.1)' }}
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-xs md:text-sm font-black text-orange-400">
+                  ⚠️ YOU'RE VIEWING TESTNET DATA
+                </span>
+              </div>
+            </div>
+          </motion.div>
+        )}
 
         {/* Color Toggle - Fixed Position */}
         <ColorToggle />
@@ -399,6 +421,9 @@ export function LandingPage() {
           </p>
         </motion.div>
 
+        {/* Live Wrap Counter */}
+        <LiveWrapCounter />
+
         {/* Period selection */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -413,9 +438,18 @@ export function LandingPage() {
               <motion.button
                 key={periodOption}
                 onClick={() => setSelectedPeriod(periodOption)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    setSelectedPeriod(periodOption);
+                  }
+                }}
                 className="relative px-4 py-2 sm:px-6 sm:py-3 md:px-8 md:py-4 rounded-lg md:rounded-xl font-black tracking-tight text-sm sm:text-base md:text-lg"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.98 }}
+                role="radio"
+                aria-checked={selectedPeriod === periodOption}
+                aria-label={`${periodOption} period`}
               >
                 {selectedPeriod === periodOption && (
                   <motion.div
@@ -433,6 +467,15 @@ export function LandingPage() {
               </motion.button>
             ))}
           </div>
+          {selectedPeriod === 'yearly' && (
+            <motion.p
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mt-2 text-center text-xs sm:text-sm font-bold tracking-[0.2em] text-white/50 uppercase"
+            >
+              2026 in review
+            </motion.p>
+          )}
         </motion.div>
 
         {/* CTA Button */}
@@ -444,6 +487,12 @@ export function LandingPage() {
         >
           <motion.button
             onClick={handleStart}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                handleStart();
+              }
+            }}
             className="relative group w-full"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.98 }}
@@ -482,7 +531,9 @@ export function LandingPage() {
                 <div className="flex items-center justify-between gap-2 sm:gap-4 md:gap-6">
                   <div className="flex flex-col items-start min-w-0">
                     <span className="text-[10px] sm:text-xs font-black tracking-[0.12em] sm:tracking-[0.2em] mb-0.5 sm:mb-1 text-white/50">INITIALIZE</span>
-                    <span className="text-lg sm:text-2xl md:text-4xl font-black tracking-tight text-white whitespace-nowrap">START WRAP</span>
+                    <span className="text-lg sm:text-2xl md:text-4xl font-black tracking-tight text-white whitespace-nowrap">
+                      START WRAP ({isMainnet ? 'MAINNET' : 'TESTNET'})
+                    </span>
                   </div>
                   <motion.div
                     animate={{ x: [0, 5, 0] }}
@@ -499,6 +550,9 @@ export function LandingPage() {
           </motion.button>
         </motion.div>
       </div>
+
+      {/* Community wraps carousel */}
+      <CommunityWrapsCarousel />
 
       {/* Corner brackets (HUD elements) */ }
       <motion.div

@@ -16,6 +16,27 @@ export interface VibeTag {
   count: number;
 }
 
+export interface DexTradingSummary {
+  totalVolume: number; // in XLM equivalent
+  tradeCount: number;
+  mostTradedPair?: string;
+  buyCount: number;
+  sellCount: number;
+}
+
+export interface SorobanDeployment {
+  contractId: string;
+  deploymentDate: string; // ISO string
+  transactionHash: string;
+}
+
+export interface SorobanBuilderSummary {
+  deployments: SorobanDeployment[];
+  deploymentCount: number;
+  contractCallCount: number;
+  builderScore: number;
+}
+
 export interface IndexerResult {
   accountId: string;
   totalTransactions: number;

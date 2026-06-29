@@ -1,6 +1,9 @@
 "use client";
 
 import Image from "next/image";
+import { useState, type RefObject } from "react";
+import { Download } from "lucide-react";
+import html2canvas from "html2canvas";
 import { mockData } from "../data/mockData";
 
 interface ShareImageCardVibe {
@@ -19,27 +22,23 @@ interface ShareImageCardProps {
   themeColor: string;
   archetypeImage?: string | null; // e.g. '/archetypes/wizard.png'; null hides the image fallback.
   data?: ShareImageCardData;
+  archetypeImage?: string;
 }
 
 export function ShareImageCard({ themeColor, archetypeImage, data }: ShareImageCardProps) {
   const { persona, transactions, username, vibes = [] } = data ?? mockData;
   const topVibe = vibes[0];
-  // Derive image from persona name if not explicitly provided: "The Wizard" -> /archetypes/wizard.png
   const resolvedArchetypeImage =
     archetypeImage === undefined
       ? `/archetypes/${persona.toLowerCase().replace(/^the\s+/, "").replace(/\s+/g, "-")}.png`
       : archetypeImage;
   const formattedTransactions = new Intl.NumberFormat("en-US").format(transactions);
 
-  // Convert any color format to rgb values for gradient
   const getRgbValues = (color: string): string => {
-    // Handle rgb() format
     const rgbMatch = color.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
     if (rgbMatch) {
       return `${rgbMatch[1]}, ${rgbMatch[2]}, ${rgbMatch[3]}`;
     }
-
-    // Handle hex format
     if (color.startsWith("#")) {
       const hex = color.replace("#", "");
       const r = parseInt(hex.substring(0, 2), 16);
@@ -47,8 +46,6 @@ export function ShareImageCard({ themeColor, archetypeImage, data }: ShareImageC
       const b = parseInt(hex.substring(4, 6), 16);
       return `${r}, ${g}, ${b}`;
     }
-
-    // Fallback
     return "29, 185, 84";
   };
 
@@ -64,7 +61,6 @@ export function ShareImageCard({ themeColor, archetypeImage, data }: ShareImageC
         backgroundColor: "#020202",
       }}
     >
-      {/* Main card container matching ShareCard preview  */}
       <div
         style={{
           position: "relative",
@@ -77,7 +73,6 @@ export function ShareImageCard({ themeColor, archetypeImage, data }: ShareImageC
           background: `linear-gradient(to bottom right, rgba(${rgbValues}, 0.2), rgba(0, 0, 0, 0.8))`,
         }}
       >
-        {/* Card header */}
         <div style={{ padding: "32px" }}>
           <div
             style={{
@@ -120,7 +115,6 @@ export function ShareImageCard({ themeColor, archetypeImage, data }: ShareImageC
           </h2>
         </div>
 
-        {/* Stats */}
         <div
           style={{
             paddingLeft: "32px",
@@ -130,7 +124,6 @@ export function ShareImageCard({ themeColor, archetypeImage, data }: ShareImageC
             gap: "16px",
           }}
         >
-          {/* Total Transactions */}
           <div
             style={{
               backdropFilter: "blur(4px)",
@@ -163,7 +156,6 @@ export function ShareImageCard({ themeColor, archetypeImage, data }: ShareImageC
             </p>
           </div>
 
-          {/* Persona */}
           <div
             style={{
               backdropFilter: "blur(4px)",
@@ -218,7 +210,6 @@ export function ShareImageCard({ themeColor, archetypeImage, data }: ShareImageC
             </div>
           </div>
 
-          {/* Top Vibe */}
           <div
             style={{
               backdropFilter: "blur(4px)",
@@ -250,7 +241,6 @@ export function ShareImageCard({ themeColor, archetypeImage, data }: ShareImageC
           </div>
         </div>
 
-        {/* Footer */}
         <div
           style={{
             position: "absolute",
@@ -296,5 +286,74 @@ export function ShareImageCard({ themeColor, archetypeImage, data }: ShareImageC
         </div>
       </div>
     </div>
+  );
+}
+
+interface DownloadPngButtonProps {
+  cardRef: RefObject<HTMLDivElement | null>;
+  address?: string;
+}
+
+export function DownloadPngButton({ cardRef, address }: DownloadPngButtonProps) {
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  const handleDownload = async () => {
+    if (!cardRef.current || isDownloading) return;
+    setIsDownloading(true);
+    try {
+      const clone = cardRef.current.cloneNode(true) as HTMLElement;
+      clone.style.position = "absolute";
+      clone.style.left = "-9999px";
+      clone.style.top = "0";
+      document.body.appendChild(clone);
+
+      const canvas = await html2canvas(clone, {
+        scale: 3,
+        backgroundColor: "#020202",
+        useCORS: true,
+        allowTaint: true,
+        logging: false,
+        width: 1080,
+        height: 1080,
+      });
+
+      document.body.removeChild(clone);
+
+      const blob = await new Promise<Blob>((resolve, reject) => {
+        canvas.toBlob((b) => {
+          if (b) resolve(b);
+          else reject(new Error("Failed to generate image blob"));
+        }, "image/png", 1.0);
+      });
+
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      const addressShort = address ? address.slice(0, 8) : "unknown";
+      link.href = url;
+      link.download = `stellar-wrap-${addressShort}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(url), 100);
+    } catch {
+      // Silently fail
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  return (
+    <button
+      onClick={handleDownload}
+      disabled={isDownloading}
+      className="flex cursor-pointer items-center pl-4 w-42 h-15 gap-3 p-2 rounded-xl bg-[#0F0F10] hover:bg-[#1a1a1c] transition-colors group"
+    >
+      <div className="h-10 w-10 flex items-center justify-center rounded-full bg-black border border-white/10">
+        <Download className={`w-5 h-5 text-white ${isDownloading ? "animate-pulse" : ""}`} />
+      </div>
+      <span className="font-bold text-white tracking-wide">
+        {isDownloading ? "Downloading..." : "Download PNG"}
+      </span>
+    </button>
   );
 }

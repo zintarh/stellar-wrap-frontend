@@ -157,6 +157,45 @@ export async function getCacheTimestamp(key: string): Promise<number | null> {
   return entry ? entry.timestamp : null;
 }
 
+/**
+ * Get all cache rows. Used for offline recovery where the app needs the most
+ * recent viewed wrap even if the current route has no wallet context.
+ */
+export async function getAllCacheEntries(): Promise<StoredCacheRecord[]> {
+  try {
+    const db = await openCacheDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_NAME, "readonly");
+      const store = tx.objectStore(STORE_NAME);
+      const request = store.getAll();
+      request.onsuccess = () => {
+        const rows = (request.result ?? []) as StoredCacheRecord[];
+        resolve(
+          rows.filter((row) => {
+            const entry = row.data;
+            return entry?.version === undefined || entry.version === CACHE_VERSION;
+          }),
+        );
+      };
+      request.onerror = () => reject(request.error);
+    });
+  } catch (error) {
+    console.warn("[IndexedDB cache] getAllCacheEntries failed:", error);
+    return [];
+  }
+}
+
+/**
+ * Return the newest cached wrap result, regardless of TTL.
+ */
+export async function getMostRecentCacheEntry(): Promise<StoredCacheRecord | null> {
+  const rows = await getAllCacheEntries();
+  if (!rows.length) return null;
+  return rows.reduce((latest, row) =>
+    row.timestamp > latest.timestamp ? row : latest,
+  );
+}
+
 async function evictIfOverLimit(db: IDBDatabase): Promise<void> {
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_NAME, "readwrite");

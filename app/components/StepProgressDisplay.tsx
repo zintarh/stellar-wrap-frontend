@@ -113,15 +113,16 @@ export function StepProgressDisplay({
             aria-valuenow={currentStep ? stepProgress[currentStep] : 0}
             aria-valuemin={0}
             aria-valuemax={100}
+            aria-label={
+              currentStep
+                ? `${INDEXING_STEPS[currentStep].label} progress`
+                : "Step progress"
+            }
           >
-            <motion.div
-              className="h-full bg-linear-to-r from-(--color-theme-primary) to-(--color-theme-primary) rounded-full"
-              initial={{ width: "0%" }}
-              animate={{
-                width: `${currentStep ? stepProgress[currentStep] : 0}%`,
-              }}
-              transition={{ duration: 0.3, ease: "easeOut" }}
+            <div
+              className="h-full bg-linear-to-r from-(--color-theme-primary) to-(--color-theme-primary) rounded-full transition-[width] duration-300 ease-out"
               style={{
+                width: `${currentStep ? stepProgress[currentStep] : 0}%`,
                 boxShadow: "var(--color-theme-primary) 0 0 10px",
               }}
             />
@@ -148,13 +149,12 @@ export function StepProgressDisplay({
             aria-valuenow={overallProgress}
             aria-valuemin={0}
             aria-valuemax={100}
+            aria-label="Overall indexing progress"
           >
-            <motion.div
-              className="h-full bg-linear-to-r from-(--color-theme-primary) to-(--color-theme-primary)"
-              initial={{ width: "0%" }}
-              animate={{ width: `${overallProgress}%` }}
-              transition={{ duration: 0.3, ease: "easeOut" }}
+            <div
+              className="h-full bg-linear-to-r from-(--color-theme-primary) to-(--color-theme-primary) transition-[width] duration-300 ease-out"
               style={{
+                width: `${overallProgress}%`,
                 boxShadow: "var(--color-theme-primary) 0 0 15px",
               }}
             />
@@ -250,6 +250,12 @@ export function StepProgressDisplay({
                 {indexingError.recoverable && onRetry && (
                   <motion.button
                     onClick={onRetry}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        onRetry();
+                      }
+                    }}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     className="flex items-center gap-2 px-4 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 rounded-lg text-sm font-medium text-red-300 transition-colors"
@@ -261,6 +267,12 @@ export function StepProgressDisplay({
                 {onCancel && (
                   <motion.button
                     onClick={onCancel}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        onCancel();
+                      }
+                    }}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     className="flex items-center gap-2 px-4 py-2 bg-neutral-500/20 hover:bg-neutral-500/30 border border-neutral-500/30 rounded-lg text-sm font-medium text-neutral-300 transition-colors"

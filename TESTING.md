@@ -2,6 +2,33 @@
 
 This document provides information about running and maintaining tests for the Stellar Wrap project.
 
+## Lighthouse CI (Performance & Quality)
+
+We use [Lighthouse CI](https://github.com/GoogleChrome/lighthouse-ci) to track Performance, Accessibility, Best Practices, and SEO scores on every pull request.
+
+### Score Thresholds
+
+| Category | Minimum Score | Enforcement |
+|----------|-------------|-------------|
+| Performance | 70 | Hard fail (PR blocked) |
+| Accessibility | 85 | Hard fail (PR blocked) |
+| Best Practices | 90 | Hard fail (PR blocked) |
+| SEO | 80 | Hard fail (PR blocked) |
+
+### Running Lighthouse Locally
+
+Useful for debugging performance regressions before opening a PR:
+
+```bash
+# 1. Install dependencies (if not already done)
+yarn install
+
+# 2. Build the production app
+yarn build
+
+# 3. Run Lighthouse CI against the local production server
+yarn lhci:local
+
 ## Quick Start
 
 ```bash

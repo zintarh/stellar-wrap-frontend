@@ -41,7 +41,6 @@ export const isFreighterInstalled = async (): Promise<boolean> => {
  * @throws {Error} If wallet is not installed, user rejects connection, or any other error occurs
  */
 export const connectFreighter = async (_network: Network): Promise<string> => {
-  // Check if Freighter is installed
   const installed = await isFreighterInstalled();
 
   if (!installed) {
@@ -51,9 +50,6 @@ export const connectFreighter = async (_network: Network): Promise<string> => {
   }
 
   try {
-    // Request access to the wallet
-    // Note: Freighter API doesn't directly support network parameter in requestAccess,
-    // but the network context is available for future network-specific operations
     const accessResult = await requestAccess();
 
     if (accessResult.error || !accessResult.address) {
@@ -62,11 +58,8 @@ export const connectFreighter = async (_network: Network): Promise<string> => {
       );
     }
 
-    // Return the address from requestAccess (it already provides the address)
-    // The network parameter can be used for subsequent operations like transaction signing
     return accessResult.address;
   } catch (error: unknown) {
-    // Handle specific error cases
     if (error instanceof Error) {
       if (error.message?.includes("User declined")) {
         throw new Error("Connection rejected by user.");
@@ -97,21 +90,20 @@ export const getCurrentPublicKey = async (): Promise<string | null> => {
 };
 
 /**
- * Checks if Albedo wallet is available (SDK loaded via script tag)
+ * Checks if Albedo wallet is available
  */
 export const isAlbedoInstalled = (): boolean => {
-  return typeof window !== "undefined" && typeof (window as unknown as Record<string, unknown>).albedo !== "undefined";
+  return typeof window !== "undefined" && typeof window.albedo !== "undefined";
 };
 
 /**
  * Connects to Albedo wallet and returns the user's public key
- * Albedo uses a popup-based flow at https://albedo.link
+ * @param _network - The network to connect to (mainnet or testnet)
  * @throws {Error} If Albedo is not available, popup is blocked, or user rejects
  */
 export const connectAlbedo = async (_network: Network): Promise<string> => {
-  if (!isAlbedoInstalled()) {
+  if (!isAlbedoInstalled() || !window.albedo) {
     throw new Error(
-      "Albedo wallet not found. Please ensure the Albedo SDK script is loaded.",
     );
   }
 
@@ -142,12 +134,10 @@ export const isValidStellarAddress = (address: string): boolean => {
 
   const trimmedAddress = address.trim();
 
-  // Check if starts with 'G' and is 56 characters
   if (!trimmedAddress.startsWith("G") || trimmedAddress.length !== 56) {
     return false;
   }
 
-  // Check if all characters are valid base32 (A-Z, 2-7)
   const base32Regex = /^[A-Z2-7]{56}$/;
   return base32Regex.test(trimmedAddress);
 };

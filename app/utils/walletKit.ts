@@ -32,6 +32,13 @@ function getStringProperty(data: unknown, key: string): string | null {
   }
 
   return null;
+function getStringField(data: unknown, field: string): string | null {
+  if (!data || typeof data !== "object" || !(field in data)) {
+    return null;
+  }
+
+  const value = (data as Record<string, unknown>)[field];
+  return typeof value === "string" ? value : null;
 }
 
 export function initWalletKit(): void {
@@ -241,4 +248,3 @@ export async function mintWrap(params: MintWrapParams): Promise<string> {
     throw genericError;
   }
 }
-

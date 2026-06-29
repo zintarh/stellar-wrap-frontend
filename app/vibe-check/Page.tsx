@@ -11,13 +11,9 @@ import { motion } from "framer-motion";
 
 export default function VibeCheckPage() {
   const router = useRouter();
-  const { result } = useWrapStore();
+  const { result, period } = useWrapStore();
   const vibes = result?.vibes ?? [];
   const dapps = result?.dapps ?? [];
-
-  return (
-    <div className="relative w-full h-screen">
-      <Screen4VibeCheck vibes={vibes} dapps={dapps} />
 
       <ProgressIndicator
         currentStep={4}
