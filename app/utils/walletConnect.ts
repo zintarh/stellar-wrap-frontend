@@ -104,10 +104,23 @@ export const isAlbedoInstalled = (): boolean => {
 export const connectAlbedo = async (_network: Network): Promise<string> => {
   if (!isAlbedoInstalled() || !window.albedo) {
     throw new Error(
+      "Albedo wallet not found. Please install the Albedo browser extension.",
     );
   }
 
   try {
+    const result = await window.albedo.publicKey();
+
+    if (!result?.publicKey) {
+      throw new Error(
+        "Connection rejected. Please approve the connection in Albedo.",
+      );
+    }
+
+    return result.publicKey;
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      if (error.message?.includes("rejected")) {
         throw new Error("Connection rejected by user.");
       }
       throw error;
@@ -129,4 +142,61 @@ export const isValidStellarAddress = (address: string): boolean => {
 
   const base32Regex = /^[A-Z2-7]{56}$/;
   return base32Regex.test(trimmedAddress);
+};
+interface XBullPublicKeyResult {
+  publicKey?: string;
+}
+
+interface XBull {
+  getPublicKey(): Promise<XBullPublicKeyResult>;
+}
+
+declare global {
+  interface Window {
+    xBull?: XBull;
+  }
+}
+
+/**
+ * Checks if the xBull browser extension is available
+ */
+export const isXBullInstalled = (): boolean => {
+  return typeof window !== "undefined" && typeof window.xBull !== "undefined";
+};
+
+/**
+ * Connects to xBull wallet and returns the user's public key
+ * @param _network - The network to connect to (mainnet or testnet)
+ * @throws {Error} If xBull is not installed, user rejects connection, or any other error occurs
+ */
+export const connectXBull = async (_network: Network): Promise<string> => {
+  if (!isXBullInstalled() || !window.xBull) {
+    throw new Error(
+      "xBull wallet not found. Please install the xBull browser extension from the Chrome Web Store.",
+    );
+  }
+
+  try {
+    const result = await window.xBull.getPublicKey();
+
+    if (!result?.publicKey) {
+      throw new Error(
+        "Connection rejected. Please approve the connection in xBull.",
+      );
+    }
+
+    return result.publicKey;
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      if (
+        error.message?.includes("User rejected") ||
+        error.message?.includes("rejected")
+      ) {
+        throw new Error("Connection rejected by user.");
+      }
+      throw error;
+    }
+
+    throw new Error("Failed to connect to xBull wallet. Please try again.");
+  }
 };
