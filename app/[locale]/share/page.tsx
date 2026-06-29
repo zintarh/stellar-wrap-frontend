@@ -6,19 +6,13 @@ import { ExternalLink, Share2 } from "lucide-react";
 import { mockData } from "@/app/data/mockData";
 import { GOLDEN_USER } from "@/src/data/mockData";
 import { ProgressIndicator } from "@/app/components/ProgressIndicator";
-import { MuteToggle } from "../components/MuteToggle";
-import { ShareCard } from "../components/ShareCard";
-import { ShareImageCard, DownloadPngButton } from "../components/ShareImageCard";
-import { PersonaEvolutionTimeline } from "../components/PersonaEvolutionTimeline";
-import { useTheme, themeColors } from "../context/ThemeContext";
-import { useWrapStore } from "../store/wrapStore";
 import {
   XIcon,
   WhatsAppIcon,
   FacebookIcon,
   LinkedInIcon,
   TelegramIcon,
-} from "../components/SocialIcons";
+} from "../../components/SocialIcons";
 
 const SocialIcons = {
   X: XIcon,

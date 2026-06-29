@@ -4,16 +4,6 @@ import { useState, useRef, useEffect, KeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Wallet, Copy, CheckCircle, XCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useWrapStore } from "../store/wrapStore";
-import { useTransactionStore } from "../store/transactionStore";
-import { useMultiTimeframeStore } from "../store/multiTimeframeStore";
-import { connectFreighter, connectAlbedo } from "../utils/walletConnect";
-import { ProgressIndicator } from "../components/ProgressIndicator";
-import { MuteToggle } from "../components/MuteToggle";
-import { useStellarAddressValidation } from "../../src/hooks/useStellarAddressValidation";
-import { useSound } from "../hooks/useSound";
-import { SOUND_NAMES } from "../utils/soundManager";
-import { useOnlineStatus } from "../hooks/useOnlineStatus";
 
 export default function ConnectPage() {
   const router = useRouter();

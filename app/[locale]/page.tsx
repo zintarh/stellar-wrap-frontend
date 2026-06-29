@@ -1,6 +1,3 @@
-import type { Metadata } from "next";
-import { LandingPage } from "./components/LandingPage";
-import { JsonLd } from "./components/JsonLd";
 
 export const metadata: Metadata = {
   title: "Stellar Wrap | Reveal Your On-Chain Persona",

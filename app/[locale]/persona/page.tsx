@@ -6,12 +6,6 @@ import confetti from "canvas-confetti";
 import { Home, Share2, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { readStreamableValue } from "ai/rsc";
-import { ProgressIndicator } from "../components/ProgressIndicator";
-import { MuteToggle } from "../components/MuteToggle";
-import { useWrapStore } from "../store/wrapStore";
-import { generatePersonaDescription } from "../actions/generate-persona";
-import { useSound } from "../hooks/useSound";
-import { PersonaEvolutionTimeline } from "../components/PersonaEvolutionTimeline";
 
 // --- Asset Mapping ---
 const ARCHETYPE_DATA: Record<string, { description: string }> = {
