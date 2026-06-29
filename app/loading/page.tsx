@@ -4,6 +4,7 @@ import { motion } from "motion/react";
 import { useCallback, useEffect, useMemo } from "react";
 import { Home, ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { ProgressIndicator } from "../components/ProgressIndicator";
 import { StepProgressDisplay } from "../components/StepProgressDisplay";
 import { CacheStatusBadge } from "../components/CacheStatusBadge";
@@ -14,6 +15,18 @@ import { useSound } from "../hooks/useSound";
 import { SOUND_NAMES } from "../utils/soundManager";
 import { indexAccount } from "../services/indexerService";
 import { IndexerEventEmitter } from "../utils/indexerEventEmitter";
+import { 
+  beginIndexingAbortScope, 
+  abortIndexingRequests, 
+  clearIndexingAbortScope, 
+  isAbortError 
+} from "../utils/indexingAbort";
+import { 
+  getMostRecentCachedData, 
+  parseCachedDataKey 
+} from "../services/cacheService";
+import { mapIndexerResultToWrapResult } from "../utils/wrapResultMapper";
+import type { IndexerResult } from "../utils/indexer";
 
 export default function LoadingScreen() {
   const router = useRouter();
@@ -127,12 +140,19 @@ export default function LoadingScreen() {
         let result: WrapResult | null = null;
 
         if (address) {
-          try {
-
-              if (!cached) {
-                throw new Error("No cached wrap available offline.");
-              }
-
+          if (!navigator.onLine) {
+            const cached = await getMostRecentCachedData();
+            if (cached) {
+              result = await buildCachedWrapResult(cached);
+            }
+          } else {
+            const indexerResult = await indexAccount(address, network, period);
+            result = mapIndexerResultToWrapResult(indexerResult.result);
+            setCacheMeta({
+              fromCache: indexerResult.fromCache,
+              cacheTimestamp: indexerResult.cacheTimestamp,
+              refreshingInBackground: indexerResult.refreshingInBackground,
+            });
           }
         } else {
           if (!navigator.onLine) {
@@ -140,9 +160,15 @@ export default function LoadingScreen() {
             if (cached) {
               result = await buildCachedWrapResult(cached);
             }
+          } else {
+            // No address provided - emit progress through steps for demo/fallback mode
+            await emitProgressThroughSteps();
+            result = mapIndexerResultToWrapResult({
+              totalTransactions: 42,
+              dapps: [],
+              largestTransaction: { amount: 1000, assetCode: "XLM" },
+            });
           }
-
-          // No address provided - emit progress through steps for demo/fallback mode
         }
 
         if (!isMounted || abortSignal.aborted || useWrapStore.getState().isCancelled) return;

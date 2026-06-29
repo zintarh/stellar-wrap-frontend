@@ -10,7 +10,7 @@ export const ColorToggle = () => {
 
   // Exclude 'white' if originally it was 'red' in the new file, but actually 'white' was in the *old* my-code. 
   // Original file had ['green', 'pink', 'yellow', 'red', 'purple'].
-  const colorOptions: ThemeColor[] = ['green', 'pink', 'yellow', 'red', 'purple'];
+  const colorOptions: ThemeColor[] = ['green', 'pink', 'yellow', 'red', 'purple', 'cosmic-purple'];
 
   return (
     <div className="relative z-50">

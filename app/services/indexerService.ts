@@ -19,6 +19,14 @@ type TransactionRecord = {
   paging_token?: string;
   [key: string]: unknown;
 };
+type HorizonTransactionResponse = {
+  records: TransactionRecord[];
+  _links: {
+    self: { href: string };
+    next?: { href: string };
+    prev?: { href: string };
+  };
+};
 import {
   IndexerResult,
   IndexerResultWithMeta,
@@ -146,6 +154,7 @@ async function runIndexingInternal(
     let cursor: string | undefined;
     let hasMore = true;
     let pageCount = 0;
+    let totalEstimatedTotal: number | null = null;
 
     while (hasMore) {
       const signal = getIndexingAbortSignal();
@@ -194,14 +203,19 @@ async function runIndexingInternal(
         }
       }
 
-      const respRecords = (response as { records: TransactionRecord[] })
-        .records;
+      const horizonResponse = response as HorizonTransactionResponse;
+      const respRecords = horizonResponse.records;
       if (!respRecords || respRecords.length === 0) {
         hasMore = false;
         break;
       }
 
       pageCount++;
+      // Estimate total transactions based on pages
+      if (pageCount === 1 && horizonResponse._links.next) {
+        totalEstimatedTotal = respRecords.length * 5;
+      }
+
       const timeProgress = Math.round(
         ((Date.now() - fetchStart) / fetchDuration) * 95,
       );
@@ -234,6 +248,7 @@ async function runIndexingInternal(
       emit(() =>
         emitter.emitMetricsUpdate({
           transactionCount: allTransactions.length,
+          totalTransactions: totalEstimatedTotal,
         }),
       );
 

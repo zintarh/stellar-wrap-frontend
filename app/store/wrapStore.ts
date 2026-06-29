@@ -108,6 +108,7 @@ const initialIndexingState = {
   isCancelled: false,
   metrics: {
     transactionCount: 0,
+    totalTransactions: null,
     assetCount: 0,
     contractCount: 0,
     volumeProcessed: "0",

@@ -83,6 +83,7 @@ export const STEP_ORDER: IndexingStep[] = [
 
 export interface IndexingMetrics {
   transactionCount: number;
+  totalTransactions: number | null;
   assetCount: number;
   contractCount: number;
   volumeProcessed: string; // Total volume as string (for large numbers)
