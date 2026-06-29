@@ -145,7 +145,16 @@ export default function ArchetypeReveal(): JSX.Element {
   const shareBtnRef = useRef<HTMLButtonElement | null>(null);
 
   const { result } = useWrapStore();
+  const notificationStore = useNotificationStore();
+  const [showNotifPrompt, setShowNotifPrompt] = useState<boolean>(true);
   const archetypeKey = result?.persona || "The Wizard";
+
+  // Suppress prompt if dismissed this session
+  useEffect(() => {
+    if (sessionStorage.getItem("notif-prompt-dismissed")) {
+      setShowNotifPrompt(false);
+    }
+  }, []);
 
   // Use streamed description if available, otherwise fall back to stored or default
   const data = {
@@ -556,6 +565,18 @@ export default function ArchetypeReveal(): JSX.Element {
           </div>
 
           {/* --- BOTTOM ROW --- */}
+          {/* Notification Prompt — shown after final wrap screen */}
+          {showNotifPrompt && !notificationStore.consentGiven && !notificationStore.pushEnabled && (
+            <motion.div
+              className="absolute bottom-24 left-1/2 -translate-x-1/2 z-30 w-[calc(100%-2rem)] max-w-sm"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 2 }}
+            >
+              <NotificationPrompt onDismiss={() => setShowNotifPrompt(false)} />
+            </motion.div>
+          )}
+
           {/* Share Popup Implementation - Absolute positioned like share page */}
           <div className="absolute bottom-6 left-6 md:bottom-8 md:left-8 z-30">
             <div className="relative">

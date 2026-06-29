@@ -1,0 +1,100 @@
+"use client";
+
+import { useState, useEffect, useCallback, useRef } from "react";
+
+export interface UseServiceWorkerReturn {
+  isSupported: boolean;
+  permissionState: NotificationPermission | null;
+  pushSubscription: PushSubscription | null;
+  subscribe: () => Promise<void>;
+  unsubscribe: () => Promise<void>;
+}
+
+function urlBase64ToUint8Array(base64String: string): Uint8Array {
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding)
+    .replace(/-/g, "+")
+    .replace(/_/g, "/");
+  const rawData = atob(base64);
+  return Uint8Array.from([...rawData].map((char) => char.charCodeAt(0)));
+}
+
+export function useServiceWorker(): UseServiceWorkerReturn {
+  const [isSupported, setIsSupported] = useState(false);
+  const [permissionState, setPermissionState] =
+    useState<NotificationPermission | null>(null);
+  const [pushSubscription, setPushSubscription] =
+    useState<PushSubscription | null>(null);
+
+  const registrationRef = useRef<ServiceWorkerRegistration | null>(null);
+
+  useEffect(() => {
+    const supported =
+      typeof window !== "undefined" &&
+      "serviceWorker" in navigator &&
+      "PushManager" in window;
+
+    setIsSupported(supported);
+
+    if (!supported) return;
+
+    // Set current permission state
+    setPermissionState(Notification.permission);
+
+    // Register the service worker
+    navigator.serviceWorker
+      .register("/sw.js")
+      .then((registration) => {
+        registrationRef.current = registration;
+
+        // Check for existing push subscription
+        return registration.pushManager.getSubscription();
+      })
+      .then((existing) => {
+        if (existing) {
+          setPushSubscription(existing);
+        }
+      })
+      .catch((err) => {
+        console.warn("[useServiceWorker] Registration failed:", err);
+        setIsSupported(false);
+      });
+  }, []);
+
+  const subscribe = useCallback(async (): Promise<void> => {
+    if (!isSupported || !registrationRef.current) return;
+
+    const permission = await Notification.requestPermission();
+    setPermissionState(permission);
+
+    if (permission !== "granted") return;
+
+    const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+    if (!vapidKey) {
+      console.warn("[useServiceWorker] NEXT_PUBLIC_VAPID_PUBLIC_KEY is not set");
+      return;
+    }
+
+    try {
+      const subscription = await registrationRef.current.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(vapidKey),
+      });
+      setPushSubscription(subscription);
+    } catch (err) {
+      console.warn("[useServiceWorker] Push subscription failed:", err);
+    }
+  }, [isSupported]);
+
+  const unsubscribe = useCallback(async (): Promise<void> => {
+    if (!pushSubscription) return;
+    try {
+      await pushSubscription.unsubscribe();
+      setPushSubscription(null);
+    } catch (err) {
+      console.warn("[useServiceWorker] Unsubscribe failed:", err);
+    }
+  }, [pushSubscription]);
+
+  return { isSupported, permissionState, pushSubscription, subscribe, unsubscribe };
+}

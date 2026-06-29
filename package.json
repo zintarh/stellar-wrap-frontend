@@ -9,8 +9,6 @@
   },
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
-    "build:analyze": "ANALYZE=true next build",
     "start": "next start",
     "lint": "eslint .",
     "vitest": "vitest",

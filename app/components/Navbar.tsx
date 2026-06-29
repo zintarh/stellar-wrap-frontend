@@ -6,9 +6,6 @@ import { ColorToggle } from "./ColorToggle";
 import { DarkLightToggle } from "./DarkLightToggle";
 import { motion } from "framer-motion";
 import { useWrapStore } from "@/app/store/wrapStore";
-import { useTransactionStore } from "@/app/store/transactionStore";
-import { useMultiTimeframeStore } from "@/app/store/multiTimeframeStore";
-import { LogOut } from "lucide-react";
 
 function truncate(addr: string) {
   return `${addr.slice(0, 4)}…${addr.slice(-4)}`;
@@ -64,14 +61,6 @@ export function Navbar() {
 
         {address && (
           <>
-            <span 
-              className="text-xs font-mono border rounded-full px-3 py-1 transition-colors duration-200"
-              style={{
-                backgroundColor: mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
-                borderColor: mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
-                color: mode === 'dark' ? 'rgba(255,255,255,0.8)' : 'rgba(0,0,0,0.8)'
-              }}
-            >
               {truncate(address)}
             </span>
             <button
