@@ -2,8 +2,20 @@
 
 import { useState, useRef, useEffect, KeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Wallet, Copy, CheckCircle, XCircle } from "lucide-react";
+import { ArrowLeft, Wallet, Copy, CheckCircle, XCircle, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Horizon } from "stellar-sdk";
+import { useWrapStore } from "@/app/store/wrapStore";
+import { useTransactionStore } from "@/app/store/transactionStore";
+import { useMultiTimeframeStore } from "@/app/store/multiTimeframeStore";
+import { useSound } from "@/app/hooks/useSound";
+import { useOnlineStatus } from "@/app/hooks/useOnlineStatus";
+import { useStellarAddressValidation } from "@/src/hooks/useStellarAddressValidation";
+import { connectFreighter, connectAlbedo } from "@/app/utils/walletConnect";
+import { MuteToggle } from "@/app/components/MuteToggle";
+import { ProgressIndicator } from "@/app/components/ProgressIndicator";
+import { SOUND_NAMES } from "@/app/utils/soundManager";
+import { RPC_ENDPOINTS } from "@/src/config";
 
 export default function ConnectPage() {
   const router = useRouter();
@@ -23,6 +35,10 @@ export default function ConnectPage() {
 
   const [isConnecting, setIsConnecting] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
+  const [showPreview, setShowPreview] = useState(false);
+  const [previewBalance, setPreviewBalance] = useState<string | null>(null);
+  const [previewTxCount, setPreviewTxCount] = useState<number | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
 
   // Refs for focus management
   const mainContentRef = useRef<HTMLDivElement>(null);
@@ -39,6 +55,31 @@ export default function ConnectPage() {
       mainContentRef.current.focus();
     }
   }, []);
+
+  const fetchAccountPreview = async (address: string) => {
+    setPreviewLoading(true);
+    try {
+      const horizon = new Horizon.Server(RPC_ENDPOINTS[network]);
+      const account = await horizon.loadAccount(address);
+
+      const nativeBalance = account.balances.find(b => b.asset_type === "native");
+      const balance = nativeBalance ? parseFloat(nativeBalance.balance).toFixed(2) : "0.00";
+      setPreviewBalance(balance);
+
+      const operations = await horizon.operations().forAccount(address).limit(1).call();
+      const txCount = operations.records.length > 0 ? Math.max((operations as any).total_count || 0, 1) : 0;
+      setPreviewTxCount(txCount);
+
+      setShowPreview(true);
+    } catch (err) {
+      console.error("Failed to fetch account preview:", err);
+      if ((err as any)?.message?.includes("rate limit")) {
+        setShowPreview(true);
+      }
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
 
   const handleFreighterConnect = async () => {
     if (!isOnline) {
@@ -59,7 +100,7 @@ export default function ConnectPage() {
       setAddress(publicKey);
       setError(null);
       playSound(SOUND_NAMES.SLIDE_WHOOSH);
-      router.push("/loading");
+      await fetchAccountPreview(publicKey);
     } catch (error: unknown) {
       const errorMessage =
         error instanceof Error ? error.message : "Failed to connect wallet";
@@ -90,7 +131,7 @@ export default function ConnectPage() {
       setAddress(publicKey);
       setError(null);
       playSound(SOUND_NAMES.SLIDE_WHOOSH);
-      router.push("/loading");
+      await fetchAccountPreview(publicKey);
     } catch (error: unknown) {
       const errorMessage =
         error instanceof Error ? error.message : "Failed to connect wallet";
@@ -129,6 +170,10 @@ export default function ConnectPage() {
 
     setAddress(walletAddress.trim());
     playSound(SOUND_NAMES.SLIDE_WHOOSH);
+    fetchAccountPreview(walletAddress.trim());
+  };
+
+  const handleContinue = () => {
     router.push("/loading");
   };
 
@@ -601,9 +646,62 @@ export default function ConnectPage() {
               )}
             </AnimatePresence>
 
-            <motion.button
-              ref={connectButtonRef}
-              onClick={handleConnect}
+            <AnimatePresence mode="wait">
+              {showPreview && (
+                <motion.div
+                  key="preview"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="mb-6 p-6 bg-theme-primary/10 border-2 border-theme-primary/50 rounded-xl"
+                >
+                  <h3 className="text-sm font-bold text-white/80 mb-4 tracking-wide">ACCOUNT SUMMARY</h3>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-white/60 text-sm">Network</span>
+                      <span className="text-white font-bold">{network === "testnet" ? "Testnet" : "Mainnet"}</span>
+                    </div>
+                    {previewLoading ? (
+                      <>
+                        <div className="flex justify-between items-center">
+                          <span className="text-white/60 text-sm">Balance</span>
+                          <div className="w-20 h-5 bg-white/10 rounded animate-pulse" />
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-white/60 text-sm">Recent Transactions</span>
+                          <div className="w-20 h-5 bg-white/10 rounded animate-pulse" />
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="flex justify-between items-center">
+                          <span className="text-white/60 text-sm">XLM Balance</span>
+                          <span className="text-white font-bold">{previewBalance} XLM</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-white/60 text-sm">Total Operations</span>
+                          <span className="text-white font-bold">{previewTxCount}</span>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                  <motion.button
+                    onClick={handleContinue}
+                    className="w-full mt-4 px-6 py-3 rounded-xl font-bold text-black bg-theme-primary hover:bg-theme-primary/90 transition-colors flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-theme-primary focus:ring-offset-2 focus:ring-offset-black"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <span>CONTINUE</span>
+                    <ChevronRight className="w-4 h-4" />
+                  </motion.button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {!showPreview && (
+              <motion.button
+                ref={connectButtonRef}
+                onClick={handleConnect}
               onKeyDown={handleConnectKeyDown}
               disabled={!isOnline || !walletAddress.trim() || isConnecting || !isValid}
               className="w-full relative group disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none"
@@ -663,6 +761,8 @@ export default function ConnectPage() {
                 )}
               </div>
             </motion.button>
+            )}
+            </AnimatePresence>
 
             {/* Wallet Connect Options */}
             <div className="mt-6 pt-6 border-t border-white/10 space-y-3">
