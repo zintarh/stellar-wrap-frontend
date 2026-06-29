@@ -9,6 +9,7 @@ import { ProgressIndicator } from "@/app/components/ProgressIndicator";
 import { MuteToggle } from "../components/MuteToggle";
 import { ShareCard } from "../components/ShareCard";
 import { ShareImageCard } from "../components/ShareImageCard";
+import { ShareImageCardStories } from "../components/ShareImageCardStories";
 import { useTheme, themeColors } from "../context/ThemeContext";
 import { useWrapStore } from "../store/wrapStore";
 import {
@@ -30,6 +31,7 @@ const SocialIcons = {
 export default function SharePageClient() {
   const [shareOpen, setShareOpen] = useState<boolean>(false);
   const [shareUrl, setShareUrl] = useState<string>("");
+  const [cardFormat, setCardFormat] = useState<"square" | "stories">("square");
   const shareMenuRef = useRef<HTMLDivElement | null>(null);
   const shareBtnRef = useRef<HTMLButtonElement | null>(null);
   const shareImageRef = useRef<HTMLDivElement>(null!);
@@ -119,7 +121,11 @@ export default function SharePageClient() {
         className="absolute"
         style={{ left: "-9999px", top: 0 }}
       >
-        <ShareImageCard themeColor={themeColor} archetypeImage={GOLDEN_USER.archetype.image} shareUrl={shareUrl} />
+        {cardFormat === "stories" ? (
+          <ShareImageCardStories themeColor={themeColor} archetypeImage={GOLDEN_USER.archetype.image} shareUrl={shareUrl} />
+        ) : (
+          <ShareImageCard themeColor={themeColor} archetypeImage={GOLDEN_USER.archetype.image} shareUrl={shareUrl} />
+        )}
       </div>
 
       <ShareCard
@@ -130,6 +136,8 @@ export default function SharePageClient() {
         vibePercentage={vibePercentage}
         shareImageRef={shareImageRef}
         themeColor={themeColor}
+        cardFormat={cardFormat}
+        onFormatChange={setCardFormat}
       />
 
       <ProgressIndicator currentStep={6} totalSteps={6} showNext={false} />

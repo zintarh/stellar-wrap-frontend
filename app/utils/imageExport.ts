@@ -53,6 +53,7 @@ const GENERATION_TIMEOUT_MS = 10_000;
 
 export interface ShareImageExportOptions {
   onFallbackWarning?: () => void;
+  format?: "square" | "stories";
 }
 
 export interface ShareImageExportResult {
@@ -219,11 +220,11 @@ async function canvasToBlob(
   return { blob, usedWorker: false };
 }
 
-function triggerDownload(blob: Blob): void {
+function triggerDownload(blob: Blob, filename: string = "stellar-wrapped-2026.png"): void {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = "stellar-wrapped-2026.png";
+  link.download = filename;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -241,6 +242,15 @@ export async function downloadShareImage(
 ): Promise<ShareImageExportResult> {
   const startTime = performance.now();
   const scale = getCaptureScale();
+  const format = options?.format || "square";
+
+  const getDimensions = (fmt: "square" | "stories") => {
+    return fmt === "stories"
+      ? { width: 1080, height: 1920, filename: "stellar-wrapped-2026-stories.png" }
+      : { width: 1080, height: 1080, filename: "stellar-wrapped-2026.png" };
+  };
+
+  const { width, height, filename } = getDimensions(format);
 
   return withTimeout(
     (async () => {
@@ -259,12 +269,12 @@ export async function downloadShareImage(
           useCORS: true,
           allowTaint: true,
           logging: false,
-          width: 1080,
-          height: 1080,
+          width,
+          height,
         });
 
         const { blob, usedWorker } = await canvasToBlob(canvas, options);
-        triggerDownload(blob);
+        triggerDownload(blob, filename);
 
         return {
           usedWorker,
