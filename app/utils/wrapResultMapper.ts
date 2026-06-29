@@ -31,6 +31,7 @@ export function mapIndexerResultToWrapResult(
     vibes: mockData.vibes,
     persona: mockData.persona,
     personaDescription: mockData.personaDescription,
+    largestTransaction: indexerResult.largestTransaction,
   };
 }
 
@@ -43,5 +44,6 @@ export function getMockWrapResult(): WrapResult {
     vibes: mockData.vibes,
     persona: mockData.persona,
     personaDescription: mockData.personaDescription,
+    largestTransaction: { amount: 4250.5, assetCode: "XLM" },
   };
 }

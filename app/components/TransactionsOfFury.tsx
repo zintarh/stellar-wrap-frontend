@@ -10,8 +10,10 @@ const TransactionsOfFury: React.FC = () => {
   const { result } = useWrapStore();
   const totalTransactions = result?.totalTransactions ?? 0;
   const percentile = result?.percentile ?? 0;
+  const largestTransaction = result?.largestTransaction ?? { amount: 4250.5, assetCode: 'XLM' };
   // keep existing mock monthly stats logic for now; could be moved into wrapStore later
   const [showPercentile, setShowPercentile] = useState(false);
+  const [showBiggestPayment, setShowBiggestPayment] = useState(false);
 
   // Spring-based count-up animation
   const count = useSpring(0, {
@@ -21,6 +23,17 @@ const TransactionsOfFury: React.FC = () => {
   });
 
   const displayCount = useTransform(count, (latest) => Math.floor(latest));
+
+  // Separate spring for the biggest-payment amount, formatted with commas + 2 decimals
+  const amountCount = useSpring(0, {
+    stiffness: 60,
+    damping: 25,
+    mass: 1,
+  });
+
+  const displayAmount = useTransform(amountCount, (latest) =>
+    latest.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  );
 
   useEffect(() => {
     // Start count-up animation
@@ -33,11 +46,18 @@ const TransactionsOfFury: React.FC = () => {
       setShowPercentile(true);
     }, 2000);
 
+    // Reveal the biggest-payment card and count it up afterwards
+    const biggestPaymentTimer = setTimeout(() => {
+      setShowBiggestPayment(true);
+      amountCount.set(largestTransaction.amount);
+    }, 2800);
+
     return () => {
       clearTimeout(timer);
       clearTimeout(percentileTimer);
+      clearTimeout(biggestPaymentTimer);
     };
-  }, [totalTransactions, count]);
+  }, [totalTransactions, count, largestTransaction.amount, amountCount]);
 
   const baseLineDurations = useMemo(
     () => Array.from({ length: 80 }, (_, i) => 2 + (i % 3) * 0.5),
@@ -259,6 +279,38 @@ const TransactionsOfFury: React.FC = () => {
                       </div>
                       <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-gray-300 font-medium">
                         of the network
+                      </p>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Biggest Single Payment Card */}
+            <AnimatePresence>
+              {showBiggestPayment && (
+                <motion.div
+                  className="relative mt-4 sm:mt-6 md:mt-8 w-full max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl px-4"
+                  initial={{ scale: 0.8, opacity: 0, y: 20 }}
+                  animate={{ scale: 1, opacity: 1, y: 0 }}
+                  exit={{ scale: 0.8, opacity: 0, y: 20 }}
+                  transition={{
+                    type: "spring",
+                    stiffness: 150,
+                    damping: 20
+                  }}
+                >
+                  <div className="relative px-8 py-6 sm:px-12 sm:py-8 md:px-16 md:py-10 bg-gradient-to-br from-[#030b0a]/90 via-[#041411]/90 to-[#030b0a]/90 border border-emerald-500/30 rounded-3xl md:rounded-[2rem] backdrop-blur-xl shadow-2xl">
+                    <div className="text-center space-y-1 sm:space-y-2">
+                      <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-gray-300 font-medium">
+                        Your biggest single payment
+                      </p>
+                      <div className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black flex items-center justify-center gap-2 flex-wrap">
+                        <motion.span className="text-white">{displayAmount}</motion.span>
+                        <span className="text-emerald-400">{largestTransaction.assetCode}</span>
+                      </div>
+                      <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-gray-300 font-medium">
+                        in a single move
                       </p>
                     </div>
                   </div>

@@ -467,6 +467,15 @@ export function LandingPage() {
               </motion.button>
             ))}
           </div>
+          {selectedPeriod === 'yearly' && (
+            <motion.p
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mt-2 text-center text-xs sm:text-sm font-bold tracking-[0.2em] text-white/50 uppercase"
+            >
+              2026 in review
+            </motion.p>
+          )}
         </motion.div>
 
         {/* CTA Button */}
