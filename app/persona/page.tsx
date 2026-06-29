@@ -290,7 +290,7 @@ export default function ArchetypeReveal(): JSX.Element {
     <>
       <div
         className="w-full bg-[#020202] md:min-h-screen flex items-center justify-center selection:bg-[var(--selection-color)]"
-        style={{ WebkitTapHighlightColor: "transparent" }}
+        style={{ WebkitTapHighlightColor: "transparent", touchAction: "pan-y" }}
       >
         {/* Progress Indicator */}
         <ProgressIndicator currentStep={5} totalSteps={6} showNext={false} />

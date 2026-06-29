@@ -175,11 +175,15 @@ export function ShareCard({
   };
   return (
     <div
-      className="relative w-full h-full overflow-hidden flex items-center justify-center"
-      style={{ backgroundColor: "var(--color-theme-background)" }}
+      className="relative w-full h-full overflow-hidden flex items-center justify-center transition-colors duration-200"
+      style={{ backgroundColor: mode === 'dark' ? "var(--color-theme-background)" : "#ffffff" }}
     >
-      {/* Dark gradient background */}
-      <div className="absolute inset-0 bg-linear-to-br from-black via-black to-black opacity-60" />
+      {/* Gradient background */}
+      <div className="absolute inset-0" style={{ 
+        background: mode === 'dark'
+          ? 'rgba(0,0,0,0.6)'
+          : 'rgba(255,255,255,0.8)'
+      }} />
 
       {/* Diagonal lines pattern */}
       <div className="absolute inset-0 opacity-5">
@@ -217,17 +221,120 @@ export function ShareCard({
                 initial={{ scale: 0.9, opacity: 0, rotateY: -20 }}
                 animate={{ scale: 1, opacity: 1, rotateY: 0 }}
                 transition={{
-                  type: "spring",
-                  stiffness: 100,
-                  delay: 0.2,
+                  duration: 3,
+                  repeat: Infinity,
+                }}
+              />
+
+              <div
+                className="relative aspect-square rounded-[40px] overflow-hidden border backdrop-blur-xl"
+                style={{
+                  borderColor: mode === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)',
+                  background: mode === 'dark' 
+                    ? `linear-gradient(to bottom right, rgba(var(--color-theme-primary-rgb), 0.2), rgba(0, 0, 0, 0.8))`
+                    : `linear-gradient(to bottom right, rgba(var(--color-theme-primary-rgb), 0.1), rgba(255, 255, 255, 0.95))`,
                 }}
                 style={{ perspective: 2000 }}
               >
-                <div className="relative">
+                {/* Card header */}
+                <div className="p-8">
+                  <div className="flex items-center gap-3 mb-6">
+                    <motion.div
+                      className="w-3 h-3 rounded-full"
+                      style={{ backgroundColor: "var(--color-theme-primary)" }}
+                      animate={{
+                        opacity: [0.5, 1, 0.5],
+                      }}
+                      transition={{
+                        duration: 2,
+                        repeat: Infinity,
+                      }}
+                    />
+                    <span className="text-sm font-black tracking-[0.2em]" style={{ color: mode === 'dark' ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.6)' }}>
+                      STELLAR WRAPPED 2026
+                    </span>
+                  </div>
+                  <h2 className="text-3xl font-black mb-2" style={{ color: mode === 'dark' ? '#ffffff' : '#1a1a1a' }}>
+                    @{username}
+                  </h2>
+                </div>
+
+                {/* Stats */}
+                <div className="px-8 space-y-4">
                   <motion.div
-                    className="absolute -inset-4 rounded-[48px] blur-2xl"
-                    style={{
-                      backgroundColor: "rgba(var(--color-theme-primary-rgb), 0.4)",
+                    className="backdrop-blur-sm rounded-2xl p-6 border"
+                    style={{ 
+                      backgroundColor: mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+                      borderColor: mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'
+                    }}
+                    initial={{ x: -50, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    transition={{ delay: 0.5 }}
+                  >
+                    <p className="text-sm font-bold mb-2" style={{ color: mode === 'dark' ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.5)' }}>
+                      Total Transactions
+                    </p>
+                    <p className="text-6xl font-black" style={{ color: mode === 'dark' ? '#ffffff' : '#1a1a1a' }}>
+                      {transactions}
+                    </p>
+                  </motion.div>
+
+                  <motion.div
+                    className="backdrop-blur-sm rounded-2xl p-6 border"
+                    style={{ 
+                      backgroundColor: mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+                      borderColor: mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'
+                    }}
+                    initial={{ x: -50, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    transition={{ delay: 0.6 }}
+                  >
+                    <p className="text-sm font-bold mb-2" style={{ color: mode === 'dark' ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.5)' }}>
+                      Persona
+                    </p>
+                    <p
+                      className="text-3xl font-black"
+                      style={{
+                        background: mode === 'dark'
+                          ? `linear-gradient(to right, #ffffff, var(--color-theme-primary))`
+                          : `linear-gradient(to right, #1a1a1a, var(--color-theme-primary))`,
+                        WebkitBackgroundClip: "text",
+                        WebkitTextFillColor: "transparent",
+                      }}
+                    >
+                      {persona}
+                    </p>
+                  </motion.div>
+
+                  <motion.div
+                    className="backdrop-blur-sm rounded-2xl p-6 border"
+                    style={{ 
+                      backgroundColor: mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+                      borderColor: mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'
+                    }}
+                    initial={{ x: -50, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    transition={{ delay: 0.7 }}
+                  >
+                    <p className="text-sm font-bold mb-2" style={{ color: mode === 'dark' ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.5)' }}>
+                      Top Vibe
+                    </p>
+                    <p className="text-2xl font-black" style={{ color: mode === 'dark' ? '#ffffff' : '#1a1a1a' }}>
+                      {vibePercentage}% {topVibe}
+                    </p>
+                  </motion.div>
+                </div>
+
+                {/* Footer */}
+                <div className="absolute bottom-8 left-8 right-8 flex items-center justify-between">
+                  <div className="text-xs font-black" style={{ color: mode === 'dark' ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.4)' }}>
+                    stellar.org/wrapped
+                  </div>
+                  <motion.div
+                    className="w-10 h-10 rounded-xl backdrop-blur-sm flex items-center justify-center border"
+                    style={{ 
+                      backgroundColor: mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+                      borderColor: mode === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)'
                     }}
                     animate={{
                       opacity: [0.5, 0.8, 0.5],
@@ -416,13 +523,15 @@ export function ShareCard({
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.5 }}
           >
-            <h3 className="text-7xl font-black text-white/90 mb-1 tracking-tight leading-none">
+            <h3 className="text-7xl font-black mb-1 tracking-tight leading-none" style={{ color: mode === 'dark' ? 'rgba(255,255,255,0.9)' : 'rgba(0,0,0,0.8)' }}>
               SHARE
             </h3>
             <h3
               className="text-8xl font-black mb-6 tracking-tight leading-none"
               style={{
-                background: `linear-gradient(to right, #ffffff, var(--color-theme-primary))`,
+                background: mode === 'dark'
+                  ? `linear-gradient(to right, #ffffff, var(--color-theme-primary))`
+                  : `linear-gradient(to right, #1a1a1a, var(--color-theme-primary))`,
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
               }}
@@ -474,8 +583,12 @@ export function ShareCard({
                   style={{ backgroundColor: "var(--color-theme-primary)" }}
                 />
                 <div
-                  className="relative flex items-center gap-4 backdrop-blur-sm text-white px-8 py-6 rounded-2xl border border-white/20"
-                  style={{ backgroundColor: "rgba(255, 255, 255, 0.1)" }}
+                  className="relative flex items-center gap-4 backdrop-blur-sm px-8 py-6 rounded-2xl border"
+                  style={{ 
+                    backgroundColor: mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+                    color: mode === 'dark' ? '#ffffff' : '#1a1a1a',
+                    borderColor: mode === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)'
+                  }}
                 >
                   <Twitter className="w-6 h-6" />
                   <span className="text-2xl font-black tracking-tight">
@@ -503,8 +616,12 @@ export function ShareCard({
                   style={{ backgroundColor: "var(--color-theme-primary)" }}
                 />
                 <div
-                  className="relative flex items-center gap-4 backdrop-blur-sm text-white px-8 py-6 rounded-2xl border border-white/20"
-                  style={{ backgroundColor: "rgba(255, 255, 255, 0.1)" }}
+                  className="relative flex items-center gap-4 backdrop-blur-sm px-8 py-6 rounded-2xl border"
+                  style={{ 
+                    backgroundColor: mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+                    color: mode === 'dark' ? '#ffffff' : '#1a1a1a',
+                    borderColor: mode === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)'
+                  }}
                 >
                   {isDownloading ? (
                     <Loader2 className="w-6 h-6 animate-spin" />
@@ -551,7 +668,7 @@ export function ShareCard({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 1.2 }}
-              className="mt-8 text-white/50 text-lg font-bold"
+              className="mt-8 text-lg font-bold" style={{ color: mode === 'dark' ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)' }}
             >
               Show the world your Stellar journey
             </motion.p>

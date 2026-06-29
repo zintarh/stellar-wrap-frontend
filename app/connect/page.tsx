@@ -262,7 +262,7 @@ export default function ConnectPage() {
       ref={mainContentRef}
       tabIndex={-1}
       onKeyDown={handlePageKeyDown}
-      className="relative w-full min-h-screen h-screen overflow-hidden flex items-center justify-center bg-theme-background focus:outline-none"
+      className="relative w-full min-h-screen h-screen overflow-hidden flex items-center justify-center bg-theme-background focus:outline-none" style={{ touchAction: "pan-y" }}
     >
       {/* Progress Indicator */}
       <ProgressIndicator currentStep={2} totalSteps={6} showNext={false} />
