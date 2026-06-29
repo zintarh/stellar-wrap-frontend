@@ -34,7 +34,6 @@ export function LandingPage() {
 
       {/* Deep space gradient */}
       <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/20" />
-      
       {/* Hexagonal grid pattern */}
       <div className="absolute inset-0 opacity-20">
         <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">

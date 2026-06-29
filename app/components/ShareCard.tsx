@@ -140,8 +140,6 @@ export function ShareCard({
     };
 
     try {
-      const { mintWrap } = await import("../utils/walletKit");
-
       await mintWrap({
         userAddress: address,
         network: network || "testnet",
