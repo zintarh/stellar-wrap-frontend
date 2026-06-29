@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { createJSONStorage, persist } from "zustand/middleware";
 
 export type TransactionState =
   | "idle"
@@ -43,6 +43,15 @@ export const useTransactionStore = create<TransactionStoreState>()(
     }),
     {
       name: "stellar-wrap-transaction-storage",
+      storage: createJSONStorage(() =>
+        typeof window !== "undefined"
+          ? localStorage
+          : {
+              getItem: () => null,
+              setItem: () => {},
+              removeItem: () => {},
+            },
+      ),
       // Only keep relevant state, if the transaction was left in an intermediate state we might want to recover.
       // E.g., if it was confirming, we want to resume polling.
     },

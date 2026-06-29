@@ -1,4 +1,4 @@
-import { Horizon } from '@stellar/stellar-sdk';
+import { Horizon } from 'stellar-sdk';
 import { Network, RPC_ENDPOINTS } from '../config';
 import { horizonQueue } from '../utils/horizonRequestQueue';
 

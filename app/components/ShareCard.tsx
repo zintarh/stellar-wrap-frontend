@@ -2,7 +2,6 @@ import { motion } from "motion/react";
 import { Share2, Download, Twitter, Loader2, Sparkles, AlertCircle } from "lucide-react";
 import { useState, RefObject, useEffect } from "react";
 import { downloadShareImage } from "../utils/imageExport";
-import { mintWrap } from "../utils/walletKit";
 import { useWrapStore } from "@/app/store/wrapStore";
 import { useTransactionStore } from "@/app/store/transactionStore";
 import { toast } from "sonner";
@@ -141,6 +140,8 @@ export function ShareCard({
     };
 
     try {
+      const { mintWrap } = await import("../utils/walletKit");
+
       await mintWrap({
         userAddress: address,
         network: network || "testnet",
@@ -386,13 +387,6 @@ export function ShareCard({
             }}
             className={`w-full group relative mt-8 ${mintFailed ? "animate-pulse" : ""}`}
             onClick={handleMint}
-            onKeyDown={(e) => {
-              if ((e.key === "Enter" || e.key === " ") && !isMinting && !mintSuccess) {
-                e.preventDefault();
-                handleMint();
-              }
-            }}
-            disabled={!isOnline || isMinting || !!mintSuccess}
           >
             <motion.div
               className={`absolute -inset-1 rounded-2xl blur-xl transition-opacity ${mintFailed ? "opacity-50" : "opacity-0 group-hover:opacity-100"}`}
@@ -406,11 +400,14 @@ export function ShareCard({
               }}
             >
               {isMinting ? (
-                <Loader2 className="w-6 h-6 animate-spin" />
+                <Loader2 className="w-6 h-6 animate-spin" aria-hidden="true" />
               ) : mintFailed ? (
-                <AlertCircle className="w-6 h-6 text-red-500" />
+                <AlertCircle
+                  className="w-6 h-6 text-red-500"
+                  aria-hidden="true"
+                />
               ) : (
-                <Sparkles className="w-6 h-6" />
+                <Sparkles className="w-6 h-6" aria-hidden="true" />
               )}
               <span className={`text-2xl font-black tracking-tight ${mintFailed ? "text-red-100" : ""}`}>
                 {getMintButtonText()}
@@ -425,6 +422,7 @@ export function ShareCard({
               target="_blank"
               rel="noopener noreferrer"
               className="block mt-4 text-center text-sm font-bold text-white/40 hover:text-white/60 transition-colors"
+              aria-label="View full account history on Stellar Expert"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 1.1 }}
@@ -441,21 +439,21 @@ export function ShareCard({
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.5 }}
           >
-            <h3 className="text-7xl font-black mb-1 tracking-tight leading-none" style={{ color: mode === 'dark' ? 'rgba(255,255,255,0.9)' : 'rgba(0,0,0,0.8)' }}>
-              SHARE
-            </h3>
-            <h3
-              className="text-8xl font-black mb-6 tracking-tight leading-none"
-              style={{
-                background: mode === 'dark'
-                  ? `linear-gradient(to right, #ffffff, var(--color-theme-primary))`
-                  : `linear-gradient(to right, #1a1a1a, var(--color-theme-primary))`,
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-              }}
             >
-              YOUR WRAP
-            </h3>
+              <span className="block text-7xl text-white/90 mb-1">
+                SHARE
+              </span>
+              <span
+                className="block text-8xl mb-6"
+                style={{
+                  background: `linear-gradient(to right, #ffffff, var(--color-theme-primary))`,
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                }}
+              >
+                YOUR WRAP
+              </span>
+            </h1>
 
             <div className="space-y-4">
               <motion.button
@@ -470,19 +468,13 @@ export function ShareCard({
                 whileTap={{ scale: 0.98 }}
                 className="w-full group relative"
                 onClick={handleShareX}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    handleShareX();
-                  }
-                }}
               >
                 <motion.div
                   className="absolute -inset-1 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity"
                   style={{ backgroundColor: "var(--color-theme-primary)" }}
                 />
                 <div className="relative flex items-center gap-4 bg-white text-black px-8 py-6 rounded-2xl border border-white/20">
-                  <Share2 className="w-6 h-6" />
+                  <Share2 className="w-6 h-6" aria-hidden="true" />
                   <span className="text-2xl font-black tracking-tight">
                     Share to Social
                   </span>
@@ -501,12 +493,6 @@ export function ShareCard({
                 whileTap={{ scale: 0.98 }}
                 className="w-full group relative"
                 onClick={handleShareX}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    handleShareX();
-                  }
-                }}
               >
                 <motion.div
                   className="absolute -inset-1 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity"
@@ -520,7 +506,7 @@ export function ShareCard({
                     borderColor: mode === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)'
                   }}
                 >
-                  <Twitter className="w-6 h-6" />
+                  <Twitter className="w-6 h-6" aria-hidden="true" />
                   <span className="text-2xl font-black tracking-tight">
                     Post to X
                   </span>
@@ -546,6 +532,7 @@ export function ShareCard({
                   }
                 }}
                 disabled={isDownloading}
+                aria-label={isDownloading ? "Generating share image" : "Download share image"}
               >
                 <motion.div
                   className="absolute -inset-1 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity"
@@ -560,9 +547,12 @@ export function ShareCard({
                   }}
                 >
                   {isDownloading ? (
-                    <Loader2 className="w-6 h-6 animate-spin" />
+                    <Loader2
+                      className="w-6 h-6 animate-spin"
+                      aria-hidden="true"
+                    />
                   ) : (
-                    <Download className="w-6 h-6" />
+                    <Download className="w-6 h-6" aria-hidden="true" />
                   )}
                   <span className="text-2xl font-black tracking-tight">
                     {isDownloading

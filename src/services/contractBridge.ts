@@ -6,7 +6,7 @@ import {
   xdr,
   BASE_FEE,
 } from 'stellar-sdk';
-import { Horizon } from '@stellar/stellar-sdk';
+import { Horizon } from 'stellar-sdk';
 import { Server, Api } from 'stellar-sdk/rpc';
 import { signTransaction } from '@stellar/freighter-api';
 import { Network, NETWORK_PASSPHRASES, SOROBAN_RPC_URLS, RPC_ENDPOINTS } from '../config';

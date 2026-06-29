@@ -3,7 +3,7 @@
  * Creates and manages Horizon server instances for different networks
  */
 
-import { Horizon } from "@stellar/stellar-sdk";
+import { Horizon } from "stellar-sdk";
 import { NEXT_PUBLIC_RPC_ENDPOINTS } from "./indexer";
 
 type NetworkType = "mainnet" | "testnet";

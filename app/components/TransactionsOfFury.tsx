@@ -143,21 +143,31 @@ const TransactionsOfFury: React.FC = () => {
         <div className="relative z-10 flex flex-col items-center justify-center h-full px-6 md:px-12">
           {/* Home Button */}
           <div className="absolute top-4 left-4 sm:top-6 sm:left-6 md:top-8 md:left-8">
-            <button className="flex items-center gap-2 px-4 py-2 sm:gap-3 sm:px-6 sm:py-3 md:gap-4 md:px-10 md:py-5 text-sm sm:text-base md:text-lg font-bold text-white bg-white/5 border border-white/20 rounded-full hover:bg-white/10 transition-all backdrop-blur-sm shadow-lg">
-              <Home className="w-4 h-4 sm:w-5 sm:h-5 md:w-7 md:h-7" />
+            <button
+              className="flex items-center gap-2 px-4 py-2 sm:gap-3 sm:px-6 sm:py-3 md:gap-4 md:px-10 md:py-5 text-sm sm:text-base md:text-lg font-bold text-white bg-white/5 border border-white/20 rounded-full hover:bg-white/10 transition-all backdrop-blur-sm shadow-lg"
+              aria-label="Go to home page"
+            >
+              <Home
+                className="w-4 h-4 sm:w-5 sm:h-5 md:w-7 md:h-7"
+                aria-hidden="true"
+              />
               <span>HOME</span>
             </button>
           </div>
 
           {/* Paint Brush Icon (top right) */}
           <div className="absolute top-4 right-4 sm:top-6 sm:right-6 md:top-8 md:right-8">
-            <button 
+            <button
               className="relative p-4 sm:p-6 md:p-9 text-white bg-white/5 border-2 border-emerald-500 rounded-full hover:bg-white/10 transition-all backdrop-blur-sm"
+              aria-label="Open color theme picker"
               style={{
                 boxShadow: '0 0 20px rgba(16, 185, 129, 0.6), 0 0 40px rgba(16, 185, 129, 0.3)'
               }}
             >
-              <Palette className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7" />
+              <Palette
+                className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7"
+                aria-hidden="true"
+              />
             </button>
           </div>
 
@@ -177,7 +187,10 @@ const TransactionsOfFury: React.FC = () => {
               {/* Glow effect behind number */}
               <div className="absolute inset-0 blur-[60px] sm:blur-[80px] bg-emerald-500/30 animate-pulse" />
               
-              <motion.h1 className="relative text-[6rem] sm:text-[8rem] md:text-[12rem] lg:text-[16rem] xl:text-[20rem] font-black tracking-tighter leading-none">
+              <motion.h1
+                className="relative text-[6rem] sm:text-[8rem] md:text-[12rem] lg:text-[16rem] xl:text-[20rem] font-black tracking-tighter leading-none focus:outline-none"
+                aria-label={`${displayCount} transactions`}
+              >
                 <span 
                   className="bg-clip-text text-transparent"
                   style={{
@@ -199,7 +212,11 @@ const TransactionsOfFury: React.FC = () => {
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.5, duration: 0.8 }}
             >
-              <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-bold tracking-[0.15em] sm:tracking-[0.2em] text-white uppercase px-4">
+              <h2
+                data-story-heading="true"
+                tabIndex={-1}
+                className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-bold tracking-[0.15em] sm:tracking-[0.2em] text-white uppercase px-4 focus:outline-none"
+              >
                 Transactions of Fury
               </h2>
             </motion.div>
@@ -252,15 +269,27 @@ const TransactionsOfFury: React.FC = () => {
 
           {/* Share Button (bottom left) */}
           <div className="absolute bottom-4 left-4 sm:bottom-6 sm:left-6 md:bottom-8 md:left-8">
-            <button className="p-4 sm:p-5 md:p-7 text-white bg-white/5 border border-white/20 rounded-full hover:bg-white/10 transition-all backdrop-blur-sm shadow-lg">
-              <Share2 className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7" />
+            <button
+              className="p-4 sm:p-5 md:p-7 text-white bg-white/5 border border-white/20 rounded-full hover:bg-white/10 transition-all backdrop-blur-sm shadow-lg"
+              aria-label="Share Transactions of Fury"
+            >
+              <Share2
+                className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7"
+                aria-hidden="true"
+              />
             </button>
           </div>
 
           {/* Next Arrow (bottom right) */}
           <div className="absolute bottom-4 right-4 sm:bottom-6 sm:right-6 md:bottom-8 md:right-8">
-            <button className="p-4 sm:p-5 md:p-7 text-white bg-white/5 border border-white/20 rounded-full hover:bg-white/10 transition-all backdrop-blur-sm hover:border-emerald-500/40 shadow-lg">
-              <ChevronRight className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />
+            <button
+              className="p-4 sm:p-5 md:p-7 text-white bg-white/5 border border-white/20 rounded-full hover:bg-white/10 transition-all backdrop-blur-sm hover:border-emerald-500/40 shadow-lg"
+              aria-label="Go to next story step"
+            >
+              <ChevronRight
+                className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8"
+                aria-hidden="true"
+              />
             </button>
           </div>
         </div>

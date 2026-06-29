@@ -100,6 +100,9 @@ export function IndexingSkeleton({
   };
 
   const stepViz = getStepVisualization(currentStep);
+  const currentStepLabel = currentStep
+    ? INDEXING_STEPS[currentStep].label
+    : "Initializing";
 
   if (!isLoading && !indexingError) {
     return null;
@@ -193,6 +196,7 @@ export function IndexingSkeleton({
                     <stepViz.icon
                       className="w-8 h-8"
                       style={{ color: stepViz.color }}
+                      aria-hidden="true"
                     />
                   </motion.div>
 
@@ -248,6 +252,7 @@ export function IndexingSkeleton({
             aria-valuenow={currentStep ? stepProgress[currentStep] : 0}
             aria-valuemin={0}
             aria-valuemax={100}
+            aria-label={`${currentStepLabel} progress`}
           >
             <div
               className="h-full rounded-full transition-[width] duration-300 ease-out"
@@ -280,6 +285,7 @@ export function IndexingSkeleton({
             aria-valuenow={overallProgress}
             aria-valuemin={0}
             aria-valuemax={100}
+            aria-label="Overall indexing progress"
           >
             <div
               className="h-full transition-[width] duration-300 ease-out"

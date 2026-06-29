@@ -343,7 +343,10 @@ export default function ConnectPage() {
           className="flex items-center gap-2 px-4 py-3 rounded-xl backdrop-blur-xl border border-white/20"
           style={{ backgroundColor: "rgba(0, 0, 0, 0.5)" }}
         >
-          <ArrowLeft className="w-5 h-5 text-white group-hover:text-white/80 transition-colors" />
+          <ArrowLeft
+            className="w-5 h-5 text-white group-hover:text-white/80 transition-colors"
+            aria-hidden="true"
+          />
           <span className="text-sm font-black text-white/80 group-hover:text-white transition-colors hidden sm:inline">
             BACK
           </span>
@@ -401,6 +404,7 @@ export default function ConnectPage() {
                 <Wallet
                   className="w-10 h-10 sm:w-12 sm:h-12"
                   style={{ color: "var(--color-theme-primary)" }}
+                  aria-hidden="true"
                 />
               </div>
             </div>
@@ -494,6 +498,7 @@ export default function ConnectPage() {
                 <Copy
                   className="w-5 h-5"
                   style={{ color: "var(--color-theme-primary)" }}
+                  aria-hidden="true"
                 />
               </motion.button>
               <AnimatePresence mode="popLayout">
@@ -516,7 +521,10 @@ export default function ConnectPage() {
                     exit={{ opacity: 0, scale: 0.8 }}
                     className="absolute right-12 top-1/2 -translate-y-1/2 pr-2 border-r border-white/20"
                   >
-                    <CheckCircle className="w-5 h-5 text-green-500" />
+                    <CheckCircle
+                      className="w-5 h-5 text-green-500"
+                      aria-hidden="true"
+                    />
                   </motion.div>
                 ) : validationState === "invalid" ||
                   validationState === "invalid-format" ||
@@ -530,7 +538,10 @@ export default function ConnectPage() {
                     exit={{ opacity: 0, scale: 0.8 }}
                     className="absolute right-12 top-1/2 -translate-y-1/2 pr-2 border-r border-white/20"
                   >
-                    <XCircle className="w-5 h-5 text-red-500" />
+                    <XCircle
+                      className="w-5 h-5 text-red-500"
+                      aria-hidden="true"
+                    />
                   </motion.div>
                 ) : null}
               </AnimatePresence>
@@ -694,6 +705,7 @@ export default function ConnectPage() {
                     <Wallet
                       className="w-5 h-5"
                       style={{ color: "var(--color-theme-primary)" }}
+                      aria-hidden="true"
                     />
                     <span>Connect with Freighter</span>
                   </>
@@ -725,6 +737,7 @@ export default function ConnectPage() {
                     <Wallet
                       className="w-5 h-5"
                       style={{ color: "var(--color-theme-primary)" }}
+                      aria-hidden="true"
                     />
                     <span>Connect with Albedo</span>
                   </>

@@ -174,7 +174,7 @@ export default function ShareCardPage() {
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.4 }}
         >
-          <ExternalLink className="w-3.5 h-3.5" />
+          <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
           View full history on Stellar.expert
         </motion.a>
       )}
@@ -195,7 +195,6 @@ export default function ShareCardPage() {
                 {/* X / Twitter */}
                 <button
                   onClick={() => handleShare("x")}
-                  onKeyDown={handleShareKeyDown("x")}
                   className="flex cursor-pointer items-center pl-4 w-42 h-15 gap-3 p-2 rounded-xl bg-[#0F0F10] hover:bg-[#1a1a1c] transition-colors group"
                   role="menuitem"
                 >
@@ -207,7 +206,6 @@ export default function ShareCardPage() {
 
                 <button
                   onClick={() => handleShare("whatsapp")}
-                  onKeyDown={handleShareKeyDown("whatsapp")}
                   className="flex cursor-pointer items-center pl-4 w-42 h-15 gap-3 p-2 rounded-xl bg-[#0F0F10] hover:bg-[#1a1a1c] transition-colors group"
                   role="menuitem"
                 >
@@ -221,7 +219,6 @@ export default function ShareCardPage() {
 
                 <button
                   onClick={() => handleShare("facebook")}
-                  onKeyDown={handleShareKeyDown("facebook")}
                   className="flex items-center cursor-pointer pl-4 gap-3 p-2 w-42 h-15 rounded-xl bg-[#0F0F10] hover:bg-[#1a1a1c] transition-colors"
                   role="menuitem"
                 >
@@ -235,7 +232,6 @@ export default function ShareCardPage() {
 
                 <button
                   onClick={() => handleShare("linkedin")}
-                  onKeyDown={handleShareKeyDown("linkedin")}
                   className="flex items-center pl-4 cursor-pointer gap-3 p-2 w-42 h-15 rounded-xl bg-[#0F0F10] hover:bg-[#1a1a1c] transition-colors"
                   role="menuitem"
                 >
@@ -249,7 +245,6 @@ export default function ShareCardPage() {
 
                 <button
                   onClick={() => handleShare("telegram")}
-                  onKeyDown={handleShareKeyDown("telegram")}
                   className="flex items-center cursor-pointer pl-4 gap-3 p-2 w-42 h-15 rounded-xl bg-[#0F0F10] hover:bg-[#1a1a1c] transition-colors"
                   role="menuitem"
                 >
@@ -273,14 +268,16 @@ export default function ShareCardPage() {
             onClick={() => setShareOpen(!shareOpen)}
             onKeyDown={toggleShareKeyDown}
             className="flex h-12 w-12 sm:h-16 sm:w-16 items-center justify-center rounded-full border border-white/10 bg-black/60 text-white backdrop-blur-md transition hover:bg-white/5"
-            aria-label="Share"
             aria-expanded={shareOpen}
           >
             <motion.div
               animate={{ rotate: shareOpen ? 50 : 0 }}
               transition={{ type: "spring", stiffness: 260, damping: 20 }}
             >
-              <Share2 className="h-5 w-5 sm:h-7 sm:w-7 cursor-pointer" />
+              <Share2
+                className="h-5 w-5 sm:h-7 sm:w-7 cursor-pointer"
+                aria-hidden="true"
+              />
             </motion.div>
           </button>
         </div>
