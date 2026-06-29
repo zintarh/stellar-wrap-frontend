@@ -6,8 +6,9 @@ import { ColorToggle } from "./ColorToggle";
 import { DarkLightToggle } from "./DarkLightToggle";
 import { motion } from "framer-motion";
 import { useWrapStore } from "@/app/store/wrapStore";
+import { useTransactionStore } from "@/app/store/transactionStore";
+import { useMultiTimeframeStore } from "@/app/store/multiTimeframeStore";
 import { LogOut } from "lucide-react";
-import { useTheme } from "../context/ThemeContext";
 
 function truncate(addr: string) {
   return `${addr.slice(0, 4)}…${addr.slice(-4)}`;
@@ -16,10 +17,12 @@ function truncate(addr: string) {
 export function Navbar() {
   const router = useRouter();
   const { address, reset } = useWrapStore();
-  const { mode } = useTheme();
 
   const handleDisconnect = () => {
     reset();
+    resetTransaction();
+    resetMultiTimeframe();
+    toast.success("Wallet disconnected");
     router.push("/");
   };
 
