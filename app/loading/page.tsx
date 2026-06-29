@@ -154,6 +154,7 @@ export default function LoadingScreen() {
         setResult(result);
         setStatus("ready");
         completeIndexing();
+        playSound(SOUND_NAMES.MINT_SUCCESS);
 
         // Give progress display time to be visible (minimum 1.5 seconds)
         setTimeout(() => {
