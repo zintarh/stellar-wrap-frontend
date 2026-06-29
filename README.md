@@ -259,6 +259,8 @@ Contract addresses are loaded per network; the app uses the selected network (ma
 ```markdown
 ### Running tests
 
+**Unit & Integration Tests:**
+
 ```bash
 pnpm install
 pnpm test
@@ -270,6 +272,27 @@ If you see `Cannot find module 'ansi-styles'` when running `pnpm test`, run a cl
 rm -rf node_modules && pnpm install
 pnpm test
 ```
+
+**End-to-End (E2E) Tests with Playwright:**
+
+Run the full user journey (landing → connect → loading → persona → share):
+
+```bash
+# Run e2e tests headlessly
+pnpm e2e
+
+# Run with interactive UI (recommended for development)
+pnpm e2e:ui
+```
+
+Tests mock the Horizon API and validate:
+- Manual wallet address entry
+- Wallet connection (Freighter/Albedo)
+- Loading/indexing progress
+- Persona reveal animation
+- Share card download
+
+E2E tests run automatically in CI on pull requests and push to main.
 
 ---
 
