@@ -125,15 +125,13 @@ export function StoryShell({ children, activeSegment = 1 }: StoryShellProps) {
       />
 
       {/* Top Controls */}
-      <div className="relative z-50 flex justify-between items-center px-8 md:px-12 py-8">
+      <div className="relative z-50 flex justify-between items-center px-3 sm:px-6 md:px-8 lg:px-12 py-4 sm:py-6 md:py-8 overflow-x-auto">
         {/* Home Button */}
         <motion.button
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.2 }}
           onClick={() => router.push("/")}
-          className="flex items-center gap-2.5 px-5 py-2.5 rounded-xl bg-black/50 border border-white/10 backdrop-blur-xl hover:bg-white/10 hover:border-white/20 transition-all font-black text-[11px] tracking-widest uppercase text-white/80 group"
-          aria-label="Go to home page"
         >
           <Home
             className="w-4 h-4 group-hover:scale-110 transition-transform"
@@ -147,12 +145,6 @@ export function StoryShell({ children, activeSegment = 1 }: StoryShellProps) {
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="flex gap-2"
-          role="progressbar"
-          aria-label={`Story progress: ${segmentLabel}`}
-          aria-valuemin={1}
-          aria-valuemax={7}
-          aria-valuenow={activeSegment + 1}
         >
           {[...Array(7)].map((_, i) => (
             <motion.div
@@ -173,7 +165,7 @@ export function StoryShell({ children, activeSegment = 1 }: StoryShellProps) {
         </motion.div>
 
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
 
             <MuteToggle />
           {/* Palette Button */}
@@ -202,13 +194,11 @@ export function StoryShell({ children, activeSegment = 1 }: StoryShellProps) {
       </div>
 
       {/* Bottom Controls */}
-      <div className="relative z-50 flex justify-between items-center px-8 md:px-12 py-8">
+      <div className="relative z-50 flex justify-between items-center px-3 sm:px-6 md:px-8 lg:px-12 py-4 sm:py-6 md:py-8 gap-4">
         <motion.button
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
-          className="p-4 rounded-full bg-black/50 border border-white/10 backdrop-blur-xl hover:bg-white/10 hover:border-white/20 transition-all"
-          aria-label="Share this story step"
         >
           <Share2 className="w-5 h-5 text-white/70" aria-hidden="true" />
         </motion.button>
@@ -217,8 +207,6 @@ export function StoryShell({ children, activeSegment = 1 }: StoryShellProps) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
-          className="p-4 rounded-full bg-black/50 border border-white/10 backdrop-blur-xl hover:bg-white/10 hover:border-white/20 transition-all group"
-          aria-label="Go to next story step"
         >
           <ChevronRight
             className="w-6 h-6 group-hover:translate-x-1 transition-transform text-white/70"
