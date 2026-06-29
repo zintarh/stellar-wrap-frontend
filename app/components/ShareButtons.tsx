@@ -10,6 +10,7 @@ interface ShareButtonsProps {
   hashtags?: string[];
   persona?: string;
   topStat?: string;
+  twitterText?: string;
 }
 
 function buildFarcasterComposeUrl(
@@ -33,6 +34,7 @@ export function ShareButtons({
   hashtags = [],
   persona,
   topStat,
+  twitterText,
 }: ShareButtonsProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [shareUrl, setShareUrl] = useState('');
@@ -52,9 +54,10 @@ export function ShareButtons({
   }, []);
 
   const hashtagString = hashtags.join(',');
+  const finalTwitterText = twitterText || text;
 
   const shareLinks = {
-    twitter: shareUrl ? `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareUrl)}&hashtags=${hashtagString}` : '',
+    twitter: shareUrl ? `https://twitter.com/intent/tweet?text=${encodeURIComponent(finalTwitterText)}&url=${encodeURIComponent(shareUrl)}&hashtags=${hashtagString}` : '',
     farcaster: shareOgUrl && appUrl ? buildFarcasterComposeUrl(text, appUrl, shareOgUrl, persona, topStat) : '',
     whatsapp: shareUrl ? `https://wa.me/?text=${encodeURIComponent(`${text} ${shareUrl}`)}` : '',
     facebook: shareUrl ? `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}` : '',
