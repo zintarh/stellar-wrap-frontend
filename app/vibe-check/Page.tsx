@@ -16,10 +16,12 @@ export default function VibeCheckPage() {
   const dapps = result?.dapps ?? [];
   const dexTradingSummary = result?.dexTradingSummary;
   const sorobanBuilderSummary = result?.sorobanBuilderSummary;
+  const portfolioDiversitySummary = result?.portfolioDiversitySummary;
+  const biggestDaySummary = result?.biggestDaySummary;
 
   return (
     <div className="relative w-full h-screen">
-      <Screen4VibeCheck vibes={vibes} dapps={dapps} dexTradingSummary={dexTradingSummary} sorobanBuilderSummary={sorobanBuilderSummary} />
+      <Screen4VibeCheck vibes={vibes} dapps={dapps} dexTradingSummary={dexTradingSummary} sorobanBuilderSummary={sorobanBuilderSummary} portfolioDiversitySummary={portfolioDiversitySummary} biggestDaySummary={biggestDaySummary} />
 
       <ProgressIndicator
         currentStep={4}

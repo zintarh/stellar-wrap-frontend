@@ -37,6 +37,27 @@ export interface SorobanBuilderSummary {
   builderScore: number;
 }
 
+export interface TopAsset {
+  assetCode: string;
+  percentage: number;
+}
+
+export interface PortfolioDiversitySummary {
+  score: number;
+  label: string;
+  uniqueAssetsCount: number;
+  topAssets: TopAsset[];
+}
+
+export interface BiggestDaySummary {
+  date: string;
+  transactionCount: number;
+  typeBreakdown: Record<string, number>;
+  topActivity: string;
+  tagline: string;
+  busiestDayOfWeek: string;
+}
+
 export interface IndexerResult {
   accountId: string;
   totalTransactions: number;
@@ -48,6 +69,8 @@ export interface IndexerResult {
   vibes: VibeTag[];
   dexTradingSummary?: DexTradingSummary;
   sorobanBuilderSummary?: SorobanBuilderSummary;
+  portfolioDiversitySummary?: PortfolioDiversitySummary;
+  biggestDaySummary?: BiggestDaySummary;
 }
 
 /** Cache entry version for schema migrations and validation */

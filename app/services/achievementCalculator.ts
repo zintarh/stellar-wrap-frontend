@@ -40,6 +40,12 @@ interface Operation {
   memo?: string;
   contract?: string;
   contract_id?: string;
+  function?: string;
+}
+
+interface DailyStats {
+  txCount: number;
+  categories: Record<string, number>;
 }
 
 /**
@@ -101,6 +107,20 @@ export function calculateAchievements(
         deploymentCount: 0,
         contractCallCount: 0,
         builderScore: 0,
+      },
+      portfolioDiversitySummary: {
+        score: 0,
+        label: "Mono-asset",
+        uniqueAssetsCount: 0,
+        topAssets: [],
+      },
+      biggestDaySummary: {
+        date: "",
+        transactionCount: 0,
+        typeBreakdown: {},
+        topActivity: "None",
+        tagline: "A chill day on Stellar",
+        busiestDayOfWeek: "None",
       }
     };
   }
@@ -139,7 +159,9 @@ export function calculateAchievements(
   // Additional metrics tracking
   let largestTransaction = 0;
   const counterparties = new Set<string>();
-  const dailyTransactions = new Map<string, number>();
+  
+  const dailyStats = new Map<string, DailyStats>();
+  const dayOfWeekCount = new Array(7).fill(0);
 
   // Process each transaction
   transactions.forEach((tx: Transaction) => {
@@ -153,8 +175,14 @@ export function calculateAchievements(
     }
 
     // Track daily activity
-    const txDate = new Date(tx.created_at).toISOString().split('T')[0];
-    dailyTransactions.set(txDate, (dailyTransactions.get(txDate) || 0) + 1);
+    const dateObj = new Date(tx.created_at);
+    const txDate = dateObj.toISOString().split('T')[0];
+    if (!dailyStats.has(txDate)) {
+      dailyStats.set(txDate, { txCount: 0, categories: {} });
+    }
+    const dayStat = dailyStats.get(txDate)!;
+    dayStat.txCount++;
+    dayOfWeekCount[dateObj.getDay()]++;
 
     // Process each operation in the transaction
     tx.operations.forEach((op: Operation) => {
@@ -165,12 +193,14 @@ export function calculateAchievements(
         case "payment":
         case "create_account":
           categories.payments++;
+          dayStat.categories.payments = (dayStat.categories.payments || 0) + 1;
           processPaymentOperation(op, tx, assetMap, assetVolumeMap, dappMap, counterparties);
           break;
 
         case "path_payment_strict_receive":
         case "path_payment_strict_send":
           categories.swaps++;
+          dayStat.categories.swaps = (dayStat.categories.swaps || 0) + 1;
           processPathPaymentOperation(op, assetMap, assetVolumeMap, vibeMap, dexTrackers);
           break;
 
@@ -179,7 +209,8 @@ export function calculateAchievements(
           // Check if this is a contract deployment (HostFunctionTypeCreateContract)
           // We'll assume the function field or asset/contract field indicates deployment
           const isDeployment = op.function === "HostFunctionTypeCreateContract" || 
-                               (typeof op === "object" && (op as any).function?.includes("CreateContract"));
+                               (typeof op === "object" && op.function?.includes("CreateContract"));
+          dayStat.categories.contractCalls = (dayStat.categories.contractCalls || 0) + 1;
           processContractOperation(op, dappMap, isDeployment, sorobanTrackers, tx);
           if (isDeployment) {
             vibeMap.set("soroban-user", (vibeMap.get("soroban-user") || 0) + 5); // Boost for deployments
@@ -191,6 +222,7 @@ export function calculateAchievements(
         case "extend_footprint_ttl":
         case "restore_footprint":
           categories.contractCalls++;
+          dayStat.categories.contractCalls = (dayStat.categories.contractCalls || 0) + 1;
           sorobanTrackers.contractCallCount++;
           vibeMap.set("soroban-user", (vibeMap.get("soroban-user") || 0) + 1);
           break;
@@ -199,6 +231,7 @@ export function calculateAchievements(
         case "manage_sell_offer":
         case "create_passive_sell_offer":
           categories.offers++;
+          dayStat.categories.offers = (dayStat.categories.offers || 0) + 1;
           processOfferOperation(op, assetMap, vibeMap, dexTrackers);
           break;
 
@@ -206,10 +239,12 @@ export function calculateAchievements(
         case "allow_trust":
         case "set_trust_line_flags":
           categories.trustlines++;
+          dayStat.categories.trustlines = (dayStat.categories.trustlines || 0) + 1;
           break;
 
         default:
           categories.other++;
+          dayStat.categories.other = (dayStat.categories.other || 0) + 1;
       }
 
       // Track largest transaction
@@ -273,6 +308,100 @@ export function calculateAchievements(
     builderScore,
   };
 
+  // Compute Portfolio Diversity Score
+  let shannonEntropy = 0;
+  const totalInteractions = Array.from(assetMap.values()).reduce((a, b) => a + b, 0);
+  let diversityScore = 0;
+  if (totalInteractions > 0 && assetMap.size > 1) {
+    assetMap.forEach(count => {
+      if (count > 0) {
+        const p = count / totalInteractions;
+        shannonEntropy -= p * Math.log(p);
+      }
+    });
+    const maxEntropy = Math.log(assetMap.size);
+    const evenness = maxEntropy > 0 ? shannonEntropy / maxEntropy : 0;
+    
+    const assetScore = Math.min(assetMap.size / 10, 1) * 50;
+    const evennessScore = evenness * 50;
+    diversityScore = Math.round(assetScore + evennessScore);
+  } else if (assetMap.size === 1) {
+    diversityScore = 0;
+  }
+
+  const topAssets = Array.from(assetMap.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .map(([assetCode, count]) => ({
+      assetCode,
+      percentage: Math.round((count / totalInteractions) * 100)
+    }));
+
+  let diversityLabel = "Mono-asset";
+  if (diversityScore >= 81) diversityLabel = "Portfolio Master";
+  else if (diversityScore >= 51) diversityLabel = "Diversified";
+  else if (diversityScore >= 21) diversityLabel = "Explorer";
+
+  const portfolioDiversitySummary = {
+    score: Math.min(100, Math.max(0, diversityScore)),
+    label: diversityLabel,
+    uniqueAssetsCount: assetMap.size,
+    topAssets,
+  };
+
+  // Compute Biggest Day Summary
+  let biggestDayDate = "";
+  let maxTxCountForDay = 0;
+  
+  for (const [date, stat] of Array.from(dailyStats.entries())) {
+    if (stat.txCount > maxTxCountForDay) {
+      maxTxCountForDay = stat.txCount;
+      biggestDayDate = date;
+    }
+  }
+  
+  const biggestDayStat = biggestDayDate ? dailyStats.get(biggestDayDate) : null;
+
+  const DAYS = ["Sundays", "Mondays", "Tuesdays", "Wednesdays", "Thursdays", "Fridays", "Saturdays"];
+  let maxDayOfWeekCount = 0;
+  let busiestDayOfWeekIndex = 0;
+  dayOfWeekCount.forEach((count, index) => {
+    if (count > maxDayOfWeekCount) {
+      maxDayOfWeekCount = count;
+      busiestDayOfWeekIndex = index;
+    }
+  });
+  const busiestDayOfWeek = maxDayOfWeekCount > 0 ? DAYS[busiestDayOfWeekIndex] : "None";
+
+  let biggestDayTagline = "A chill day on Stellar";
+  if (maxTxCountForDay >= 50) biggestDayTagline = "You went absolutely wild!";
+  else if (maxTxCountForDay >= 20) biggestDayTagline = "A very productive day";
+  else if (maxTxCountForDay >= 5) biggestDayTagline = "Solid activity on-chain";
+
+  let biggestDayTopActivity = "None";
+  if (biggestDayStat) {
+    const cats = Object.entries(biggestDayStat.categories).sort((a, b) => b[1] - a[1]);
+    biggestDayTopActivity = cats.map(([cat, count]) => `${count} ${cat}`).join(", ");
+  }
+
+  // Format date nicely
+  let formattedDate = biggestDayDate;
+  if (biggestDayDate) {
+    try {
+      const d = new Date(biggestDayDate);
+      formattedDate = new Intl.DateTimeFormat('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }).format(d);
+    } catch(e) {}
+  }
+
+  const biggestDaySummary = {
+    date: formattedDate,
+    transactionCount: maxTxCountForDay,
+    typeBreakdown: biggestDayStat ? biggestDayStat.categories : {},
+    topActivity: biggestDayTopActivity,
+    tagline: biggestDayTagline,
+    busiestDayOfWeek,
+  };
+
   return {
     accountId: "",
     totalTransactions: transactions.length,
@@ -286,6 +415,8 @@ export function calculateAchievements(
     vibes,
     dexTradingSummary,
     sorobanBuilderSummary,
+    portfolioDiversitySummary,
+    biggestDaySummary,
   };
 }
 

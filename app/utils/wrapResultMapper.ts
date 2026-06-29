@@ -31,6 +31,10 @@ export function mapIndexerResultToWrapResult(
     vibes: mockData.vibes,
     persona: mockData.persona,
     personaDescription: mockData.personaDescription,
+    portfolioDiversitySummary: indexerResult.portfolioDiversitySummary,
+    biggestDaySummary: indexerResult.biggestDaySummary,
+    dexTradingSummary: indexerResult.dexTradingSummary,
+    sorobanBuilderSummary: indexerResult.sorobanBuilderSummary,
   };
 }
 
