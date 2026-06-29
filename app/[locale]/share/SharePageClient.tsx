@@ -29,6 +29,7 @@ const SocialIcons = {
 
 export default function SharePageClient() {
   const [shareOpen, setShareOpen] = useState<boolean>(false);
+  const [shareUrl, setShareUrl] = useState<string>("");
   const shareMenuRef = useRef<HTMLDivElement | null>(null);
   const shareBtnRef = useRef<HTMLButtonElement | null>(null);
   const shareImageRef = useRef<HTMLDivElement>(null!);
@@ -59,6 +60,12 @@ export default function SharePageClient() {
 
     return computedColor || themeColors[color].primary;
   });
+
+  React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      setShareUrl(window.location.href);
+    }
+  }, []);
 
   const handleShare = (platform: string) => {
     const url = window.location.href;
@@ -112,7 +119,7 @@ export default function SharePageClient() {
         className="absolute"
         style={{ left: "-9999px", top: 0 }}
       >
-        <ShareImageCard themeColor={themeColor} archetypeImage={GOLDEN_USER.archetype.image} />
+        <ShareImageCard themeColor={themeColor} archetypeImage={GOLDEN_USER.archetype.image} shareUrl={shareUrl} />
       </div>
 
       <ShareCard

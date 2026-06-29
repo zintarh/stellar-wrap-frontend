@@ -9,14 +9,19 @@ import { mockData } from "../data/mockData";
 interface ShareImageCardProps {
   themeColor: string;
   archetypeImage?: string;
+  shareUrl?: string;
 }
 
-export function ShareImageCard({ themeColor, archetypeImage }: ShareImageCardProps) {
+export function ShareImageCard({ themeColor, archetypeImage, shareUrl }: ShareImageCardProps) {
   const { persona, transactions, username, vibes } = mockData;
   const topVibe = vibes[0];
   const resolvedArchetypeImage =
     archetypeImage ??
     `/archetypes/${persona.toLowerCase().replace(/^the\s+/, "").replace(/\s+/g, "-")}.png`;
+
+  const qrCodeUrl = shareUrl
+    ? `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(shareUrl)}`
+    : null;
 
   const getRgbValues = (color: string): string => {
     const rgbMatch = color.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
@@ -217,7 +222,7 @@ export function ShareImageCard({ themeColor, archetypeImage }: ShareImageCardPro
             left: "32px",
             right: "32px",
             display: "flex",
-            alignItems: "center",
+            alignItems: "flex-end",
             justifyContent: "space-between",
           }}
         >
@@ -232,25 +237,61 @@ export function ShareImageCard({ themeColor, archetypeImage }: ShareImageCardPro
           </div>
           <div
             style={{
-              width: "40px",
-              height: "40px",
-              borderRadius: "12px",
-              backdropFilter: "blur(4px)",
               display: "flex",
+              flexDirection: "column",
               alignItems: "center",
-              justifyContent: "center",
-              border: "1px solid rgba(255, 255, 255, 0.2)",
-              backgroundColor: "rgba(255, 255, 255, 0.1)",
+              gap: "8px",
             }}
           >
-            <div
-              style={{
-                width: "20px",
-                height: "20px",
-                borderRadius: "8px",
-                backgroundColor: themeColor,
-              }}
-            />
+            {qrCodeUrl && (
+              <>
+                <img
+                  src={qrCodeUrl}
+                  alt="Scan to view"
+                  style={{
+                    width: "120px",
+                    height: "120px",
+                    borderRadius: "8px",
+                    backgroundColor: "white",
+                    padding: "8px",
+                  }}
+                />
+                <div
+                  style={{
+                    fontSize: "10px",
+                    fontWeight: "700",
+                    color: "rgba(255, 255, 255, 0.6)",
+                    letterSpacing: "0.05em",
+                  }}
+                >
+                  SCAN TO VIEW
+                </div>
+              </>
+            )}
+            {!qrCodeUrl && (
+              <div
+                style={{
+                  width: "40px",
+                  height: "40px",
+                  borderRadius: "12px",
+                  backdropFilter: "blur(4px)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  border: "1px solid rgba(255, 255, 255, 0.2)",
+                  backgroundColor: "rgba(255, 255, 255, 0.1)",
+                }}
+              >
+                <div
+                  style={{
+                    width: "20px",
+                    height: "20px",
+                    borderRadius: "8px",
+                    backgroundColor: themeColor,
+                  }}
+                />
+              </div>
+            )}
           </div>
         </div>
       </div>
