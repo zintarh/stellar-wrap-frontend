@@ -46,8 +46,6 @@ export interface WrapResult {
   vibes: VibeSlice[];
   persona: string;
   personaDescription: string;
-  dexTradingSummary?: DexTradingSummaryType;
-  sorobanBuilderSummary?: SorobanBuilderSummaryType;
 }
 
 type WrapStatus = "idle" | "loading" | "ready" | "error";
@@ -315,9 +313,12 @@ export const useWrapStore = create<WrapStoreState>()(
 
       cancelIndexing: () => {
         set({
+          ...initialIndexingState,
           isCancelled: true,
           isLoading: false,
-          currentStep: null,
+          status: "idle",
+          result: null,
+          cacheMeta: null,
         });
         get().clearPersistedIndexingState();
       },

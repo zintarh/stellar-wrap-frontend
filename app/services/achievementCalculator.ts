@@ -244,35 +244,6 @@ export function calculateAchievements(
     assetMap,
   );
 
-  // Compute most traded pair
-  let mostTradedPair: string | undefined = undefined;
-  let maxPairCount = 0;
-  dexTrackers.pairMap.forEach((count, pair) => {
-    if (count > maxPairCount) {
-      maxPairCount = count;
-      mostTradedPair = pair;
-    }
-  });
-
-  const dexTradingSummary: DexTradingSummary = {
-    totalVolume: dexTrackers.totalVolume,
-    tradeCount: dexTrackers.tradeCount,
-    mostTradedPair,
-    buyCount: dexTrackers.buyCount,
-    sellCount: dexTrackers.sellCount,
-  };
-
-  // Compute builder score
-  const deploymentCount = sorobanTrackers.deployments.length;
-  const builderScore = deploymentCount * 100 + Math.floor(sorobanTrackers.contractCallCount / 10);
-
-  const sorobanBuilderSummary: SorobanBuilderSummary = {
-    deployments: sorobanTrackers.deployments,
-    deploymentCount,
-    contractCallCount: sorobanTrackers.contractCallCount,
-    builderScore,
-  };
-
   return {
     accountId: "",
     totalTransactions: transactions.length,
@@ -284,8 +255,6 @@ export function calculateAchievements(
       (a, b) => b.transactionCount - a.transactionCount || b.volume - a.volume,
     ),
     vibes,
-    dexTradingSummary,
-    sorobanBuilderSummary,
   };
 }
 

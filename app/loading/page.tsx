@@ -14,17 +14,6 @@ import { useSound } from "../hooks/useSound";
 import { SOUND_NAMES } from "../utils/soundManager";
 import { indexAccount } from "../services/indexerService";
 import { IndexerEventEmitter } from "../utils/indexerEventEmitter";
-import type { IndexerResult } from "../utils/indexer";
-import {
-  getCachedData,
-  getCachedDataKey,
-  getMostRecentCachedData,
-  parseCachedDataKey,
-} from "../services/cacheService";
-import {
-  getMockWrapResult,
-  mapIndexerResultToWrapResult,
-} from "../utils/wrapResultMapper";
 
 export default function LoadingScreen() {
   const router = useRouter();
@@ -39,8 +28,10 @@ export default function LoadingScreen() {
   }, [router, playSound]);
 
   const handleCancel = useCallback(() => {
+    abortIndexingRequests();
     cancelIndexing();
-    router.push("/");
+    toast.info("Indexing cancelled");
+    router.push("/connect");
   }, [cancelIndexing, router]);
 
   const handleRetry = useCallback(() => {
@@ -69,13 +60,9 @@ export default function LoadingScreen() {
 
   useEffect(() => {
     let isMounted = true;
+    const abortSignal = beginIndexingAbortScope();
 
-    // CRITICAL: Connect emitter to store BEFORE starting indexing to catch all events
-    console.log("Connecting event emitter to store");
     IndexerEventEmitter.getInstance().connectToStore();
-
-    // Always set isLoading to true at the start to guarantee progress display
-    console.log("Starting indexing");
     startIndexing();
 
     // Helper to emit progress through all indexing steps (for fallback/demo mode)
@@ -141,53 +128,11 @@ export default function LoadingScreen() {
 
         if (address) {
           try {
-            if (!navigator.onLine) {
-              const cacheKey = getCachedDataKey(
-                address,
-                network as "mainnet" | "testnet",
-                period as "weekly" | "monthly" | "yearly",
-              );
-              const cached =
-                (await getCachedData(cacheKey)) ||
-                (await getMostRecentCachedData());
 
               if (!cached) {
                 throw new Error("No cached wrap available offline.");
               }
 
-              result = await buildCachedWrapResult(cached);
-            } else {
-              console.log("Starting real indexer with address:", address);
-              const indexerResponse = await indexAccount(
-                address,
-                network as "mainnet" | "testnet",
-                period as "weekly" | "monthly" | "yearly",
-              );
-              const indexerResult = indexerResponse.result;
-              console.log("Indexer completed, result:", indexerResult, "fromCache:", indexerResponse.fromCache);
-
-              setCacheMeta({
-                fromCache: indexerResponse.fromCache,
-                cacheTimestamp: indexerResponse.cacheTimestamp,
-                refreshingInBackground: indexerResponse.refreshingInBackground,
-              });
-
-              result = mapIndexerResultToWrapResult(indexerResult);
-            }
-          } catch (indexerError) {
-            if (!navigator.onLine) {
-              const cached = await getMostRecentCachedData();
-              if (cached) {
-                result = await buildCachedWrapResult(cached);
-              } else {
-                throw indexerError;
-              }
-            } else {
-              // Fallback to mock data if real indexer fails
-              console.warn("Real indexer failed, using mock data:", indexerError);
-              await emitProgressThroughSteps();
-              result = getMockWrapResult();
-            }
           }
         } else {
           if (!navigator.onLine) {
@@ -198,13 +143,9 @@ export default function LoadingScreen() {
           }
 
           // No address provided - emit progress through steps for demo/fallback mode
-          if (!result) {
-            await emitProgressThroughSteps();
-            result = getMockWrapResult();
-          }
         }
 
-        if (!isMounted) return;
+        if (!isMounted || abortSignal.aborted || useWrapStore.getState().isCancelled) return;
 
         if (!result) {
           throw new Error("No wrap data available.");
@@ -221,7 +162,7 @@ export default function LoadingScreen() {
           }
         }, 1500);
       } catch (error: unknown) {
-        if (!isMounted) return;
+        if (isAbortError(error) || !isMounted) return;
         setStatus("error");
         if (error instanceof Error) {
           setError(error.message);
@@ -244,6 +185,8 @@ export default function LoadingScreen() {
 
     return () => {
       isMounted = false;
+      abortIndexingRequests();
+      clearIndexingAbortScope();
       IndexerEventEmitter.getInstance().reset();
     };
   }, [

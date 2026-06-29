@@ -182,12 +182,10 @@ export async function mintWrap(params: MintWrapParams): Promise<string> {
           break;
         case "confirmed":
           setTransactionState("confirmed");
-            }
           }
           break;
         case "failed":
           setTransactionState("failed");
-            }
           }
           break;
       }

@@ -4,6 +4,8 @@ import React from "react";
 
 export const runtime = 'edge';
 
+const CACHE_CONTROL = 'public, s-maxage=86400, stale-while-revalidate=604800';
+
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
@@ -12,12 +14,9 @@ export async function GET(req: NextRequest) {
     const persona = searchParams.get('persona') || 'Network Pioneer';
     const topVibe = searchParams.get('topVibe') || 'Steady';
     const vibePercentage = searchParams.get('vibePercentage') || '0';
-    
-    // archetypeImage: relative path e.g. /archetypes/wizard.png
     const archetypeImagePath = searchParams.get('archetypeImage') ||
       `/archetypes/${persona.toLowerCase().replace(/^the\s+/, '').replace(/\s+/g, '-')}.png`;
 
-    // Fetch archetype image for embedding (edge runtime requires absolute URL)
     const baseUrl = req.nextUrl.origin;
     let archetypeImageSrc: string | null = null;
     try {
@@ -35,7 +34,7 @@ export async function GET(req: NextRequest) {
       // image not found — render fallback layout without it safely
     }
 
-    return new ImageResponse(
+    const imageResponse = new ImageResponse(
       (
         <div
           style={{
@@ -126,7 +125,6 @@ export async function GET(req: NextRequest) {
                     </span>
                 </div>
 
-                {/* Persona — archetype image + bold name */}
                 <div style={{
                     display: 'flex',
                     flexDirection: 'column',
@@ -200,6 +198,9 @@ export async function GET(req: NextRequest) {
         height: 1200,
       }
     );
+
+    imageResponse.headers.set('Cache-Control', CACHE_CONTROL);
+    return imageResponse;
   } catch (e) {
     if (e instanceof Error) {
       console.error(e.message);

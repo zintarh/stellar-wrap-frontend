@@ -4,9 +4,6 @@ import { motion } from 'framer-motion';
 import { useMemo } from 'react';
 import { TrendingUp, Palette, Code, AppWindow } from 'lucide-react';
 import { formatDappDisplayName } from '@/app/utils/formatDappLabel';
-import { DexTradingSummary } from './DexTradingSummary';
-import { SorobanBuilderTimeline } from './SorobanBuilderTimeline';
-import type { DexTradingSummary as DexTradingSummaryType, SorobanBuilderSummary as SorobanBuilderSummaryType } from '@/app/utils/indexer';
 
 type VibeIconKey = 'defi' | 'nft' | 'dev';
 
@@ -25,8 +22,6 @@ interface TopDappItem {
 interface Screen4VibeCheckProps {
   vibes: VibeData[];
   dapps?: TopDappItem[];
-  dexTradingSummary?: DexTradingSummaryType;
-  sorobanBuilderSummary?: SorobanBuilderSummaryType;
 }
 
 const TOP_DAPPS_LIMIT = 5;
@@ -38,7 +33,12 @@ const vibeIcons: Record<VibeIconKey, React.ComponentType<{ className?: string }>
   dev: Code,
 };
 
-export function Screen4VibeCheck({ vibes, dapps = [] }: Screen4VibeCheckProps) {
+export function Screen4VibeCheck({
+  vibes,
+  dapps = [],
+  dailyActivity = {},
+  period = "monthly",
+}: Screen4VibeCheckProps) {
   const topDapps = useMemo(
     () => [...dapps].sort((a, b) => b.interactions - a.interactions).slice(0, TOP_DAPPS_LIMIT),
     [dapps],
@@ -235,8 +235,6 @@ export function Screen4VibeCheck({ vibes, dapps = [] }: Screen4VibeCheckProps) {
               </motion.div>
             )}
 
-            <DexTradingSummary summary={dexTradingSummary} />
-            <SorobanBuilderTimeline summary={sorobanBuilderSummary} />
           </div>
 
           {/* Right: Visualization */}

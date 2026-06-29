@@ -21,7 +21,6 @@ export function getHorizonServer(
 
 export function validateAccountId(accountId: string): boolean {
   try {
-    // Stellar account IDs start with 'G' and are 56 characters long
     return accountId.startsWith("G") && accountId.length === 56;
   } catch {
     return false;
