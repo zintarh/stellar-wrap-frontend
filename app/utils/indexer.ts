@@ -48,6 +48,8 @@ export interface IndexerResult {
   vibes: VibeTag[];
   dexTradingSummary?: DexTradingSummary;
   sorobanBuilderSummary?: SorobanBuilderSummary;
+  /** Single largest payment operation by amount, in its own asset's units. */
+  largestTransaction?: { amount: number; assetCode: string };
 }
 
 /** Cache entry version for schema migrations and validation */

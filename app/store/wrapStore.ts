@@ -20,6 +20,13 @@ const PERSISTENCE_TIMEOUT = 5 * 60 * 1000;
 
 export type WrapPeriod = "weekly" | "monthly" | "yearly";
 
+/** Day-count window per period, kept in sync with `app/utils/indexer.ts`'s PERIODS. */
+export const PERIODS: Record<WrapPeriod, number> = {
+  weekly: 7,
+  monthly: 30,
+  yearly: 365,
+};
+
 export interface DappData {
   name: string;
   logo?: string;
@@ -48,6 +55,7 @@ export interface WrapResult {
   personaDescription: string;
   dexTradingSummary?: DexTradingSummaryType;
   sorobanBuilderSummary?: SorobanBuilderSummaryType;
+  largestTransaction?: { amount: number; assetCode: string };
 }
 
 type WrapStatus = "idle" | "loading" | "ready" | "error";
