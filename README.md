@@ -271,11 +271,6 @@ rm -rf node_modules && pnpm install
 pnpm test
 ```
 
-### Running Lighthouse locally
-
-```bash
-yarn build
-yarn lhci:local
 ---
 
 See [TESTING.md](./TESTING.md) for full Lighthouse CI documentation, score thresholds, and troubleshooting.

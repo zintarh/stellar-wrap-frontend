@@ -104,22 +104,10 @@ export const isAlbedoInstalled = (): boolean => {
 export const connectAlbedo = async (_network: Network): Promise<string> => {
   if (!isAlbedoInstalled() || !window.albedo) {
     throw new Error(
-      "Albedo wallet not found. Please ensure the Albedo extension or script is loaded.",
     );
   }
 
   try {
-    const result = await window.albedo.publicKey();
-    return result.publicKey;
-  } catch (error: unknown) {
-    if (error instanceof Error) {
-      const msg = error.message?.toLowerCase() || "";
-      if (msg.includes("blocked") || msg.includes("popup")) {
-        throw new Error(
-          "Albedo popup was blocked by your browser. Please allow popups for this site.",
-        );
-      }
-      if (msg.includes("cancel") || msg.includes("denied") || msg.includes("declined")) {
         throw new Error("Connection rejected by user.");
       }
       throw error;

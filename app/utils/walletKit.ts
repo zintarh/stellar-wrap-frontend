@@ -182,19 +182,11 @@ export async function mintWrap(params: MintWrapParams): Promise<string> {
           break;
         case "confirmed":
           setTransactionState("confirmed");
-          {
-            const transactionHash = getStringField(data, "transactionHash");
-            if (transactionHash) {
-              setTransactionHash(transactionHash);
             }
           }
           break;
         case "failed":
           setTransactionState("failed");
-          {
-            const error = getStringField(data, "error");
-            if (error) {
-              setTransactionError(error);
             }
           }
           break;
