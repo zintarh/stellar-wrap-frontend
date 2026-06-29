@@ -2,17 +2,10 @@
 
 import React, { JSX, useCallback, useEffect, useRef, useState } from "react";
 import { motion, useAnimation, AnimatePresence } from "framer-motion";
-import { Home, Share2, ChevronRight } from "lucide-react";
+import { Home, Share2, ChevronRight, X } from "lucide-react";
 import Link from "next/link";
 import { readStreamableValue } from "ai/rsc";
-
-// --- Asset Mapping ---
-const ARCHETYPE_DATA: Record<string, { description: string }> = {
-  "The Wizard": {
-    description:
-      "Like Gandalf in Middle-earth, you wield DeFi magic with wisdom. The blockchain bends to your will.",
-  },
-};
+import { getArchetypeDescription } from "@/data/archetypeConfig";
 
 // Removed theme system - using standard CSS variables from globals.css
 const useConfetti = (color?: string) => {
@@ -135,6 +128,7 @@ export default function ArchetypeReveal(): JSX.Element {
   const controls: ReturnType<typeof useAnimation> = useAnimation();
   const [isFlipped, setIsFlipped] = useState<boolean>(false);
   const [streamedDescription, setStreamedDescription] = useState<string>("");
+  const [showTooltip, setShowTooltip] = useState<boolean>(false);
   const { playSound } = useSound();
 
   // Menu states
@@ -143,6 +137,8 @@ export default function ArchetypeReveal(): JSX.Element {
   // Refs
   const shareMenuRef = useRef<HTMLDivElement | null>(null);
   const shareBtnRef = useRef<HTMLButtonElement | null>(null);
+  const tooltipRef = useRef<HTMLDivElement | null>(null);
+  const cardRef = useRef<HTMLDivElement | null>(null);
 
   const { result } = useWrapStore();
   const notificationStore = useNotificationStore();
@@ -161,8 +157,7 @@ export default function ArchetypeReveal(): JSX.Element {
     description:
       streamedDescription ||
       result?.personaDescription ||
-      ARCHETYPE_DATA[archetypeKey]?.description ||
-      ARCHETYPE_DATA["The Wizard"].description,
+      getArchetypeDescription(archetypeKey),
   };
 
   const displayedDescription = useTypewriter(data.description, 25, 2200);
@@ -220,7 +215,7 @@ export default function ArchetypeReveal(): JSX.Element {
     }
   };
 
-  // click-outside to close share menu
+  // click-outside to close share menu and tooltip
   useEffect(() => {
     const onDocClick = (e: MouseEvent) => {
       const target = e.target as Node | null;
@@ -234,10 +229,22 @@ export default function ArchetypeReveal(): JSX.Element {
       ) {
         setShareOpen(false);
       }
+
+      // Close Tooltip
+      if (
+        showTooltip &&
+        !tooltipRef.current?.contains(target) &&
+        !cardRef.current?.contains(target)
+      ) {
+        setShowTooltip(false);
+      }
     };
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape" && shareOpen) {
         setShareOpen(false);
+      }
+      if (e.key === "Escape" && showTooltip) {
+        setShowTooltip(false);
       }
     };
     document.addEventListener("mousedown", onDocClick);
@@ -246,7 +253,7 @@ export default function ArchetypeReveal(): JSX.Element {
       document.removeEventListener("mousedown", onDocClick);
       document.removeEventListener("keydown", onKeyDown);
     };
-  }, [shareOpen]);
+  }, [shareOpen, showTooltip]);
 
   const triggerConfetti = useConfetti();
 
@@ -457,14 +464,28 @@ export default function ArchetypeReveal(): JSX.Element {
             />
 
             <motion.div
+              ref={cardRef}
               role="button"
               tabIndex={0}
-              aria-label={`${archetypeKey} persona reveal card. ${result?.totalTransactions ?? 0} transactions, ${result?.percentile ?? 0} percentile. Tap to replay persona reveal.`}
-              onClick={handleCardTap}
+              aria-label={`${archetypeKey} persona reveal card. ${result?.totalTransactions ?? 0} transactions, ${result?.percentile ?? 0} percentile. Tap to replay persona reveal. Long press or hover to see archetype description.`}
+              onClick={(e) => {
+                if (isFlipped && !showTooltip) {
+                  setShowTooltip(true);
+                  e.stopPropagation();
+                } else {
+                  handleCardTap();
+                }
+              }}
+              onMouseEnter={() => isFlipped && setShowTooltip(true)}
+              onMouseLeave={() => setShowTooltip(false)}
               onKeyDown={(event) => {
                 if (event.key === "Enter" || event.key === " ") {
                   event.preventDefault();
-                  handleCardTap();
+                  if (isFlipped && !showTooltip) {
+                    setShowTooltip(true);
+                  } else {
+                    handleCardTap();
+                  }
                 }
               }}
               initial={{ y: 40, scale: 0.95, opacity: 0, rotateY: 0 }}
@@ -542,6 +563,33 @@ export default function ArchetypeReveal(): JSX.Element {
                 </h1>
               </div>
             </motion.div>
+
+            {/* Tooltip / Explanation Panel */}
+            <AnimatePresence>
+              {showTooltip && (
+                <motion.div
+                  ref={tooltipRef}
+                  initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                  transition={{ duration: 0.2 }}
+                  className="absolute top-full mt-4 left-1/2 -translate-x-1/2 z-20 w-[280px] sm:w-[500px] max-w-[90vw]"
+                >
+                  <div className="relative backdrop-blur-md px-4 sm:px-6 py-3 sm:py-4 rounded-lg sm:rounded-xl border border-white/20 bg-black/70 shadow-xl">
+                    <button
+                      onClick={() => setShowTooltip(false)}
+                      className="absolute top-2 right-2 sm:top-3 sm:right-3 p-1 hover:bg-white/10 rounded-md transition-colors"
+                      aria-label="Close tooltip"
+                    >
+                      <X className="w-4 h-4 sm:w-5 sm:h-5 text-white/60 hover:text-white" />
+                    </button>
+                    <p className="text-xs sm:text-sm text-gray-200 leading-relaxed pr-6">
+                      <span className="font-semibold text-white">Archetype Rule:</span> {data.description}
+                    </p>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
           {/* Description Text Below Card */}
