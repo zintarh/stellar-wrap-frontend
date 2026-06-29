@@ -1,10 +1,7 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { lazy, Suspense } from 'react';
 import { Home, Share2, ChevronRight, Palette } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { ReactNode, useEffect } from "react";
-import { MuteToggle } from "./MuteToggle";
 
 interface StoryShellProps {
   children: ReactNode;
@@ -138,6 +135,25 @@ export function StoryShell({ children, activeSegment = 1 }: StoryShellProps) {
             aria-hidden="true"
           />
           <span>Home</span>
+          <AnimatePresence mode="wait">
+            {cards.map((card, index) => (
+              <motion.div 
+                key={card.id}
+                initial={{ opacity: 0, x: 100 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -100 }}
+                className="absolute inset-0"
+              >
+                <LazyStoryCard>
+                  <Suspense fallback={<StorySkeleton />}>
+                    {/* Render your specific lazy component based on the flow */}
+                    {index === 0 && <TopDapps />}
+                    {index === 1 && <TransactionsOfFury />}
+                  </Suspense>
+                </LazyStoryCard>
+              </motion.div>
+            ))}
+        </AnimatePresence>
         </motion.button>
 
         {/* Segmented Progress Bar */}
