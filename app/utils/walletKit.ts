@@ -25,6 +25,15 @@ if (
 // Initialize StellarWalletsKit for testnet
 let isInitialized = false;
 
+function getStringProperty(data: unknown, key: string): string | null {
+  if (data && typeof data === "object" && key in data) {
+    const value = (data as Record<string, unknown>)[key];
+    return typeof value === "string" ? value : null;
+  }
+
+  return null;
+}
+
 export function initWalletKit(): void {
   if (!isInitialized && typeof window !== "undefined") {
     StellarWalletsKit.init({
@@ -173,14 +182,20 @@ export async function mintWrap(params: MintWrapParams): Promise<string> {
           break;
         case "confirmed":
           setTransactionState("confirmed");
-          if (data && typeof data === 'object' && 'transactionHash' in data) {
-            setTransactionHash((data as any).transactionHash as string);
+          {
+            const transactionHash = getStringProperty(data, "transactionHash");
+            if (transactionHash) {
+              setTransactionHash(transactionHash);
+            }
           }
           break;
         case "failed":
           setTransactionState("failed");
-          if (data && typeof data === 'object' && 'error' in data) {
-            setTransactionError((data as any).error as string);
+          {
+            const error = getStringProperty(data, "error");
+            if (error) {
+              setTransactionError(error);
+            }
           }
           break;
       }

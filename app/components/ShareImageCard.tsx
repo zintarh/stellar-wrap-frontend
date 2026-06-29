@@ -3,18 +3,33 @@
 import Image from "next/image";
 import { mockData } from "../data/mockData";
 
-interface ShareImageCardProps {
-  themeColor: string;
-  archetypeImage?: string; // e.g. '/archetypes/wizard.png'
+interface ShareImageCardVibe {
+  percentage: number;
+  label: string;
 }
 
-export function ShareImageCard({ themeColor, archetypeImage }: ShareImageCardProps) {
-  const { persona, transactions, username, vibes } = mockData;
+interface ShareImageCardData {
+  username: string;
+  transactions: number;
+  persona: string;
+  vibes?: ShareImageCardVibe[];
+}
+
+interface ShareImageCardProps {
+  themeColor: string;
+  archetypeImage?: string | null; // e.g. '/archetypes/wizard.png'; null hides the image fallback.
+  data?: ShareImageCardData;
+}
+
+export function ShareImageCard({ themeColor, archetypeImage, data }: ShareImageCardProps) {
+  const { persona, transactions, username, vibes = [] } = data ?? mockData;
   const topVibe = vibes[0];
   // Derive image from persona name if not explicitly provided: "The Wizard" -> /archetypes/wizard.png
   const resolvedArchetypeImage =
-    archetypeImage ??
-    `/archetypes/${persona.toLowerCase().replace(/^the\s+/, "").replace(/\s+/g, "-")}.png`;
+    archetypeImage === undefined
+      ? `/archetypes/${persona.toLowerCase().replace(/^the\s+/, "").replace(/\s+/g, "-")}.png`
+      : archetypeImage;
+  const formattedTransactions = new Intl.NumberFormat("en-US").format(transactions);
 
   // Convert any color format to rgb values for gradient
   const getRgbValues = (color: string): string => {
@@ -138,12 +153,13 @@ export function ShareImageCard({ themeColor, archetypeImage }: ShareImageCardPro
               style={{
                 fontSize: "60px",
                 fontWeight: "900",
+                background: `linear-gradient(to right, #ffffff, ${themeColor})`,
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
                 backgroundClip: "text",
               }}
             >
-              {transactions}
+              {formattedTransactions}
             </p>
           </div>
 
@@ -168,13 +184,27 @@ export function ShareImageCard({ themeColor, archetypeImage }: ShareImageCardPro
               Persona
             </p>
             <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-              <Image
-                src={resolvedArchetypeImage}
-                alt={persona}
-                width={64}
-                height={64}
-                style={{ borderRadius: "12px", objectFit: "cover", flexShrink: 0 }}
-              />
+              {resolvedArchetypeImage ? (
+                <Image
+                  src={resolvedArchetypeImage}
+                  alt={persona}
+                  width={64}
+                  height={64}
+                  style={{ borderRadius: "12px", objectFit: "cover", flexShrink: 0 }}
+                />
+              ) : (
+                <div
+                  aria-hidden="true"
+                  style={{
+                    width: "64px",
+                    height: "64px",
+                    borderRadius: "12px",
+                    flexShrink: 0,
+                    border: "1px solid rgba(255, 255, 255, 0.18)",
+                    backgroundColor: "rgba(255, 255, 255, 0.08)",
+                  }}
+                />
+              )}
               <p
                 style={{
                   fontSize: "30px",
@@ -215,7 +245,7 @@ export function ShareImageCard({ themeColor, archetypeImage }: ShareImageCardPro
                 color: "white",
               }}
             >
-              {topVibe.percentage}% {topVibe.label}
+              {topVibe ? `${topVibe.percentage}% ${topVibe.label}` : "No vibe data"}
             </p>
           </div>
         </div>
