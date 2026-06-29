@@ -275,6 +275,96 @@ pnpm test
 
 See [TESTING.md](./TESTING.md) for full Lighthouse CI documentation, score thresholds, and troubleshooting.
 
+## 📡 API Reference
+
+The application exposes two HTTP API routes. A machine-readable [OpenAPI 3.1 spec](./openapi.yaml) is also available.
+
+TypeScript request/response types live in [`src/types/api.ts`](./src/types/api.ts).
+
+---
+
+### `GET /api/wrapped`
+
+Returns aggregated on-chain statistics for a Stellar address.
+
+**Query parameters**
+
+| Parameter   | Type     | Required | Default    | Description |
+|-------------|----------|----------|------------|-------------|
+| `accountId` | `string` | ✅ Yes   | —          | Stellar public key (56 chars, starts with `G`) |
+| `network`   | `string` | No       | `mainnet`  | `mainnet` or `testnet` |
+| `period`    | `string` | No       | `monthly`  | `weekly`, `monthly`, or `yearly` |
+
+**Cache behaviour**: Results are cached in IndexedDB for 60 minutes. Subsequent requests within that window return `cached: true` and may trigger a background re-index (`refreshingInBackground: true`).
+
+**Example request**
+
+```bash
+curl "https://stellar-wrap.vercel.app/api/wrapped?accountId=GAAZI4TCR3TY5OJHCTJC2A4QSY6CJWJH5IAJTGKIN2ER7LBNVKOCCWN&network=mainnet&period=monthly"
+```
+
+**Example response (200)**
+
+```json
+{
+  "username": "alice.stellar",
+  "address": "GAAZI4TCR3TY5OJHCTJC2A4QSY6CJWJH5IAJTGKIN2ER7LBNVKOCCWN",
+  "totalTransactions": 142,
+  "totalVolume": 58432.5,
+  "percentile": 87,
+  "persona": "The DeFi Patron",
+  "personaDescription": "You move capital with purpose across Stellar's DEX.",
+  "dapps": [
+    { "name": "Stellar DEX", "transactions": 80, "color": "#6366f1", "gradient": "linear-gradient(135deg,#6366f1,#8b5cf6)" }
+  ],
+  "vibes": [
+    { "type": "Power User", "percentage": 72, "color": "#f59e0b", "label": "Power User" }
+  ],
+  "cached": false,
+  "cacheTimestamp": null,
+  "refreshingInBackground": false
+}
+```
+
+**Error responses**
+
+| Status | Meaning |
+|--------|---------|
+| `400`  | Missing or invalid `accountId`, `network`, or `period` |
+| `404`  | Account not found on the specified network |
+| `429`  | Horizon rate limit exceeded — retry after a short delay |
+| `500`  | Unexpected server or Horizon error |
+
+---
+
+### `GET /api/og`
+
+Returns a **1200 × 1200 PNG** share card image, rendered on Vercel Edge Runtime.
+
+**Query parameters**
+
+| Parameter       | Type     | Required | Default             | Description |
+|-----------------|----------|----------|---------------------|-------------|
+| `username`      | `string` | No       | `StellarUser`       | Username shown on the card |
+| `transactions`  | `string` | No       | `0`                 | Total transaction count |
+| `persona`       | `string` | No       | `Network Pioneer`   | Archetype label |
+| `topVibe`       | `string` | No       | `Steady`            | Top vibe label |
+| `vibePercentage`| `string` | No       | `0`                 | Top vibe percentage (0–100) |
+| `archetypeImage`| `string` | No       | *(derived)*         | Path to archetype image under `/public` |
+
+**Cache**: `Cache-Control: public, s-maxage=86400, stale-while-revalidate=604800` — CDN-cached for 24 h, stale-while-revalidate for 7 days.
+
+**Example request**
+
+```bash
+curl -o share-card.png \
+  "https://stellar-wrap.vercel.app/api/og?username=alice&transactions=142&persona=The+DeFi+Patron&topVibe=Power+User&vibePercentage=72"
+```
+
+**Response**: Binary PNG (`Content-Type: image/png`).
+
+---
+
 ## 🗺️ Roadmap
 
 Our immediate focus is on delivering a polished MVP for the community:
