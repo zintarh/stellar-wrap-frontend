@@ -41,6 +41,115 @@ In Web3, your on-chain history is your resume, your identity, and your reputatio
 
 ---
 
+## 🏗️ Architecture Diagram
+
+This diagram shows the complete data flow from wallet connection through to the share card generation, highlighting where Horizon API and Soroban contract interactions occur.
+
+```mermaid
+flowchart TD
+    Wallet[("👛 Wallet<br/>(Freighter/Albedo/WalletConnect)")]
+    
+    subgraph Connect ["📱 Connect Phase"]
+        ConnectPage["/connect<br/>Wallet Connection"]
+        WalletConnect["WalletConnect<br/>Protocol"]
+    end
+    
+    subgraph Indexing ["⚙️ Indexing Phase"]
+        IndexerService["indexerService<br/>/api/wrapped"]
+        HorizonAPI["🌐 Horizon API<br/>(Stellar RPC)"]
+        IndexedDBCache["💾 IndexedDB Cache"]
+    end
+    
+    subgraph StateManagement ["🗄️ State Management"]
+        WrapStore[("useWrapperStore<br/>address, period, network,<br/>status, error, result")]
+        RateLimitStore[("useRateLimitStore<br/>isRateLimited, resetTime")]
+        TransactionStore[("useTransactionStore<br/>transactionHash, status")]
+    end
+    
+    subgraph PersonaGeneration ["🎭 Persona Generation"]
+        PersonaAction["generatePersonaDescription<br/>(AI Server Action)"]
+        OpenAI["🤖 OpenAI GPT-4o-mini"]
+    end
+    
+    subgraph SorobanContracts ["📜 Soroban Contracts"]
+        ContractBridge["contractBridge.ts<br/>getContractInstance()"]
+        SorobanRPC["🔗 Soroban RPC<br/>(Smart Contract Calls)"]
+    end
+    
+    subgraph UIScreens ["🖥️ UI Screens"]
+        LoadingPage["/loading<br/>Indexing Progress"]
+        TopDapps["/top-daps<br/>DApp Interactions"]
+        Transactions["/transactions-of-fury<br/>Transaction History"]
+        VibeCheck["/vibe-check<br/>Vibe Analysis"]
+        PersonaPage["/persona<br/>Persona Reveal"]
+        SharePage["/share<br/>Share Card Generation"]
+    end
+    
+    Wallet -->|"public key"| ConnectPage
+    ConnectPage -->|"session"| WalletConnect
+    WalletConnect -->|"address, network"| IndexerService
+    
+    IndexerService -->|"fetch account data"| HorizonAPI
+    HorizonAPI -->|"transactions, payments"| IndexerService
+    IndexerService -->|"cache results"| IndexedDBCache
+    IndexedDBCache -->|"cached data"| IndexerService
+    
+    IndexerService -->|"wrapped data"| WrapStore
+    IndexerService -->|"429 errors"| RateLimitStore
+    
+    WrapStore -->|"read data"| LoadingPage
+    LoadingPage -->|"display progress"| TopDapps
+    
+    TopDapps -->|"read dapps"| WrapStore
+    TopDapps -->|"navigate"| Transactions
+    
+    Transactions -->|"read transactions"| WrapStore
+    Transactions -->|"navigate"| VibeCheck
+    
+    VibeCheck -->|"read vibes"| WrapStore
+    VibeCheck -->|"navigate"| PersonaPage
+    
+    PersonaPage -->|"read metrics"| WrapStore
+    PersonaPage -->|"stream persona"| PersonaAction
+    PersonaAction -->|"generate description"| OpenAI
+    OpenAI -->|"persona text"| PersonaAction
+    PersonaPage -->|"navigate"| SharePage
+    
+    SharePage -->|"read address, network"| WrapStore
+    SharePage -->|"mint action"| ContractBridge
+    ContractBridge -->|"contract call"| SorobanRPC
+    SorobanRPC -->|"transaction hash"| TransactionStore
+    TransactionStore -->|"mint status"| SharePage
+    
+    classDef wallet fill:#dbeafe,stroke:#2563eb,color:#0f172a
+    classDef connect fill:#e0e7ff,stroke:#4f46e5,color:#0f172a
+    classDef indexing fill:#fef3c7,stroke:#d97706,color:#0f172a
+    classDef state fill:#f8fafc,stroke:#64748b,color:#0f172a
+    classDef persona fill:#fce7f3,stroke:#db2777,color:#0f172a
+    classDef soroban fill:#ede9fe,stroke:#7c3aed,color:#0f172a
+    classDef ui fill:#dcfce7,stroke:#16a34a,color:#0f172a
+    
+    class Wallet wallet
+    class ConnectPage,WalletConnect connect
+    class IndexerService,HorizonAPI,IndexedDBCache indexing
+    class WrapStore,RateLimitStore,TransactionStore state
+    class PersonaAction,OpenAI persona
+    class ContractBridge,SorobanRPC soroban
+    class LoadingPage,TopDapps,Transactions,VibeCheck,PersonaPage,SharePage ui
+```
+
+### Key Components
+
+| Component | Location | Purpose |
+|-----------|----------|---------|
+| **Horizon API** | `src/services/horizonIndexer.ts` | Fetches account data, payments, and transactions from Stellar Horizon |
+| **Indexer Service** | `app/services/indexerService.ts` | Orchestrates indexing with caching and rate limiting |
+| **Zustand Stores** | `app/store/`, `src/store/` | Manages application state (wrap data, transactions, rate limits) |
+| **Contract Bridge** | `app/utils/contractBridge.ts` | Interfaces with Soroban smart contracts for minting |
+| **Persona Generator** | `app/actions/generate-persona.ts` | AI-powered persona description generation |
+
+---
+
 ## User Journey Diagrams
 
 These Mermaid diagrams are intentionally GitHub-compatible so new contributors can preview the full app journey directly in the README.
