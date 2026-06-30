@@ -43,11 +43,6 @@ interface Operation {
   function?: string;
 }
 
-interface DailyStats {
-  txCount: number;
-  categories: Record<string, number>;
-}
-
 /**
  * Transaction categorization by type
  */
@@ -58,6 +53,24 @@ interface TransactionCategories {
   offers: number;
   trustlines: number;
   other: number;
+}
+
+export type PersonaArchetype =
+  | "The Architect"
+  | "The Patron"
+  | "The Collector"
+  | "The Trader"
+  | "The Wizard"
+  | "The Explorer";
+
+export interface PersonaAssignmentInput {
+  categories: TransactionCategories;
+  deploymentCount: number;
+  contractCallCount: number;
+  defiTraderCount: number;
+  dexTradeCount: number;
+  totalVolume: number;
+  txCount: number;
 }
 
 /**
@@ -96,6 +109,7 @@ export function calculateAchievements(
       gasSpent: 0,
       dapps: [],
       vibes: [{ tag: "Getting Started", count: 0 }],
+      persona: "The Explorer",
       dexTradingSummary: {
         totalVolume: 0,
         tradeCount: 0,
@@ -209,9 +223,6 @@ export function calculateAchievements(
           categories.contractCalls++;
           // Check if this is a contract deployment (HostFunctionTypeCreateContract)
           // We'll assume the function field or asset/contract field indicates deployment
-          const isDeployment = op.function === "HostFunctionTypeCreateContract" || 
-                               (typeof op === "object" && op.function?.includes("CreateContract"));
-          dayStat.categories.contractCalls = (dayStat.categories.contractCalls || 0) + 1;
           processContractOperation(op, dappMap, isDeployment, sorobanTrackers, tx);
           if (isDeployment) {
             vibeMap.set("soroban-user", (vibeMap.get("soroban-user") || 0) + 5); // Boost for deployments
@@ -282,128 +293,6 @@ export function calculateAchievements(
     assetMap,
   );
 
-  // Compute most traded pair
-  let mostTradedPair: string | undefined = undefined;
-  let maxPairCount = 0;
-  dexTrackers.pairMap.forEach((count, pair) => {
-    if (count > maxPairCount) {
-      maxPairCount = count;
-      mostTradedPair = pair;
-    }
-  });
-
-  const dexTradingSummary: DexTradingSummary = {
-    totalVolume: dexTrackers.totalVolume,
-    tradeCount: dexTrackers.tradeCount,
-    mostTradedPair,
-    buyCount: dexTrackers.buyCount,
-    sellCount: dexTrackers.sellCount,
-  };
-
-  // Compute builder score
-  const deploymentCount = sorobanTrackers.deployments.length;
-  const builderScore = deploymentCount * 100 + Math.floor(sorobanTrackers.contractCallCount / 10);
-
-  const sorobanBuilderSummary: SorobanBuilderSummary = {
-    deployments: sorobanTrackers.deployments,
-    deploymentCount,
-    contractCallCount: sorobanTrackers.contractCallCount,
-    builderScore,
-  };
-
-  // Compute Portfolio Diversity Score
-  let shannonEntropy = 0;
-  const totalInteractions = Array.from(assetMap.values()).reduce((a, b) => a + b, 0);
-  let diversityScore = 0;
-  if (totalInteractions > 0 && assetMap.size > 1) {
-    assetMap.forEach(count => {
-      if (count > 0) {
-        const p = count / totalInteractions;
-        shannonEntropy -= p * Math.log(p);
-      }
-    });
-    const maxEntropy = Math.log(assetMap.size);
-    const evenness = maxEntropy > 0 ? shannonEntropy / maxEntropy : 0;
-    
-    const assetScore = Math.min(assetMap.size / 10, 1) * 50;
-    const evennessScore = evenness * 50;
-    diversityScore = Math.round(assetScore + evennessScore);
-  } else if (assetMap.size === 1) {
-    diversityScore = 0;
-  }
-
-  const topAssets = Array.from(assetMap.entries())
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 3)
-    .map(([assetCode, count]) => ({
-      assetCode,
-      percentage: Math.round((count / totalInteractions) * 100)
-    }));
-
-  let diversityLabel = "Mono-asset";
-  if (diversityScore >= 81) diversityLabel = "Portfolio Master";
-  else if (diversityScore >= 51) diversityLabel = "Diversified";
-  else if (diversityScore >= 21) diversityLabel = "Explorer";
-
-  const portfolioDiversitySummary = {
-    score: Math.min(100, Math.max(0, diversityScore)),
-    label: diversityLabel,
-    uniqueAssetsCount: assetMap.size,
-    topAssets,
-  };
-
-  // Compute Biggest Day Summary
-  let biggestDayDate = "";
-  let maxTxCountForDay = 0;
-  
-  for (const [date, stat] of Array.from(dailyStats.entries())) {
-    if (stat.txCount > maxTxCountForDay) {
-      maxTxCountForDay = stat.txCount;
-      biggestDayDate = date;
-    }
-  }
-  
-  const biggestDayStat = biggestDayDate ? dailyStats.get(biggestDayDate) : null;
-
-  const DAYS = ["Sundays", "Mondays", "Tuesdays", "Wednesdays", "Thursdays", "Fridays", "Saturdays"];
-  let maxDayOfWeekCount = 0;
-  let busiestDayOfWeekIndex = 0;
-  dayOfWeekCount.forEach((count, index) => {
-    if (count > maxDayOfWeekCount) {
-      maxDayOfWeekCount = count;
-      busiestDayOfWeekIndex = index;
-    }
-  });
-  const busiestDayOfWeek = maxDayOfWeekCount > 0 ? DAYS[busiestDayOfWeekIndex] : "None";
-
-  let biggestDayTagline = "A chill day on Stellar";
-  if (maxTxCountForDay >= 50) biggestDayTagline = "You went absolutely wild!";
-  else if (maxTxCountForDay >= 20) biggestDayTagline = "A very productive day";
-  else if (maxTxCountForDay >= 5) biggestDayTagline = "Solid activity on-chain";
-
-  let biggestDayTopActivity = "None";
-  if (biggestDayStat) {
-    const cats = Object.entries(biggestDayStat.categories).sort((a, b) => b[1] - a[1]);
-    biggestDayTopActivity = cats.map(([cat, count]) => `${count} ${cat}`).join(", ");
-  }
-
-  // Format date nicely
-  let formattedDate = biggestDayDate;
-  if (biggestDayDate) {
-    try {
-      const d = new Date(biggestDayDate);
-      formattedDate = new Intl.DateTimeFormat('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }).format(d);
-    } catch(e) {}
-  }
-
-  const biggestDaySummary = {
-    date: formattedDate,
-    transactionCount: maxTxCountForDay,
-    typeBreakdown: biggestDayStat ? biggestDayStat.categories : {},
-    topActivity: biggestDayTopActivity,
-    tagline: biggestDayTagline,
-    busiestDayOfWeek,
-  };
 
   return {
     accountId: "",
@@ -416,10 +305,6 @@ export function calculateAchievements(
       (a, b) => b.transactionCount - a.transactionCount || b.volume - a.volume,
     ),
     vibes,
-    dexTradingSummary,
-    sorobanBuilderSummary,
-    portfolioDiversitySummary,
-    biggestDaySummary,
   };
 }
 
@@ -558,9 +443,99 @@ function processOfferOperation(
 }
 
 /**
+ * Assign a persona archetype based on dominant on-chain activity patterns.
+ */
+export function assignPersona(input: PersonaAssignmentInput): PersonaArchetype {
+  const {
+    categories,
+    deploymentCount,
+    contractCallCount,
+    defiTraderCount,
+    dexTradeCount,
+    totalVolume,
+    txCount,
+  } = input;
+
+  // Soroban Architect: contract deployments or sustained Soroban builder activity
+  if (deploymentCount > 0 || contractCallCount >= 5) {
+    return "The Architect";
+  }
+
+  // DeFi Patron: sustained liquidity and DEX offer activity
+  if (defiTraderCount > 10 || dexTradeCount > 8) {
+    return "The Patron";
+  }
+
+  // Diamond Hand / Collector: trustline accumulation with minimal trading
+  if (
+    categories.trustlines >= 3 &&
+    categories.swaps + categories.offers < categories.trustlines
+  ) {
+    return "The Collector";
+  }
+
+  // Active swap and offer activity
+  if (categories.swaps + categories.offers >= 5) {
+    return "The Trader";
+  }
+
+  // High-volume or very active accounts
+  if (totalVolume > 100_000 || txCount > 100) {
+    return "The Wizard";
+  }
+
+  return "The Explorer";
+}
+
+function buildDexTradingSummary(
+  dexTrackers: {
+    totalVolume: number;
+    tradeCount: number;
+    buyCount: number;
+    sellCount: number;
+    pairMap: Map<string, number>;
+  },
+): DexTradingSummary {
+  let mostTradedPair: string | undefined;
+  let maxPairCount = 0;
+  dexTrackers.pairMap.forEach((count, pair) => {
+    if (count > maxPairCount) {
+      maxPairCount = count;
+      mostTradedPair = pair;
+    }
+  });
+
+  return {
+    totalVolume: dexTrackers.totalVolume,
+    tradeCount: dexTrackers.tradeCount,
+    buyCount: dexTrackers.buyCount,
+    sellCount: dexTrackers.sellCount,
+    ...(mostTradedPair ? { mostTradedPair } : {}),
+  };
+}
+
+function buildSorobanBuilderSummary(
+  sorobanTrackers: {
+    deployments: SorobanDeployment[];
+    contractCallCount: number;
+  },
+): SorobanBuilderSummary {
+  const deploymentCount = sorobanTrackers.deployments.length;
+  const contractCallCount = sorobanTrackers.contractCallCount;
+  const builderScore = deploymentCount * 100 + Math.floor(contractCallCount / 10);
+
+  return {
+    deployments: sorobanTrackers.deployments,
+    deploymentCount,
+    contractCallCount,
+    builderScore,
+  };
+}
+
+/**
  * Generate vibe tags based on user activity patterns
  */
-function generateVibes(
+export function generateVibes(
   txCount: number,
   totalVolume: number,
   contractCalls: number,

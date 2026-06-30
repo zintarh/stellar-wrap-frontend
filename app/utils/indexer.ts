@@ -67,10 +67,6 @@ export interface IndexerResult {
   gasSpent: number;
   dapps: DappInfo[];
   vibes: VibeTag[];
-  dexTradingSummary?: DexTradingSummary;
-  sorobanBuilderSummary?: SorobanBuilderSummary;
-  portfolioDiversitySummary?: PortfolioDiversitySummary;
-  biggestDaySummary?: BiggestDaySummary;
 }
 
 /** Cache entry version for schema migrations and validation */
