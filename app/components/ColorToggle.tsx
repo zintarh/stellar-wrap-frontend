@@ -30,6 +30,9 @@ export const ColorToggle = () => {
         aria-haspopup="menu"
       >
         {isOpen ? (
+          <X size={24} style={{ color: `var(--color-theme-primary)` }} />
+        ) : (
+          <Palette size={24} style={{ color: `var(--color-theme-primary)` }} />
         )}
       </motion.button>
 
