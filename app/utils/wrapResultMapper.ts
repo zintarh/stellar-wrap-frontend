@@ -21,6 +21,9 @@ function mapMockDapps() {
 export function mapIndexerResultToWrapResult(
   indexerResult: IndexerResult,
 ): WrapResult {
+  // Prefer the computed persona from the indexer; fall back to mockData only if absent.
+  const persona = indexerResult.persona ?? mockData.persona;
+
   return {
     username: mockData.username,
     totalTransactions: indexerResult.totalTransactions || mockData.transactions,
@@ -29,7 +32,7 @@ export function mapIndexerResultToWrapResult(
       ? mapIndexerDapps(indexerResult.dapps)
       : mapMockDapps(),
     vibes: mockData.vibes,
-    persona: mockData.persona,
+    persona,
     personaDescription: mockData.personaDescription,
     portfolioDiversitySummary: indexerResult.portfolioDiversitySummary,
     biggestDaySummary: indexerResult.biggestDaySummary,

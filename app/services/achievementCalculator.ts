@@ -88,6 +88,80 @@ const DAPP_KEYWORDS = {
   payment: { name: "Payments", icon: "💳" },
 };
 
+// ─── Thresholds for persona detection ───────────────────────────────────────
+
+/**
+ * Minimum number of DEX operations (offers + path payments combined) required
+ * to qualify as a Yield Farmer.
+ */
+const YIELD_FARMER_MIN_DEX_OPS = 10;
+
+/**
+ * Minimum number of distinct LP-related asset trustlines required to qualify
+ * as a Yield Farmer (change_trust operations involving non-XLM assets indicate
+ * LP pool token participation).
+ */
+const YIELD_FARMER_MIN_LP_TRUSTLINES = 2;
+
+/**
+ * Maximum total transaction count for a Hodler persona. Hodlers interact with
+ * the network rarely — mostly just receiving/sending XLM.
+ */
+const HODLER_MAX_TX_COUNT = 20;
+
+/**
+ * Hodlers must also have very few DEX operations to distinguish them from
+ * low-activity traders.
+ */
+const HODLER_MAX_DEX_OPS = 3;
+
+// ─── Persona detection ───────────────────────────────────────────────────────
+
+/**
+ * Persona metrics extracted during transaction processing.
+ */
+interface PersonaMetrics {
+  dexOpCount: number;       // offers + path payments
+  lpTrustlineCount: number; // change_trust with non-native assets
+  totalTransactions: number;
+  contractCalls: number;
+}
+
+/**
+ * Determine the best-fit persona archetype from transaction metrics.
+ *
+ * Priority (highest to lowest):
+ *   1. The Yield Farmer  — many DEX ops AND multiple LP trustlines
+ *   2. The Hodler        — very few transactions AND very few DEX ops
+ *   3. The Wizard        — many Soroban contract calls (fallback kept for
+ *                          backwards-compat with existing logic)
+ *   4. The Explorer      — default when nothing else matches
+ */
+export function detectPersona(metrics: PersonaMetrics): string {
+  const { dexOpCount, lpTrustlineCount, totalTransactions, contractCalls } = metrics;
+
+  if (
+    dexOpCount >= YIELD_FARMER_MIN_DEX_OPS &&
+    lpTrustlineCount >= YIELD_FARMER_MIN_LP_TRUSTLINES
+  ) {
+    return "The Yield Farmer";
+  }
+
+  if (
+    totalTransactions <= HODLER_MAX_TX_COUNT &&
+    dexOpCount <= HODLER_MAX_DEX_OPS &&
+    totalTransactions > 0
+  ) {
+    return "The Hodler";
+  }
+
+  if (contractCalls > 10) {
+    return "The Wizard";
+  }
+
+  return "The Explorer";
+}
+
 /**
  * Main achievement calculation function
  * Analyzes transactions and returns comprehensive metrics
@@ -170,6 +244,14 @@ export function calculateAchievements(
     contractCallCount: 0,
   };
 
+  // Persona metrics trackers
+  const personaMetrics: PersonaMetrics = {
+    dexOpCount: 0,       // offers + path payments
+    lpTrustlineCount: 0, // change_trust with non-native assets (LP tokens)
+    totalTransactions: transactions.length,
+    contractCalls: 0,
+  };
+
   // Additional metrics tracking
   let largestTransaction = 0;
   let largestTransactionAsset = "XLM";
@@ -215,12 +297,12 @@ export function calculateAchievements(
         case "path_payment_strict_receive":
         case "path_payment_strict_send":
           categories.swaps++;
-          dayStat.categories.swaps = (dayStat.categories.swaps || 0) + 1;
           processPathPaymentOperation(op, assetMap, assetVolumeMap, vibeMap, dexTrackers);
           break;
 
         case "invoke_host_function":
           categories.contractCalls++;
+          personaMetrics.contractCalls++;
           // Check if this is a contract deployment (HostFunctionTypeCreateContract)
           // We'll assume the function field or asset/contract field indicates deployment
           processContractOperation(op, dappMap, isDeployment, sorobanTrackers, tx);
@@ -243,7 +325,6 @@ export function calculateAchievements(
         case "manage_sell_offer":
         case "create_passive_sell_offer":
           categories.offers++;
-          dayStat.categories.offers = (dayStat.categories.offers || 0) + 1;
           processOfferOperation(op, assetMap, vibeMap, dexTrackers);
           break;
 
@@ -251,7 +332,6 @@ export function calculateAchievements(
         case "allow_trust":
         case "set_trust_line_flags":
           categories.trustlines++;
-          dayStat.categories.trustlines = (dayStat.categories.trustlines || 0) + 1;
           break;
 
         default:
@@ -305,6 +385,7 @@ export function calculateAchievements(
       (a, b) => b.transactionCount - a.transactionCount || b.volume - a.volume,
     ),
     vibes,
+    persona,
   };
 }
 
