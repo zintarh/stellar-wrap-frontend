@@ -1,6 +1,7 @@
 "use client";
 
 import React, { JSX, useCallback, useEffect, useRef, useState } from "react";
+import { PersonaRarityChart } from "@/app/components/PersonaRarityChart";
 import { motion, useAnimation, AnimatePresence } from "framer-motion";
 import { Home, Share2, ChevronRight } from "lucide-react";
 import Link from "next/link";
@@ -563,6 +564,18 @@ export default function ArchetypeReveal(): JSX.Element {
           <div className="relative z-10 w-full mt-8">
             <PersonaEvolutionTimeline useDemo={process.env.NODE_ENV === "development"} />
           </div>
+
+          {/* Persona rarity / archetype comparison */}
+          {isFlipped && (
+            <motion.div
+              className="relative z-10 w-full mt-4"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 1.4 }}
+            >
+              <PersonaRarityChart userArchetype={archetypeKey} />
+            </motion.div>
+          )}
 
           {/* --- BOTTOM ROW --- */}
           {/* Notification Prompt — shown after final wrap screen */}
