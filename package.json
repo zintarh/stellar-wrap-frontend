@@ -14,7 +14,6 @@
     "vitest": "vitest",
     "test:ui": "vitest --ui",
     "test": "jest",
-    "load:og": "node load-tests/og-load-test.js",
     "prepare": "husky install"
   },
   "dependencies": {

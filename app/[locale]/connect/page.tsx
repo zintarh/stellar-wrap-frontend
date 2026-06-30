@@ -23,6 +23,7 @@ export default function ConnectPage() {
 
   const [isConnecting, setIsConnecting] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
+  const [lastUsedAddress, setLastUsedAddress] = useState<string | null>(null);
 
   // Refs for focus management
   const mainContentRef = useRef<HTMLDivElement>(null);
@@ -32,13 +33,27 @@ export default function ConnectPage() {
   const freighterButtonRef = useRef<HTMLButtonElement>(null);
   const demoButtonRef = useRef<HTMLButtonElement>(null);
 
-  // Focus management on mount
+  // Load last-used address from localStorage on mount
   useEffect(() => {
+    const saved = localStorage.getItem("lastUsedStellarAddress");
+    if (saved) {
+      setLastUsedAddress(saved);
+    }
     // Focus the main content area on mount
     if (mainContentRef.current) {
       mainContentRef.current.focus();
     }
   }, []);
+
+  const saveAddressToLocalStorage = (address: string) => {
+    localStorage.setItem("lastUsedStellarAddress", address);
+    setLastUsedAddress(address);
+  };
+
+  const clearSavedAddress = () => {
+    localStorage.removeItem("lastUsedStellarAddress");
+    setLastUsedAddress(null);
+  };
 
   const handleFreighterConnect = async () => {
     if (!isOnline) {
@@ -57,6 +72,7 @@ export default function ConnectPage() {
     try {
       const publicKey = await connectFreighter(network);
       setAddress(publicKey);
+      saveAddressToLocalStorage(publicKey);
       setError(null);
       playSound(SOUND_NAMES.SLIDE_WHOOSH);
       router.push("/loading");
@@ -88,6 +104,7 @@ export default function ConnectPage() {
     try {
       const publicKey = await connectAlbedo(network);
       setAddress(publicKey);
+      saveAddressToLocalStorage(publicKey);
       setError(null);
       playSound(SOUND_NAMES.SLIDE_WHOOSH);
       router.push("/loading");
@@ -127,7 +144,9 @@ export default function ConnectPage() {
     resetTransaction();
     resetMultiTimeframe();
 
-    setAddress(walletAddress.trim());
+    const trimmedAddress = walletAddress.trim();
+    setAddress(trimmedAddress);
+    saveAddressToLocalStorage(trimmedAddress);
     playSound(SOUND_NAMES.SLIDE_WHOOSH);
     router.push("/loading");
   };
@@ -414,6 +433,53 @@ export default function ConnectPage() {
             Enter your Stellar wallet address to unwrap your 2026 journey
           </p>
         </motion.div>
+
+        {/* Last-used address shortcut */}
+        {lastUsedAddress && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="mb-6 max-w-2xl mx-auto"
+          >
+            <motion.button
+              onClick={() => {
+                reset();
+                resetTransaction();
+                resetMultiTimeframe();
+                setAddress(lastUsedAddress);
+                playSound(SOUND_NAMES.SLIDE_WHOOSH);
+                router.push("/loading");
+              }}
+              className="w-full px-6 py-4 bg-gradient-to-r from-white/10 to-white/5 border-2 rounded-xl font-bold text-white hover:from-white/20 hover:to-white/10 transition-all flex items-center justify-center gap-3 focus:outline-none focus:ring-2 focus:ring-theme-primary focus:ring-offset-2 focus:ring-offset-black"
+              style={{
+                borderColor: "rgba(var(--color-theme-primary-rgb), 0.5)",
+              }}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              tabIndex={0}
+              aria-label={`Continue as ${lastUsedAddress.slice(0, 4)}...${lastUsedAddress.slice(-4)}`}
+              role="button"
+            >
+              <CheckCircle
+                className="w-5 h-5"
+                style={{ color: "var(--color-theme-primary)" }}
+                aria-hidden="true"
+              />
+              <span className="text-sm sm:text-base">
+                Continue as {lastUsedAddress.slice(0, 4)}...{lastUsedAddress.slice(-4)}
+              </span>
+            </motion.button>
+            <button
+              onClick={clearSavedAddress}
+              className="w-full mt-2 text-xs sm:text-sm text-white/50 hover:text-white/70 transition-colors font-medium"
+              tabIndex={0}
+              aria-label="Use a different wallet"
+            >
+              Use a different wallet
+            </button>
+          </motion.div>
+        )}
 
         <motion.div
           initial={{ opacity: 0, y: 30 }}
