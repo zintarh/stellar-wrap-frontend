@@ -16,6 +16,8 @@ interface ShareCardProps {
   vibePercentage: number;
   shareImageRef: RefObject<HTMLDivElement>;
   themeColor?: string;
+  cardFormat?: "square" | "stories";
+  onFormatChange?: (format: "square" | "stories") => void;
 }
 
 export function ShareCard({
@@ -26,6 +28,8 @@ export function ShareCard({
   vibePercentage,
   shareImageRef,
   themeColor = "rgb(5, 64, 32)",
+  cardFormat = "square",
+  onFormatChange,
 }: ShareCardProps) {
   const [isDownloading, setIsDownloading] = useState(false);
   const { address, network } = useWrapStore();
@@ -78,6 +82,7 @@ export function ShareCard({
     try {
       const result = await downloadShareImage(shareImageRef.current, {
         onFallbackWarning: () => setUsedMainThreadFallback(true),
+        format: cardFormat,
       });
       console.info(
         `Share image generated in ${result.durationMs}ms (scale: ${result.scale}x, worker: ${result.usedWorker})`,
@@ -577,6 +582,41 @@ export function ShareCard({
                 YOUR WRAP
               </span>
             </h1>
+
+            {/* Format Toggle */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6 }}
+              className="mb-6 flex gap-3"
+            >
+              <motion.button
+                onClick={() => onFormatChange?.("square")}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                  cardFormat === "square"
+                    ? "bg-white text-black"
+                    : "bg-white/10 text-white hover:bg-white/20"
+                }`}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <Film className="w-4 h-4" />
+                <span className="text-sm font-bold">Square</span>
+              </motion.button>
+              <motion.button
+                onClick={() => onFormatChange?.("stories")}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                  cardFormat === "stories"
+                    ? "bg-white text-black"
+                    : "bg-white/10 text-white hover:bg-white/20"
+                }`}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <ImagePlay className="w-4 h-4" />
+                <span className="text-sm font-bold">Stories</span>
+              </motion.button>
+            </motion.div>
 
             <div className="space-y-4">
               <motion.button
