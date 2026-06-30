@@ -253,6 +253,7 @@ Copy `.env.example` to `.env.local` and set:
 | `NEXT_PUBLIC_CONTRACT_ADDRESS_TESTNET` | Soroban contract address on testnet (56-char, `C...`). |
 | `NEXT_PUBLIC_CONTRACT_ADDRESS` | (Optional) Legacy: used for both networks if the two above are not set. |
 | `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` | WalletConnect project ID (optional). |
+| `NEXT_PUBLIC_PLAUSIBLE_DOMAIN` | Plausible Analytics domain for privacy-friendly page-view tracking (optional). |
 
 Contract addresses are loaded per network; the app uses the selected network (mainnet/testnet) to choose the contract. When you switch networks in the UI, the contract instance is re-loaded for the new network.
 

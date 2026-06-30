@@ -2,20 +2,6 @@
 
 import { useState, useRef, useEffect, KeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Wallet, Copy, CheckCircle, XCircle, ChevronRight } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Horizon } from "stellar-sdk";
-import { useWrapStore } from "@/app/store/wrapStore";
-import { useTransactionStore } from "@/app/store/transactionStore";
-import { useMultiTimeframeStore } from "@/app/store/multiTimeframeStore";
-import { useSound } from "@/app/hooks/useSound";
-import { useOnlineStatus } from "@/app/hooks/useOnlineStatus";
-import { useStellarAddressValidation } from "@/src/hooks/useStellarAddressValidation";
-import { connectFreighter, connectAlbedo } from "@/app/utils/walletConnect";
-import { MuteToggle } from "@/app/components/MuteToggle";
-import { ProgressIndicator } from "@/app/components/ProgressIndicator";
-import { SOUND_NAMES } from "@/app/utils/soundManager";
-import { RPC_ENDPOINTS } from "@/src/config";
 
 export default function ConnectPage() {
   const router = useRouter();
@@ -111,6 +97,78 @@ export default function ConnectPage() {
       setError(null);
       playSound(SOUND_NAMES.SLIDE_WHOOSH);
       await fetchAccountPreview(publicKey);
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to connect wallet";
+      setError(errorMessage);
+      setLocalError(errorMessage);
+      setStatus("error");
+    } finally {
+      setIsConnecting(false);
+    }
+  };
+
+
+  const handleXBullConnect = async () => {
+    if (!isOnline) {
+      setLocalError("Wallet connect is unavailable offline.");
+      return;
+    }
+
+    if (!isXBullInstalled()) {
+      setLocalError("xBull wallet not found. Please install it from the Chrome Web Store.");
+      window.open(
+        "https://chromewebstore.google.com/detail/xbull-wallet/klpfklhikflhefnndkhiokkdbndlfhno",
+        "_blank"
+      );
+      return;
+    }
+
+    setIsConnecting(true);
+    setLocalError(null);
+    setStatus("loading");
+    // Reset all stores before connecting
+    reset();
+    resetTransaction();
+    resetMultiTimeframe();
+
+    try {
+      const publicKey = await connectXBull(network);
+      setAddress(publicKey);
+      setError(null);
+      playSound(SOUND_NAMES.SLIDE_WHOOSH);
+      router.push("/loading");
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to connect wallet";
+      setError(errorMessage);
+      setLocalError(errorMessage);
+      setStatus("error");
+    } finally {
+      setIsConnecting(false);
+    }
+  };
+
+  const handleWalletConnectConnect = async () => {
+    if (!isOnline) {
+      setLocalError("Wallet connect is unavailable offline.");
+      return;
+    }
+
+    setIsConnecting(true);
+    setLocalError(null);
+    setStatus("loading");
+    // Reset all stores before connecting
+    reset();
+    resetTransaction();
+    resetMultiTimeframe();
+
+    try {
+      const publicKey = await connectWalletConnect(network);
+      setAddress(publicKey);
+      setError(null);
+      playSound(SOUND_NAMES.SLIDE_WHOOSH);
+      router.push("/loading");
     } catch (error: unknown) {
       const errorMessage =
         error instanceof Error ? error.message : "Failed to connect wallet";
@@ -233,6 +291,21 @@ export default function ConnectPage() {
     if ((e.key === "Enter" || e.key === " ") && !isConnecting) {
       e.preventDefault();
       handleAlbedoConnect();
+    }
+  };
+
+
+  const handleXBullKeyDown = (e: KeyboardEvent) => {
+    if ((e.key === "Enter" || e.key === " ") && !isConnecting) {
+      e.preventDefault();
+      handleXBullConnect();
+    }
+  };
+
+  const handleWalletConnectKeyDown = (e: KeyboardEvent) => {
+    if ((e.key === "Enter" || e.key === " ") && !isConnecting) {
+      e.preventDefault();
+      handleWalletConnectConnect();
     }
   };
 
@@ -858,6 +931,70 @@ export default function ConnectPage() {
                       aria-hidden="true"
                     />
                     <span>Connect with Albedo</span>
+                  </>
+                )}
+              </motion.button>
+
+              <motion.button
+                onClick={handleXBullConnect}
+                onKeyDown={handleXBullKeyDown}
+                disabled={!isOnline || isConnecting}
+                className="w-full px-6 py-4 bg-transparent border-2 rounded-xl font-bold text-white/70 hover:text-white transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-theme-primary focus:ring-offset-2 focus:ring-offset-black"
+                style={{
+                  borderColor: "rgba(var(--color-theme-primary-rgb), 0.3)",
+                }}
+                whileHover={{ scale: !isOnline || isConnecting ? 1 : 1.02 }}
+                whileTap={{ scale: !isOnline || isConnecting ? 1 : 0.98 }}
+                tabIndex={0}
+                aria-label="Connect with xBull wallet"
+                aria-disabled={!isOnline || isConnecting}
+                role="button"
+              >
+                {isConnecting ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white/70 border-t-transparent rounded-full animate-spin" />
+                    <span>Connecting...</span>
+                  </>
+                ) : (
+                  <>
+                    <Wallet
+                      className="w-5 h-5"
+                      style={{ color: "var(--color-theme-primary)" }}
+                      aria-hidden="true"
+                    />
+                    <span>Connect with xBull</span>
+                  </>
+                )}
+              </motion.button>
+
+              <motion.button
+                onClick={handleWalletConnectConnect}
+                onKeyDown={handleWalletConnectKeyDown}
+                disabled={!isOnline || isConnecting}
+                className="w-full px-6 py-4 bg-transparent border-2 rounded-xl font-bold text-white/70 hover:text-white transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-theme-primary focus:ring-offset-2 focus:ring-offset-black"
+                style={{
+                  borderColor: "rgba(var(--color-theme-primary-rgb), 0.3)",
+                }}
+                whileHover={{ scale: !isOnline || isConnecting ? 1 : 1.02 }}
+                whileTap={{ scale: !isOnline || isConnecting ? 1 : 0.98 }}
+                tabIndex={0}
+                aria-label="Connect with WalletConnect mobile wallets"
+                aria-disabled={!isOnline || isConnecting}
+                role="button"
+              >
+                {isConnecting ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white/70 border-t-transparent rounded-full animate-spin" />
+                    <span>Connecting...</span>
+                  </>
+                ) : (
+                  <>
+                    <QrCode
+                      className="w-5 h-5"
+                      style={{ color: "var(--color-theme-primary)" }}
+                      aria-hidden="true"
+                    />
+                    <span>Connect with WalletConnect</span>
                   </>
                 )}
               </motion.button>

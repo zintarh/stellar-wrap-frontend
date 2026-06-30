@@ -19,6 +19,7 @@ import {
   LinkedInIcon,
   TelegramIcon,
 } from "../components/SocialIcons";
+import { trackEvent } from "../../utils/plausible";
 
 const SocialIcons = {
   X: XIcon,
@@ -70,6 +71,7 @@ export default function SharePageClient() {
   }, []);
 
   const handleShare = (platform: string) => {
+    trackEvent("share_clicked", { platform });
     const url = window.location.href;
     const text = `Check out my Stellar Wrapped 2026! ${transactions} transactions, ${persona} persona, ${vibePercentage}% ${topVibe}! 🎉 #StellarWrapped`;
     let shareUrl = "";
