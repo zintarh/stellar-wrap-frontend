@@ -6,18 +6,32 @@ import { Download } from "lucide-react";
 import html2canvas from "html2canvas";
 import { mockData } from "../data/mockData";
 
+interface ShareImageCardVibe {
+  percentage: number;
+  label: string;
+}
+
+interface ShareImageCardData {
+  username: string;
+  transactions: number;
+  persona: string;
+  vibes?: ShareImageCardVibe[];
+}
+
 interface ShareImageCardProps {
   themeColor: string;
+  archetypeImage?: string | null; // e.g. '/archetypes/wizard.png'; null hides the image fallback.
+  data?: ShareImageCardData;
   archetypeImage?: string;
   shareUrl?: string;
 }
 
-export function ShareImageCard({ themeColor, archetypeImage, shareUrl }: ShareImageCardProps) {
-  const { persona, transactions, username, vibes } = mockData;
   const topVibe = vibes[0];
   const resolvedArchetypeImage =
-    archetypeImage ??
-    `/archetypes/${persona.toLowerCase().replace(/^the\s+/, "").replace(/\s+/g, "-")}.png`;
+    archetypeImage === undefined
+      ? `/archetypes/${persona.toLowerCase().replace(/^the\s+/, "").replace(/\s+/g, "-")}.png`
+      : archetypeImage;
+  const formattedTransactions = new Intl.NumberFormat("en-US").format(transactions);
 
   const qrCodeUrl = shareUrl
     ? `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(shareUrl)}`
@@ -135,12 +149,13 @@ export function ShareImageCard({ themeColor, archetypeImage, shareUrl }: ShareIm
               style={{
                 fontSize: "60px",
                 fontWeight: "900",
+                background: `linear-gradient(to right, #ffffff, ${themeColor})`,
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
                 backgroundClip: "text",
               }}
             >
-              {transactions}
+              {formattedTransactions}
             </p>
           </div>
 
@@ -164,13 +179,27 @@ export function ShareImageCard({ themeColor, archetypeImage, shareUrl }: ShareIm
               Persona
             </p>
             <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-              <Image
-                src={resolvedArchetypeImage}
-                alt={persona}
-                width={64}
-                height={64}
-                style={{ borderRadius: "12px", objectFit: "cover", flexShrink: 0 }}
-              />
+              {resolvedArchetypeImage ? (
+                <Image
+                  src={resolvedArchetypeImage}
+                  alt={persona}
+                  width={64}
+                  height={64}
+                  style={{ borderRadius: "12px", objectFit: "cover", flexShrink: 0 }}
+                />
+              ) : (
+                <div
+                  aria-hidden="true"
+                  style={{
+                    width: "64px",
+                    height: "64px",
+                    borderRadius: "12px",
+                    flexShrink: 0,
+                    border: "1px solid rgba(255, 255, 255, 0.18)",
+                    backgroundColor: "rgba(255, 255, 255, 0.08)",
+                  }}
+                />
+              )}
               <p
                 style={{
                   fontSize: "30px",
@@ -210,7 +239,7 @@ export function ShareImageCard({ themeColor, archetypeImage, shareUrl }: ShareIm
                 color: "white",
               }}
             >
-              {topVibe.percentage}% {topVibe.label}
+              {topVibe ? `${topVibe.percentage}% ${topVibe.label}` : "No vibe data"}
             </p>
           </div>
         </div>

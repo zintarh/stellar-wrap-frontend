@@ -104,6 +104,24 @@ npm test -- indexer.service.test.ts
 npm test -- --testNamePattern="calculateVolume"
 ```
 
+### Run Share Card Visual Regression Tests
+
+Share card screenshots are tested with Playwright at the card's native
+`1080x1080` resolution. The suite covers all five color themes, short and long
+persona names, transaction counts of `1`, `100`, and `999,999`, and missing
+archetype/vibe data.
+
+```bash
+# Run visual comparisons against committed baselines
+npm run test:visual
+
+# Update baselines after an intentional ShareImageCard visual change
+npm run test:visual:update
+```
+
+Review the generated image changes before committing updated baselines. Visual
+tests fail when the screenshot diff exceeds `0.1%`.
+
 ### Generate Coverage Report
 
 ```bash

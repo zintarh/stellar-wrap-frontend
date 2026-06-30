@@ -108,6 +108,17 @@ export const connectAlbedo = async (_network: Network): Promise<string> => {
   }
 
   try {
+    const albedo = (window as unknown as Record<string, { publicKey: (opts?: Record<string, unknown>) => Promise<{ publicKey: string }> }>).albedo;
+    const result = await albedo.publicKey();
+    return result.publicKey;
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      if (error.message?.includes("blocked") || error.message?.includes("popup")) {
+        throw new Error(
+          "Albedo popup was blocked. Please allow popups for this site and try again.",
+        );
+      }
+      if (error.message?.includes("cancel") || error.message?.includes("denied")) {
         throw new Error("Connection rejected by user.");
       }
       throw error;
