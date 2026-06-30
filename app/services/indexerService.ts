@@ -165,6 +165,12 @@ async function runIndexingInternal(
       let response: unknown;
       try {
         response = await concurrencyManager.run(async () => {
+          // Benchmark: limit=200 is Horizon's maximum page size.
+          // Compared to the default of 10 this cuts API round-trips by ~20x
+          // (e.g. 2 000 transactions → 200 calls → 10 calls), which sharply
+          // reduces total latency and the chance of triggering Horizon's
+          // rate-limiter. ConcurrencyManager (MAX_CONCURRENT_REQUESTS=5)
+          // still bounds the number of in-flight requests at this page size.
           const builder = server
             .transactions()
             .forAccount(accountId)
