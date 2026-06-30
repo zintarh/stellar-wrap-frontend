@@ -46,6 +46,11 @@ export interface IndexerResult {
   gasSpent: number;
   dapps: DappInfo[];
   vibes: VibeTag[];
+  /**
+   * Computed persona archetype for this account, e.g. "The Yield Farmer".
+   * Assigned by detectPersona() in achievementCalculator.
+   */
+  persona?: string;
 }
 
 /** Cache entry version for schema migrations and validation */

@@ -3,7 +3,9 @@ import {
   Crown,
   Gem,
   Hammer,
+  Leaf,
   Sparkles,
+  Vault,
   Wand2,
   type LucideIcon,
 } from "lucide-react";
@@ -50,6 +52,18 @@ export const ARCHETYPE_STYLES: Record<string, ArchetypeStyle> = {
     color: "#00D4FF",
     gradient: "linear-gradient(135deg, #00D4FF 0%, #0099CC 100%)",
     icon: Sparkles,
+  },
+  /** Yield Farmer: active on DEX with high swap/offer volume and LP positions */
+  "The Yield Farmer": {
+    color: "#22C55E",
+    gradient: "linear-gradient(135deg, #22C55E 0%, #15803D 100%)",
+    icon: Leaf,
+  },
+  /** Hodler: long-term, low-activity wallet that prefers holding over trading */
+  "The Hodler": {
+    color: "#EAB308",
+    gradient: "linear-gradient(135deg, #EAB308 0%, #92400E 100%)",
+    icon: Vault,
   },
 };
 
