@@ -23,6 +23,8 @@ export function StepProgressDisplay({
     indexingError,
     estimatedTimeRemaining,
     isLoading,
+    metrics,
+    startTime,
   } = useWrapStore();
 
   const formatTime = (ms: number): string => {
@@ -33,6 +35,27 @@ export function StepProgressDisplay({
     const minutes = Math.ceil(seconds / 60);
     return `${minutes}m`;
   };
+
+  // Calculate better ETA using transaction metrics if available
+  const calculateETA = (): number | null => {
+    if (
+      metrics.totalTransactions &&
+      metrics.transactionCount > 0 &&
+      startTime
+    ) {
+      const elapsed = Date.now() - startTime;
+      const transactionsProcessed = metrics.transactionCount;
+      const transactionsRemaining =
+        metrics.totalTransactions - transactionsProcessed;
+      if (transactionsRemaining <= 0) return 0;
+
+      const timePerTransaction = elapsed / transactionsProcessed;
+      return transactionsRemaining * timePerTransaction;
+    }
+    return estimatedTimeRemaining;
+  };
+
+  const eta = calculateETA();
 
   if (!isLoading && !indexingError) {
     return null;
@@ -213,18 +236,15 @@ export function StepProgressDisplay({
         </div>
 
         {/* Time Estimate */}
-        {estimatedTimeRemaining && !indexingError && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="text-center text-sm text-neutral-400"
-          >
-            Estimated time remaining:{" "}
-            <span className="font-semibold text-white">
-              {formatTime(estimatedTimeRemaining)}
-            </span>
-          </motion.div>
-        )}
+    {eta !== null && eta > 5000 && !indexingError && (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="text-center text-sm text-neutral-400"
+      >
+        Est. ~<span className="font-semibold text-white">{formatTime(eta)}</span> remaining
+      </motion.div>
+    )}
 
         {/* Error State */}
         <AnimatePresence>
