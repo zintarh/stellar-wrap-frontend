@@ -13,6 +13,7 @@ interface ProgressIndicatorProps {
   onNext?: () => void;
   showNext?: boolean;
   routes?: string[]; // Optional array of routes for each step (1-indexed)
+  "data-testid"?: string;
 }
 
 // Default route mapping based on the app flow
@@ -40,6 +41,7 @@ export function ProgressIndicator({
   onNext,
   showNext = false,
   routes,
+  "data-testid": dataTestid,
 }: ProgressIndicatorProps) {
   const router = useRouter();
   const routeMap = routes || DEFAULT_ROUTES;
@@ -137,7 +139,7 @@ export function ProgressIndicator({
   };
 
   return (
-    <>
+    <div data-testid={dataTestid}>
       {/* Home button */}
       <motion.button
         onClick={() => router.push("/")}
@@ -318,6 +320,6 @@ export function ProgressIndicator({
       <div className="sr-only" aria-live="polite" aria-atomic="true">
         {`${currentStepLabel}. Step ${currentStep} of ${totalSteps}.`}
       </div>
-    </>
+</div>
   );
 }

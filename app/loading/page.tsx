@@ -232,7 +232,7 @@ export default function LoadingScreen() {
 
   return (
     <div className="relative w-full min-h-screen h-screen overflow-hidden flex items-center justify-center bg-theme-background">
-      <ProgressIndicator currentStep={3} totalSteps={6} showNext={false} />
+      <ProgressIndicator currentStep={3} totalSteps={6} showNext={false} data-testid="progress-indicator" />
 
       {/* Container for centered layout with progress left and content right */}
       <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-40 w-full max-w-6xl px-4 pointer-events-auto">
@@ -242,6 +242,7 @@ export default function LoadingScreen() {
             <StepProgressDisplay
               onCancel={handleCancel}
               onRetry={handleRetry}
+              data-testid="step-progress-display"
             />
             <CacheStatusBadge />
           </div>
@@ -267,7 +268,6 @@ export default function LoadingScreen() {
         transition={{ delay: 0.2 }}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
-        aria-label="Go home"
       >
         <div
           className="flex items-center gap-2 px-3 py-2 md:px-4 md:py-3 rounded-xl backdrop-blur-xl border border-white/20"
@@ -311,7 +311,6 @@ export default function LoadingScreen() {
         transition={{ delay: 1 }}
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.95 }}
-        aria-label="Skip"
       >
         <div className="flex flex-col items-center gap-2">
           <div className="relative">
