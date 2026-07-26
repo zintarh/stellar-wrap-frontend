@@ -48,3 +48,7 @@ next-env.d.ts
 
 # Storybook
 storybook-static
+
+# a11y reports
+a11y-report.sarif
+a11y-results.json
