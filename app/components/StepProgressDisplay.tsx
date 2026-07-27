@@ -8,11 +8,13 @@ import { INDEXING_STEPS, STEP_ORDER } from "@/app/types/indexing";
 interface StepProgressDisplayProps {
   onRetry?: () => void;
   onCancel?: () => void;
+  "data-testid"?: string;
 }
 
 export function StepProgressDisplay({
   onRetry,
   onCancel,
+  "data-testid": dataTestid,
 }: StepProgressDisplayProps) {
   const {
     currentStep,
@@ -63,6 +65,7 @@ export function StepProgressDisplay({
 
   return (
     <motion.div
+      data-testid={dataTestid}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 20 }}

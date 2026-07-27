@@ -5,9 +5,10 @@ import { useEffect, useState } from 'react';
 
 interface LiveWrapCounterProps {
   className?: string;
+  "data-testid"?: string;
 }
 
-export function LiveWrapCounter({ className }: LiveWrapCounterProps) {
+export function LiveWrapCounter({ className, "data-testid": dataTestid }: LiveWrapCounterProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [targetCount, setTargetCount] = useState(0);
   const [walletCount, setWalletCount] = useState(0);
@@ -63,6 +64,7 @@ export function LiveWrapCounter({ className }: LiveWrapCounterProps) {
 
   return (
     <motion.div
+      data-testid={dataTestid}
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 1.2 }}
