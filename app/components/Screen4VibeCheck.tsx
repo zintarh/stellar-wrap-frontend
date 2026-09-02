@@ -106,13 +106,7 @@ export function Screen4VibeCheck({
       {/* Hexagon pattern */}
       <div className="absolute inset-0 opacity-5">
         <div 
-          className="w-full h-full"
-          style={{
-            backgroundImage: `
-              radial-gradient(circle, rgba(var(--color-theme-primary-rgb), 0.8) 1px, transparent 1px)
-            `,
-            backgroundSize: '40px 40px',
-          }}
+          className="h-full w-full vibe-check-pattern"
         />
       </div>
 
@@ -137,12 +131,7 @@ export function Screen4VibeCheck({
                   VIBE
                 </span>
                 <span
-                  className="block text-5xl sm:text-6xl md:text-7xl lg:text-8xl"
-                  style={{
-                    background: `linear-gradient(to right, #ffffff, var(--color-theme-primary))`,
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                  }}
+                  className="block bg-gradient-to-r from-white to-[var(--color-theme-primary)] bg-clip-text text-5xl text-transparent sm:text-6xl md:text-7xl lg:text-8xl"
                 >
                   CHECK
                 </span>
@@ -163,16 +152,13 @@ export function Screen4VibeCheck({
                   >
                     <div className="relative">
                       <motion.div
-                        className="absolute -inset-1 sm:-inset-2 rounded-xl sm:rounded-2xl blur-md opacity-0 group-hover:opacity-50 transition-opacity"
-                        style={{ backgroundColor: 'var(--color-theme-primary)' }}
+                        className="absolute -inset-1 rounded-xl bg-[var(--color-theme-primary)] opacity-0 blur-md transition-opacity group-hover:opacity-50 sm:-inset-2 sm:rounded-2xl"
                       />
-                      <div className="relative backdrop-blur-sm p-4 sm:p-5 md:p-6 rounded-xl sm:rounded-2xl border border-white/10 flex items-center justify-between"
-                        style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)' }}
+                      <div className="relative flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.05] p-4 backdrop-blur-sm sm:rounded-2xl sm:p-5 md:p-6"
                       >
                         <div className="flex items-center gap-3 sm:gap-4 md:gap-5">
                           <motion.div 
-                            className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl border-2 border-white/30 flex items-center justify-center"
-                            style={{ backgroundColor: 'var(--color-theme-primary)' }}
+                            className="flex h-10 w-10 items-center justify-center rounded-lg border-2 border-white/30 bg-[var(--color-theme-primary)] sm:h-12 sm:w-12 sm:rounded-xl"
                             animate={{
                               boxShadow: [
                                 `0 0 10px rgba(var(--color-theme-primary-rgb), 0.3)`,
@@ -248,8 +234,7 @@ export function Screen4VibeCheck({
                       className="group"
                     >
                       <div
-                        className="flex items-center justify-between gap-3 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-white/10 backdrop-blur-sm"
-                        style={{ backgroundColor: 'rgba(255, 255, 255, 0.04)' }}
+                        className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.04] p-3 backdrop-blur-sm sm:rounded-2xl sm:p-4"
                       >
                         <div className="flex items-center gap-3 min-w-0">
                           <DappIcon
@@ -275,7 +260,9 @@ export function Screen4VibeCheck({
               </motion.div>
             )}
 
-            <PortfolioDiversityCard summary={portfolioDiversitySummary} />
+            {portfolioDiversitySummary && (
+              <PortfolioDiversityCard summary={portfolioDiversitySummary} />
+            )}
             <NftActivityCard summary={nftActivitySummary} />
             <BiggestDayCard summary={biggestDaySummary} />
             <DexTradingSummary summary={dexTradingSummary} />
@@ -288,15 +275,13 @@ export function Screen4VibeCheck({
           <div className="relative w-full h-[300px] sm:h-[400px] md:h-[500px] lg:h-[600px] flex items-center justify-center mt-6 sm:mt-8 md:mt-10 lg:mt-0 mx-auto max-w-md sm:max-w-lg">
             {/* Outer ring */}
             <motion.div
-              className="absolute inset-0 rounded-full border"
-              style={{ borderColor: 'rgba(var(--color-theme-primary-rgb), 0.2)' }}
+              className="absolute inset-0 rounded-full border border-[rgba(var(--color-theme-primary-rgb),0.2)]"
               initial={{ scale: 0, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: 0.3, duration: 1 }}
             />
             <motion.div
-              className="absolute inset-12 rounded-full border"
-              style={{ borderColor: 'rgba(var(--color-theme-primary-rgb), 0.1)' }}
+              className="absolute inset-12 rounded-full border border-[rgba(var(--color-theme-primary-rgb),0.1)]"
               initial={{ scale: 0, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: 0.4, duration: 1 }}
@@ -309,7 +294,9 @@ export function Screen4VibeCheck({
                 return (
                   <motion.div
                     key={blob.type}
-                    className="absolute"
+                    className={`absolute ${
+                      ["-translate-x-full", "translate-x-0", "translate-x-full"][index] ?? "translate-x-0"
+                    }`}
                     initial={{ opacity: 0, scale: 0 }}
                     animate={{ 
                       opacity: 1, 
@@ -320,17 +307,11 @@ export function Screen4VibeCheck({
                       type: "spring",
                       stiffness: 50,
                     }}
-                    style={{
-                      x: blob.x,
-                      y: blob.y,
-                    }}
                   >
                     <motion.div
-                      className="relative rounded-full flex items-center justify-center"
-                      style={{
-                        width: blob.size,
-                        height: blob.size,
-                      }}
+                      className={`relative flex rounded-full items-center justify-center ${
+                        blob.size >= 300 ? "size-80" : blob.size >= 250 ? "size-72" : blob.size >= 200 ? "size-64" : "size-52"
+                      }`}
                       animate={{
                         y: [0, -30, 0],
                         x: [0, Math.sin(index) * 20, 0],
@@ -346,21 +327,14 @@ export function Screen4VibeCheck({
                     >
                       {/* Reduced blur background */}
                       <div 
-                        className="absolute inset-0 rounded-full"
-                        style={{
-                          backgroundColor: 'var(--color-theme-primary)',
-                          filter: 'blur(20px)',
-                          opacity: 0.6,
-                        }}
+                        className="absolute inset-0 rounded-full bg-[var(--color-theme-primary)] opacity-60 blur-[20px]"
                       />
                       
                       {/* Icon in center */}
                       <div
-                        className="relative z-10 flex items-center justify-center"
-                        style={{
-                          width: blob.size * 0.3,
-                          height: blob.size * 0.3,
-                        }}
+                        className={`relative z-10 flex items-center justify-center ${
+                          blob.size >= 300 ? "size-24" : blob.size >= 250 ? "size-20" : blob.size >= 200 ? "size-16" : "size-14"
+                        }`}
                       >
                         <Icon
                           className="text-white w-full h-full"
@@ -374,15 +348,13 @@ export function Screen4VibeCheck({
 
               {/* Center glow - reduced blur */}
               <motion.div
-                className="absolute w-32 h-32 rounded-full backdrop-blur-xl border border-white/30"
-                style={{ backgroundColor: 'rgba(255, 255, 255, 0.2)' }}
+                className="absolute h-32 w-32 rounded-full border border-white/30 bg-white/20 backdrop-blur-xl"
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ delay: 1, type: "spring", stiffness: 200 }}
               >
                 <motion.div
-                  className="absolute inset-0 rounded-full opacity-50 blur-md"
-                  style={{ backgroundColor: 'var(--color-theme-primary)' }}
+                  className="absolute inset-0 rounded-full bg-[var(--color-theme-primary)] opacity-50 blur-md"
                   animate={{
                     opacity: [0.3, 0.5, 0.3],
                   }}
