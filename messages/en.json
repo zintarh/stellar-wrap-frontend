@@ -67,5 +67,19 @@
     "title": "{username}'s Stellar Wrap",
     "description": "Check out this Stellar blockchain year in review — transactions, DeFi persona, and vibes!",
     "shareCardAlt": "Stellar Wrap share card"
+  },
+  "NFTGallery": {
+    "title": "NFT Gallery",
+    "subtitle": "Connect to view and interact with your NFTs.",
+    "connectWallet": "Connect Wallet",
+    "connecting": "Connecting...",
+    "interactWithNFT": "Mint / Interact with NFT",
+    "disconnect": "Disconnect",
+    "balance": "Balance: {amount} XLM",
+    "errorSignatureRejected": "Transaction signature rejected by user.",
+    "simulating": "Simulating...",
+    "signing": "Awaiting signature...",
+    "submitting": "Submitting...",
+    "success": "Transaction successful!"
   }
 }
