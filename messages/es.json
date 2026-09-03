@@ -69,5 +69,46 @@
     "title": "El Stellar Wrap de {username}",
     "description": "Mira este resumen del año en la blockchain de Stellar — transacciones, personalidad DeFi y vibras.",
     "shareCardAlt": "Tarjeta para compartir de Stellar Wrap"
+  },
+  "NFTGallery": {
+    "title": "Galería NFT",
+    "subtitle": "Conecta para ver e interactuar con tus NFTs.",
+    "connectWallet": "Conectar Cartera",
+    "connecting": "Conectando...",
+    "interactWithNFT": "Interactuar con NFT",
+    "disconnect": "Desconectar",
+    "balance": "Saldo: {amount} XLM",
+    "errorSignatureRejected": "Firma de transacción rechazada por el usuario.",
+    "simulating": "Simulando...",
+    "signing": "Esperando firma...",
+    "submitting": "Enviando...",
+    "success": "¡Transacción exitosa!"
+  },
+  "RecentActivity": {
+    "title": "Actividad Reciente",
+    "subtitle": "Mira tus últimas 20 transacciones",
+    "connectWallet": "Conectar Cartera",
+    "connecting": "Conectando...",
+    "interactWithNFT": "Verificar Feed",
+    "disconnect": "Desconectar",
+    "balance": "Saldo: {amount} XLM",
+    "errorSignatureRejected": "Firma de transacción rechazada por el usuario.",
+    "simulating": "Simulando...",
+    "signing": "Esperando firma...",
+    "submitting": "Enviando...",
+    "success": "¡Transacción exitosa!",
+    "table": {
+      "id": "Hash de Transacción",
+      "date": "Fecha",
+      "status": "Estado",
+      "fee": "Comisión",
+      "successful": "Éxito",
+      "failed": "Fallido"
+    },
+    "pagination": {
+      "previous": "Anterior",
+      "next": "Siguiente",
+      "page": "Página {current} de {total}"
+    }
   }
 }
