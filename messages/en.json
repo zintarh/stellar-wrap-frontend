@@ -81,5 +81,32 @@
     "signing": "Awaiting signature...",
     "submitting": "Submitting...",
     "success": "Transaction successful!"
+  },
+  "RecentActivity": {
+    "title": "Recent Activity",
+    "subtitle": "View your latest 20 transactions",
+    "connectWallet": "Connect Wallet",
+    "connecting": "Connecting...",
+    "interactWithNFT": "Verify Feed",
+    "disconnect": "Disconnect",
+    "balance": "Balance: {amount} XLM",
+    "errorSignatureRejected": "Transaction signature rejected by user.",
+    "simulating": "Simulating...",
+    "signing": "Awaiting signature...",
+    "submitting": "Submitting...",
+    "success": "Transaction successful!",
+    "table": {
+      "id": "Transaction Hash",
+      "date": "Date",
+      "status": "Status",
+      "fee": "Fee Charged",
+      "successful": "Success",
+      "failed": "Failed"
+    },
+    "pagination": {
+      "previous": "Previous",
+      "next": "Next",
+      "page": "Page {current} of {total}"
+    }
   }
 }
