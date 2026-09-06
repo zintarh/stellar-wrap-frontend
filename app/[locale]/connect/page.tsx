@@ -1,17 +1,21 @@
 "use client";
 
-import { useState, useRef, useEffect, KeyboardEvent, FormEvent, ChangeEvent } from "react";
+import { useState, useRef, useEffect, KeyboardEvent, ChangeEvent, FormEvent } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, Wallet, CheckCircle, XCircle, Copy, ChevronRight, QrCode } from "lucide-react";
+import { logger } from "@/app/utils/logger";
 import { Horizon } from "stellar-sdk";
+import { useTranslations } from "next-intl";
 import { useWrapStore } from "../../store/wrapStore";
 import { useTransactionStore } from "../../store/transactionStore";
 import { useMultiTimeframeStore } from "../../store/multiTimeframeStore";
+import { useWalletStore } from "../../store/walletStore";
 import { useSound } from "../../hooks/useSound";
 import { useOnlineStatus } from "../../hooks/useOnlineStatus";
 import { useStellarAddressValidation } from "../../../src/hooks/useStellarAddressValidation";
 import { ProgressIndicator } from "../../components/ProgressIndicator";
 import { MuteToggle } from "../../components/MuteToggle";
+import { ConnectWalletButton } from "../../components/ConnectWalletButton";
 import {
   connectFreighter,
   connectAlbedo,
@@ -31,9 +35,11 @@ import {
 
 export default function ConnectPage() {
   const router = useRouter();
+  const t = useTranslations("ConnectPage");
   const { setAddress, setError, setStatus, network, reset } = useWrapStore();
   const { resetTransaction } = useTransactionStore();
   const { reset: resetMultiTimeframe } = useMultiTimeframeStore();
+  const { connect: connectWalletSession } = useWalletStore();
   const { playSound } = useSound();
   const isOnline = useOnlineStatus();
 
@@ -73,7 +79,6 @@ export default function ConnectPage() {
   const backButtonRef = useRef<HTMLButtonElement>(null);
   const addressInputRef = useRef<HTMLInputElement>(null);
   const connectButtonRef = useRef<HTMLButtonElement>(null);
-  const freighterButtonRef = useRef<HTMLButtonElement>(null);
   const demoButtonRef = useRef<HTMLButtonElement>(null);
 
   // Load last-used address from localStorage on mount
@@ -113,9 +118,10 @@ export default function ConnectPage() {
     try {
       localStorage.removeItem("lastUsedStellarAddress");
     } catch {
-      // Non-fatal, see saveAddressToLocalStorage.
+      // non-fatal
     }
     setLastUsedAddress(null);
+    useWalletStore.getState().disconnect();
   };
 
   /**
@@ -146,7 +152,7 @@ export default function ConnectPage() {
         .call();
       setPreviewTxCount(txPage.records.length);
     } catch (error) {
-      console.error("Failed to fetch account preview:", error);
+      log.error("Failed to fetch account preview:", error);
       setPreviewBalance("0");
       setPreviewTxCount(0);
     } finally {
@@ -156,7 +162,7 @@ export default function ConnectPage() {
 
   const handleFreighterConnect = async () => {
     if (!isOnline) {
-      setLocalError("Wallet connect is unavailable offline.");
+      setLocalError(t("errors.offlineConnect"));
       return;
     }
 
@@ -172,6 +178,7 @@ export default function ConnectPage() {
     try {
       const publicKey = await connectFreighter(network);
       setAddress(publicKey);
+      connectWalletSession(publicKey, "freighter", network);
       saveAddressToLocalStorage(publicKey);
       setError(null);
       playSound(SOUND_NAMES.SLIDE_WHOOSH);
@@ -183,7 +190,7 @@ export default function ConnectPage() {
         setStatus("idle");
       } else {
         const msg =
-          error instanceof Error ? error.message : "Failed to connect wallet";
+          error instanceof Error ? error.message : t("errors.walletConnectFailed");
         setError(msg);
         setLocalError(msg);
         setStatus("error");
@@ -195,7 +202,7 @@ export default function ConnectPage() {
 
   const handleAlbedoConnect = async () => {
     if (!isOnline) {
-      setLocalError("Wallet connect is unavailable offline.");
+      setLocalError(t("errors.offlineConnect"));
       return;
     }
 
@@ -210,15 +217,16 @@ export default function ConnectPage() {
     try {
       const publicKey = await connectAlbedo(network);
       setAddress(publicKey);
+      connectWalletSession(publicKey, "albedo", network);
       saveAddressToLocalStorage(publicKey);
       setError(null);
       playSound(SOUND_NAMES.SLIDE_WHOOSH);
       await fetchAccountPreview(publicKey);
     } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Failed to connect wallet";
-      setError(errorMessage);
-      setLocalError(errorMessage);
+      const errMsg =
+        error instanceof Error ? error.message : t("errors.walletConnectFailed");
+      setError(errMsg);
+      setLocalError(errMsg);
       setStatus("error");
     } finally {
       setIsConnecting(false);
@@ -227,12 +235,12 @@ export default function ConnectPage() {
 
   const handleXBullConnect = async () => {
     if (!isOnline) {
-      setLocalError("Wallet connect is unavailable offline.");
+      setLocalError(t("errors.offlineConnect"));
       return;
     }
 
     if (!isXBullInstalled()) {
-      setLocalError("xBull wallet not found. Please install it from the Chrome Web Store.");
+      setLocalError(t("errors.xbullNotFoundShort"));
       window.open(
         "https://chromewebstore.google.com/detail/xbull-wallet/klpfklhikflhefnndkhiokkdbndlfhno",
         "_blank"
@@ -251,14 +259,15 @@ export default function ConnectPage() {
     try {
       const publicKey = await connectXBull(network);
       setAddress(publicKey);
+      connectWalletSession(publicKey, "xbull", network);
       setError(null);
       playSound(SOUND_NAMES.SLIDE_WHOOSH);
       router.push("/loading");
     } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Failed to connect wallet";
-      setError(errorMessage);
-      setLocalError(errorMessage);
+      const errMsg =
+        error instanceof Error ? error.message : t("errors.walletConnectFailed");
+      setError(errMsg);
+      setLocalError(errMsg);
       setStatus("error");
     } finally {
       setIsConnecting(false);
@@ -267,7 +276,7 @@ export default function ConnectPage() {
 
   const handleWalletConnectConnect = async () => {
     if (!isOnline) {
-      setLocalError("Wallet connect is unavailable offline.");
+      setLocalError(t("errors.offlineConnect"));
       return;
     }
 
@@ -282,14 +291,15 @@ export default function ConnectPage() {
     try {
       const publicKey = await connectWalletConnect(network);
       setAddress(publicKey);
+      connectWalletSession(publicKey, "walletconnect", network);
       setError(null);
       playSound(SOUND_NAMES.SLIDE_WHOOSH);
       router.push("/loading");
     } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Failed to connect wallet";
-      setError(errorMessage);
-      setLocalError(errorMessage);
+      const errMsg =
+        error instanceof Error ? error.message : t("errors.walletConnectFailed");
+      setError(errMsg);
+      setLocalError(errMsg);
       setStatus("error");
     } finally {
       setIsConnecting(false);
@@ -300,24 +310,24 @@ export default function ConnectPage() {
     if (e) e.preventDefault();
 
     if (!isOnline) {
-      setLocalError("Indexing is unavailable offline.");
+      setLocalError(t("errors.offlineIndexing"));
       return;
     }
 
     if (!walletAddress.trim()) {
-      setLocalError("Please enter a wallet address");
+      setLocalError(t("errors.emptyAddress"));
       return;
     }
 
     // Validate Stellar address format
     if (validationState === 'validating') {
-      setLocalError("Please wait while we validate your address...");
+      setLocalError(t("errors.validatingWait"));
       return;
     }
 
     if (!isValid) {
-      setLocalError("Invalid wallet address. Please check and try again.");
-      setError("Invalid wallet address");
+      setLocalError(t("errors.invalidAddress"));
+      setError(t("errors.invalidAddressShort"));
       return;
     }
 
@@ -330,6 +340,7 @@ export default function ConnectPage() {
     setAddress(trimmedAddress);
     setStatus("loading");
     setError(null);
+    connectWalletSession(trimmedAddress, "manual", network);
     saveAddressToLocalStorage(trimmedAddress);
     playSound(SOUND_NAMES.SLIDE_WHOOSH);
     fetchAccountPreview(walletAddress.trim());
@@ -356,8 +367,7 @@ export default function ConnectPage() {
         addressInputRef.current.focus();
       }
     } catch {
-      const pasteError =
-        "Clipboard access failed. Paste the address manually or allow clipboard access.";
+      const pasteError = t("errors.clipboardFailed");
       setLocalError(pasteError);
       setError(pasteError);
       addressInputRef.current?.focus();
@@ -370,7 +380,7 @@ export default function ConnectPage() {
 
   const handleDemoMode = () => {
     if (!isOnline) {
-      setLocalError("Demo indexing is unavailable offline.");
+      setLocalError(t("errors.demoOffline"));
       return;
     }
 
@@ -380,6 +390,7 @@ export default function ConnectPage() {
     setTimeout(() => {
       setAddress(DEMO_STELLAR_ADDRESS);
       setStatus("loading");
+      connectWalletSession(DEMO_STELLAR_ADDRESS, "demo", network);
       playSound(SOUND_NAMES.SLIDE_WHOOSH);
       router.push("/loading");
     }, 100);
@@ -422,7 +433,6 @@ export default function ConnectPage() {
       handleAlbedoConnect();
     }
   };
-
 
   const handleXBullKeyDown = (e: KeyboardEvent) => {
     if ((e.key === "Enter" || e.key === " ") && !isConnecting) {
@@ -540,7 +550,9 @@ export default function ConnectPage() {
           transition={{ delay: 0.2 }}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          aria-label="Back"
+          tabIndex={0}
+          aria-label={t("backAria")}
+          role="button"
         >
           <div
             className="flex items-center gap-2 px-4 py-3 rounded-xl backdrop-blur-xl border border-white/20"
@@ -551,7 +563,7 @@ export default function ConnectPage() {
               aria-hidden="true"
             />
             <span className="text-sm font-black text-white/80 group-hover:text-white transition-colors hidden sm:inline">
-              BACK
+              {t("back")}
             </span>
           </div>
         </motion.button>
@@ -614,11 +626,18 @@ export default function ConnectPage() {
             </div>
           </motion.div>
 
-          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black mb-3 md:mb-4 tracking-tight leading-none text-white">
-            CONNECT WALLET
+          <h1
+            className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black mb-3 md:mb-4 tracking-tight leading-none"
+            style={{
+              background: `linear-gradient(180deg, #ffffff 0%, var(--color-theme-primary) 100%)`,
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+            }}
+          >
+            {t("title")}
           </h1>
-          <p className="text-base sm:text-lg md:text-xl font-bold text-white/80 leading-relaxed">
-            Enter your Stellar wallet address to unwrap your 2026 journey
+          <p className="text-base sm:text-lg md:text-xl font-bold text-white/70 leading-relaxed">
+            {t("subtitle")}
           </p>
         </motion.div>
 
@@ -636,6 +655,7 @@ export default function ConnectPage() {
                 resetTransaction();
                 resetMultiTimeframe();
                 setAddress(lastUsedAddress);
+                connectWalletSession(lastUsedAddress, "manual", network);
                 playSound(SOUND_NAMES.SLIDE_WHOOSH);
                 router.push("/loading");
               }}
@@ -645,6 +665,9 @@ export default function ConnectPage() {
               }}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
+              tabIndex={0}
+              aria-label={t("continueAs", { shortAddress: `${lastUsedAddress.slice(0, 4)}...${lastUsedAddress.slice(-4)}` })}
+              role="button"
             >
               <CheckCircle
                 className="w-5 h-5"
@@ -652,16 +675,17 @@ export default function ConnectPage() {
                 aria-hidden="true"
               />
               <span className="text-sm sm:text-base">
-                Continue as {lastUsedAddress.slice(0, 4)}...{lastUsedAddress.slice(-4)}
+                {t("continueAs", { shortAddress: `${lastUsedAddress.slice(0, 4)}...${lastUsedAddress.slice(-4)}` })}
               </span>
             </motion.button>
             <button
               type="button"
               onClick={clearSavedAddress}
-              className="w-full mt-2 text-xs sm:text-sm text-white/70 hover:text-white transition-colors font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 focus-visible:ring-offset-black focus-visible:rounded"
-              aria-label="Use a different wallet"
+              className="w-full mt-2 text-xs sm:text-sm text-white/50 hover:text-white/70 transition-colors font-medium"
+              tabIndex={0}
+              aria-label={t("useDifferentWallet")}
             >
-              Use a different wallet
+              {t("useDifferentWallet")}
             </button>
           </motion.div>
         )}
@@ -697,7 +721,7 @@ export default function ConnectPage() {
               htmlFor="wallet-address"
               className="block text-sm font-black text-white/70 mb-3 tracking-wider"
             >
-              STELLAR ADDRESS
+              {t("stellarAddressLabel")}
             </label>
 
             <div className="relative mb-6">
@@ -708,7 +732,7 @@ export default function ConnectPage() {
                 value={walletAddress}
                 onChange={handleAddressChange}
                 onKeyDown={handleAddressKeyDown}
-                placeholder="Paste your Stellar address here"
+                placeholder={t("addressPlaceholder")}
                 className="w-full px-5 py-4 rounded-xl font-mono text-sm sm:text-base border-2 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-theme-primary focus:ring-offset-2 focus:ring-offset-black"
                 style={{
                   backgroundColor: "rgba(0, 0, 0, 0.5)",
@@ -718,6 +742,7 @@ export default function ConnectPage() {
                   color: "white",
                 }}
                 tabIndex={0}
+                aria-label={t("addressInputAria")}
                 aria-required="true"
                 aria-invalid={!!localError}
                 aria-describedby={errorId}
@@ -730,7 +755,9 @@ export default function ConnectPage() {
                 className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-lg hover:bg-white/10 transition-colors focus:outline-none focus:ring-2 focus:ring-theme-primary focus:ring-offset-2 focus:ring-offset-black"
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
-                aria-label="Paste from clipboard"
+                tabIndex={0}
+                aria-label={t("pasteAria")}
+                role="button"
               >
                 <Copy
                   className="w-5 h-5"
@@ -802,11 +829,8 @@ export default function ConnectPage() {
                   className="mb-6 p-4 bg-yellow-500/10 border-2 border-yellow-500/50 rounded-xl text-yellow-500 text-sm text-center font-medium"
                 >
                   <div className="flex items-center justify-center gap-2">
-                    <div
-                      aria-hidden="true"
-                      className="w-4 h-4 border-2 border-yellow-500 border-t-transparent rounded-full animate-spin"
-                    />
-                    Checking account...
+                    <div className="w-4 h-4 border-2 border-yellow-500 border-t-transparent rounded-full animate-spin" />
+                    {t("checkingAccount")}
                   </div>
                 </motion.div>
               )}
@@ -820,11 +844,8 @@ export default function ConnectPage() {
                   className="mb-6 p-4 bg-theme-primary/10 border-2 border-theme-primary/50 rounded-xl text-theme-primary text-sm text-center font-medium"
                 >
                   <div className="flex items-center justify-center gap-2">
-                    <div
-                      aria-hidden="true"
-                      className="w-4 h-4 border-2 border-theme-primary border-t-transparent rounded-full animate-spin"
-                    />
-                    Indexing transactions...
+                    <div className="w-4 h-4 border-2 border-theme-primary border-t-transparent rounded-full animate-spin" />
+                    {t("indexingTransactions")}
                   </div>
                 </motion.div>
               )}
@@ -853,14 +874,14 @@ export default function ConnectPage() {
                   className="mb-6 p-4 bg-red-500/10 border-2 border-red-500/50 rounded-xl text-red-400 text-sm text-center font-medium"
                 >
                   ⚠️ {localError}
-                  {localError.includes("Freighter is not installed") && (
+                  {localError.includes("Freighter") && localError.includes("installed") && (
                     <a
                       href="https://www.freighter.app/"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="ml-2 underline font-bold"
                     >
-                      Install or open Freighter
+                      {t("freighterInstallLink")}
                     </a>
                   )}
                 </motion.div>
@@ -874,21 +895,18 @@ export default function ConnectPage() {
                   exit={{ opacity: 0, y: -10 }}
                   className="mb-6 p-4 bg-yellow-500/10 border-2 border-yellow-500/50 rounded-xl text-yellow-300 text-sm font-medium"
                 >
-                  <p className="font-bold mb-1">⚠️ Wallet network mismatch</p>
+                  <p className="font-bold mb-1">{t("networkMismatchTitle")}</p>
                   <p className="text-yellow-400/80 text-xs mb-3">
-                    Freighter is connected to{" "}
-                    <span className="font-bold text-yellow-300">
-                      {networkMismatch.actual}
-                    </span>
-                    , but this app is set to{" "}
-                    <span className="font-bold text-yellow-300">
-                      {networkMismatch.expected}
-                    </span>
-                    . Please switch your Freighter wallet to{" "}
-                    <span className="font-bold text-yellow-300">
-                      {networkMismatch.expected}
-                    </span>{" "}
-                    and try again.
+                    {t.rich("networkMismatchDescription", {
+                      actual: networkMismatch.actual,
+                      expected: networkMismatch.expected,
+                      actual: (chunks) => (
+                        <span className="font-bold text-yellow-300">{chunks}</span>
+                      ),
+                      expected: (chunks) => (
+                        <span className="font-bold text-yellow-300">{chunks}</span>
+                      ),
+                    })}
                   </p>
                   <button
                     data-testid="network-mismatch-retry"
@@ -898,7 +916,7 @@ export default function ConnectPage() {
                     }}
                     className="w-full px-4 py-2 rounded-lg bg-yellow-500/20 border border-yellow-500/50 text-yellow-200 font-bold text-xs hover:bg-yellow-500/30 transition-colors focus:outline-none focus:ring-2 focus:ring-yellow-400"
                   >
-                    I&apos;ve switched — try again
+                    {t("networkMismatchRetry")}
                   </button>
                 </motion.div>
               )}
@@ -909,7 +927,7 @@ export default function ConnectPage() {
                   exit={{ opacity: 0, y: -10 }}
                   className="mb-6 p-4 bg-yellow-500/10 border-2 border-yellow-500/50 rounded-xl text-yellow-400 text-sm text-center font-medium"
                 >
-                  You&apos;re offline — wallet connect and indexing are disabled.
+                  {t("offlineNotice")}
                 </motion.div>
               )}
             </AnimatePresence>
@@ -924,34 +942,34 @@ export default function ConnectPage() {
                   className="mb-6 p-6 bg-theme-primary/10 border-2 border-theme-primary/50 rounded-xl"
                 >
                   <h2 className="text-sm font-bold text-white/80 mb-4 tracking-wide">
-                    ACCOUNT SUMMARY
+                    {t("accountSummary.title")}
                   </h2>
                   <div className="space-y-3">
                     <div className="flex justify-between items-center">
-                      <span className="text-white/60 text-sm">Network</span>
+                      <span className="text-white/60 text-sm">{t("accountSummary.network")}</span>
                       <span className="text-white font-bold">
-                        {network === "testnet" ? "Testnet" : "Mainnet"}
+                        {network === "testnet" ? t("accountSummary.testnet") : t("accountSummary.mainnet")}
                       </span>
                     </div>
                     {previewLoading ? (
                       <>
                         <div className="flex justify-between items-center">
-                          <span className="text-white/60 text-sm">Balance</span>
+                          <span className="text-white/60 text-sm">{t("accountSummary.balance")}</span>
                           <div className="w-20 h-5 bg-white/10 rounded animate-pulse" />
                         </div>
                         <div className="flex justify-between items-center">
-                          <span className="text-white/60 text-sm">Recent Transactions</span>
+                          <span className="text-white/60 text-sm">{t("accountSummary.recentTransactions")}</span>
                           <div className="w-20 h-5 bg-white/10 rounded animate-pulse" />
                         </div>
                       </>
                     ) : (
                       <>
                         <div className="flex justify-between items-center">
-                          <span className="text-white/60 text-sm">XLM Balance</span>
+                          <span className="text-white/60 text-sm">{t("accountSummary.xlmBalance")}</span>
                           <span className="text-white font-bold">{previewBalance} XLM</span>
                         </div>
                         <div className="flex justify-between items-center">
-                          <span className="text-white/60 text-sm">Total Operations</span>
+                          <span className="text-white/60 text-sm">{t("accountSummary.totalOperations")}</span>
                           <span className="text-white font-bold">{previewTxCount}</span>
                         </div>
                       </>
@@ -964,8 +982,8 @@ export default function ConnectPage() {
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                   >
-                    <span>CONTINUE</span>
-                    <ChevronRight className="w-4 h-4" aria-hidden="true" />
+                    <span>{t("accountSummary.continue")}</span>
+                    <ChevronRight className="w-4 h-4" />
                   </motion.button>
                 </motion.div>
               ) : (
@@ -991,6 +1009,18 @@ export default function ConnectPage() {
                         ? 1
                         : 0.98,
                   }}
+                  tabIndex={0}
+                  aria-label={
+                    !isOnline
+                      ? t("offlineAria")
+                      : isConnecting
+                        ? t("connectingAria")
+                        : t("startWrappingAria")
+                  }
+                  aria-disabled={
+                    !isOnline || !walletAddress.trim() || isConnecting || !isValid
+                  }
+                  role="button"
                 >
                   <motion.div
                     aria-hidden="true"
@@ -1021,17 +1051,14 @@ export default function ConnectPage() {
                     }}
                   >
                     {!isOnline ? (
-                      "OFFLINE"
+                      t("offline")
                     ) : isConnecting ? (
                       <>
-                        <div
-                          aria-hidden="true"
-                          className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin"
-                        />
-                        <span>CONNECTING...</span>
+                        <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                        <span>{t("connecting")}</span>
                       </>
                     ) : (
-                      "START WRAPPING"
+                      t("startWrapping")
                     )}
                   </div>
                 </motion.button>
@@ -1040,8 +1067,8 @@ export default function ConnectPage() {
 
             {/* Wallet Connect Options */}
             <div className="mt-6 pt-6 border-t border-white/10 space-y-3">
-              <p className="text-center text-sm font-medium text-white/70 mb-4">
-                or connect with
+              <p className="text-center text-sm font-medium text-white/50 mb-4">
+                {t("orConnectWith")}
               </p>
               <motion.button
                 ref={freighterButtonRef}
@@ -1055,15 +1082,15 @@ export default function ConnectPage() {
                 }}
                 whileHover={{ scale: !isOnline || isConnecting ? 1 : 1.02 }}
                 whileTap={{ scale: !isOnline || isConnecting ? 1 : 0.98 }}
-                aria-label="Connect with Freighter wallet"
+                tabIndex={0}
+                aria-label={t("freighterButtonAria")}
+                aria-disabled={!isOnline || isConnecting}
+                role="button"
               >
                 {isConnecting ? (
                   <>
-                    <div
-                      aria-hidden="true"
-                      className="w-5 h-5 border-2 border-white/70 border-t-transparent rounded-full animate-spin"
-                    />
-                    <span>Connecting...</span>
+                    <div className="w-5 h-5 border-2 border-white/70 border-t-transparent rounded-full animate-spin" />
+                    <span>{t("connecting")}</span>
                   </>
                 ) : (
                   <>
@@ -1072,7 +1099,7 @@ export default function ConnectPage() {
                       style={{ color: "var(--color-theme-primary)" }}
                       aria-hidden="true"
                     />
-                    <span>Connect with Freighter</span>
+                    <span>{t("freighterButton")}</span>
                   </>
                 )}
               </motion.button>
@@ -1088,15 +1115,15 @@ export default function ConnectPage() {
                 }}
                 whileHover={{ scale: !isOnline || isConnecting ? 1 : 1.02 }}
                 whileTap={{ scale: !isOnline || isConnecting ? 1 : 0.98 }}
-                aria-label="Connect with Albedo wallet"
+                tabIndex={0}
+                aria-label={t("albedoButtonAria")}
+                aria-disabled={!isOnline || isConnecting}
+                role="button"
               >
                 {isConnecting ? (
                   <>
-                    <div
-                      aria-hidden="true"
-                      className="w-5 h-5 border-2 border-white/70 border-t-transparent rounded-full animate-spin"
-                    />
-                    <span>Connecting...</span>
+                    <div className="w-5 h-5 border-2 border-white/70 border-t-transparent rounded-full animate-spin" />
+                    <span>{t("connecting")}</span>
                   </>
                 ) : (
                   <>
@@ -1105,7 +1132,7 @@ export default function ConnectPage() {
                       style={{ color: "var(--color-theme-primary)" }}
                       aria-hidden="true"
                     />
-                    <span>Connect with Albedo</span>
+                    <span>{t("albedoButton")}</span>
                   </>
                 )}
               </motion.button>
@@ -1121,15 +1148,15 @@ export default function ConnectPage() {
                 }}
                 whileHover={{ scale: !isOnline || isConnecting ? 1 : 1.02 }}
                 whileTap={{ scale: !isOnline || isConnecting ? 1 : 0.98 }}
-                aria-label="Connect with xBull wallet"
+                tabIndex={0}
+                aria-label={t("xbullButtonAria")}
+                aria-disabled={!isOnline || isConnecting}
+                role="button"
               >
                 {isConnecting ? (
                   <>
-                    <div
-                      aria-hidden="true"
-                      className="w-5 h-5 border-2 border-white/70 border-t-transparent rounded-full animate-spin"
-                    />
-                    <span>Connecting...</span>
+                    <div className="w-5 h-5 border-2 border-white/70 border-t-transparent rounded-full animate-spin" />
+                    <span>{t("connecting")}</span>
                   </>
                 ) : (
                   <>
@@ -1138,7 +1165,7 @@ export default function ConnectPage() {
                       style={{ color: "var(--color-theme-primary)" }}
                       aria-hidden="true"
                     />
-                    <span>Connect with xBull</span>
+                    <span>{t("xbullButton")}</span>
                   </>
                 )}
               </motion.button>
@@ -1154,15 +1181,15 @@ export default function ConnectPage() {
                 }}
                 whileHover={{ scale: !isOnline || isConnecting ? 1 : 1.02 }}
                 whileTap={{ scale: !isOnline || isConnecting ? 1 : 0.98 }}
-                aria-label="Connect with WalletConnect mobile wallets"
+                tabIndex={0}
+                aria-label={t("walletConnectButtonAria")}
+                aria-disabled={!isOnline || isConnecting}
+                role="button"
               >
                 {isConnecting ? (
                   <>
-                    <div
-                      aria-hidden="true"
-                      className="w-5 h-5 border-2 border-white/70 border-t-transparent rounded-full animate-spin"
-                    />
-                    <span>Connecting...</span>
+                    <div className="w-5 h-5 border-2 border-white/70 border-t-transparent rounded-full animate-spin" />
+                    <span>{t("connecting")}</span>
                   </>
                 ) : (
                   <>
@@ -1171,24 +1198,25 @@ export default function ConnectPage() {
                       style={{ color: "var(--color-theme-primary)" }}
                       aria-hidden="true"
                     />
-                    <span>Connect with WalletConnect</span>
+                    <span>{t("walletConnectButton")}</span>
                   </>
                 )}
               </motion.button>
             </div>
 
             <div className="mt-6 pt-6 border-t border-white/10">
-              <p className="text-xs sm:text-sm text-white/70 text-center mb-3">
-                Don&apos;t have a Stellar wallet?{" "}
+              <p className="text-xs sm:text-sm text-white/50 text-center mb-3">
+                {t("noWalletPrompt")}{" "}
                 <a
                   href="https://stellar.org/wallets"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="font-bold hover:opacity-80 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 focus-visible:ring-offset-black focus-visible:rounded"
                   style={{ color: "var(--color-theme-primary)" }}
-                  aria-label="Learn how to get a Stellar wallet (opens in new window)"
+                  tabIndex={0}
+                  aria-label={t("getOneHereAria")}
                 >
-                  Get one here
+                  {t("getOneHere")}
                 </a>
               </p>
               <motion.button
@@ -1199,8 +1227,11 @@ export default function ConnectPage() {
                 className="w-full text-xs sm:text-sm font-bold text-white/60 hover:text-white/80 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 focus-visible:ring-offset-black focus-visible:rounded"
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
+                tabIndex={0}
+                aria-label={t("tryDemoModeAria")}
+                role="button"
               >
-                Or click here to try demo mode →
+                {t("tryDemoMode")}
               </motion.button>
             </div>
           </div>
