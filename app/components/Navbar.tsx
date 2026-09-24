@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { LogOut } from "lucide-react";
+import { LogOut, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { ColorToggle } from "./ColorToggle";
 import { DarkLightToggle } from "./DarkLightToggle";
@@ -20,26 +20,47 @@ export function Navbar() {
   const router = useRouter();
   const { address, reset } = useWrapStore();
   const network = useWrapStore((s) => s.network);
-  const disconnectWallet = useWalletStore((s) => s.disconnect);
+  const optimisticDisconnect = useWalletStore((s) => s.optimisticDisconnect);
+  const isDisconnecting = useWalletStore((s) => s.isDisconnecting);
   const { mode } = useTheme();
 
   // Re-validate the persisted wallet session on load so a page refresh doesn't
   // silently drop the user's connection.
   useHydrateWallet(network);
 
-  const handleDisconnect = () => {
-    reset();
-    resetCache();
-    disconnectWallet();
-    // Clear the remembered last-used address so a stale session isn't offered
-    // as a one-tap reconnect on the next visit.
-    try {
-      localStorage.removeItem("lastUsedStellarAddress");
-    } catch {
-      // Non-fatal.
+  const handleDisconnect = async () => {
+    // Capture a reference to the address before the optimistic clear wipes it.
+    const previousAddress = address;
+
+    // Perform the local store/cache cleanup inside the cleanup callback so
+    // that a failure reverts *all* state together via the snapshot rollback.
+    const cleanup = async () => {
+      reset();
+      resetCache();
+      try {
+        localStorage.removeItem("lastUsedStellarAddress");
+      } catch {
+        // Non-fatal: localStorage may be unavailable in some environments.
+      }
+    };
+
+    const succeeded = await optimisticDisconnect(cleanup);
+
+    if (succeeded) {
+      toast.success("Wallet disconnected");
+      router.push("/");
+    } else {
+      // The store has already rolled back to the previous session; notify the
+      // user so they know the disconnect did not complete.
+      toast.error("Disconnect failed — your session was restored. Please try again.");
+      // Re-apply the wrap address from the snapshot so wrapStore stays in sync.
+      if (previousAddress) {
+        // wrapStore.reset() was called inside cleanup before the failure; we
+        // need to put the address back.  Use setAddress from a fresh selector
+        // to avoid a stale closure.
+        useWrapStore.getState().setAddress(previousAddress);
+      }
     }
-    toast.success("Wallet disconnected");
-    router.push("/");
   };
 
   return (
@@ -106,8 +127,10 @@ export function Navbar() {
             </span>
             <button
               onClick={handleDisconnect}
-              aria-label="Disconnect wallet"
-              className="flex items-center gap-1.5 text-xs border rounded-full px-3 py-1 transition-all duration-200"
+              disabled={isDisconnecting}
+              aria-label={isDisconnecting ? "Disconnecting wallet…" : "Disconnect wallet"}
+              aria-busy={isDisconnecting}
+              className="flex items-center gap-1.5 text-xs border rounded-full px-3 py-1 transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-60"
               style={{
                 backgroundColor: "transparent",
                 borderColor:
@@ -118,6 +141,7 @@ export function Navbar() {
                   mode === "dark" ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.6)",
               }}
               onMouseEnter={(e) => {
+                if (isDisconnecting) return;
                 e.currentTarget.style.backgroundColor =
                   mode === "dark"
                     ? "rgba(255,255,255,0.05)"
@@ -130,8 +154,12 @@ export function Navbar() {
                   mode === "dark" ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.6)";
               }}
             >
-              <LogOut size={12} />
-              Disconnect
+              {isDisconnecting ? (
+                <Loader2 size={12} className="animate-spin" aria-hidden="true" />
+              ) : (
+                <LogOut size={12} aria-hidden="true" />
+              )}
+              {isDisconnecting ? "Disconnecting…" : "Disconnect"}
             </button>
           </>
         )}
