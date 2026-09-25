@@ -3,6 +3,12 @@
     "title": "Welcome to Stellar Wrap",
     "subtitle": "Your year in review on the Stellar Network"
   },
+  "Navbar": {
+    "disconnect": "Disconnect"
+  },
+  "Landing": {
+    "tagline": "Your blockchain story, told like never before."
+  },
   "SharePage": {
     "title": "Stellar Wrapped 2026",
     "shareText": "Check out my Stellar Wrapped 2026! {transactions} transactions, {persona} persona, {vibePercentage}% {topVibe}! 🎉 #StellarWrapped",

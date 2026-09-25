@@ -56,6 +56,9 @@ jobs:
       - name: Validate environment variables
         run: node scripts/validate-env.js
       
+      - name: Validate locale catalogs
+        run: pnpm validate:i18n
+      
       - name: Lint
         run: pnpm lint
 

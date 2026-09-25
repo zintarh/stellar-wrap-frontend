@@ -1,4 +1,8 @@
 {
+  "LandingPage": {
+    "title": "Bienvenue sur Stellar Wrap",
+    "subtitle": "Votre récapitulatif de l’année sur le réseau Stellar"
+  },
   "Navbar": {
     "disconnect": "Se déconnecter"
   },

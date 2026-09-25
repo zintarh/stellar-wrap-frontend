@@ -35,6 +35,7 @@
     "prepare": "husky install",
     "analyze": "ANALYZE=true next build",
     "validate:env": "node scripts/validate-env.js",
+    "validate:i18n": "node scripts/validate-i18n.js",
     "optimize:svgs": "node scripts/optimize-featured-svgs.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
