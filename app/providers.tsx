@@ -1,8 +1,17 @@
 "use client";
 
-import { type ReactNode, useEffect } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { ThemeProvider } from "./context/ThemeContext";
-import { useEffect, useState } from "react";
+import { initWalletKit } from "./utils/walletKit";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ServiceWorkerManager } from "./components/ServiceWorkerManager";
+import { OfflineWrapHydrator } from "./components/OfflineWrapHydrator";
+import { OfflineBanner } from "./components/OfflineBanner";
+import { PwaInstallPrompt } from "./components/PwaInstallPrompt";"use client";
+
+import { type ReactNode, useEffect, useState } from "react";
+import { ThemeProvider } from "./context/ThemeContext";
+import { initWalletKit } from "./utils/walletKit";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ServiceWorkerManager } from "./components/ServiceWorkerManager";
 import { OfflineWrapHydrator } from "./components/OfflineWrapHydrator";
@@ -10,21 +19,26 @@ import { OfflineBanner } from "./components/OfflineBanner";
 import { PwaInstallPrompt } from "./components/PwaInstallPrompt";
 
 export function Providers({ children }: { children: React.ReactNode }) {
-  const [queryClient] = useState(() => new QueryClient({
-    defaultOptions: {
-      queries: {
-        staleTime: 60 * 1000,
-        retry: 2,
-        refetchOnWindowFocus: false,
-      },
-    },
-  }));
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            staleTime: 60 * 1000,
+            retry: 2,
+            refetchOnWindowFocus: false,
+          },
+        },
+      }),
+  );
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      import("@/app/utils/wallet").then(({ initWalletKit }) => {
-        initWalletKit();
-      }).catch(console.error);
+      import("@/app/utils/wallet")
+        .then(({ initWalletKit }) => {
+          initWalletKit();
+        })
+        .catch(console.error);
     }
   }, []);
 
@@ -40,4 +54,3 @@ export function Providers({ children }: { children: React.ReactNode }) {
     </QueryClientProvider>
   );
 }
-

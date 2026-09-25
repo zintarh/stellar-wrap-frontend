@@ -34,7 +34,6 @@ function getStringProperty(data: unknown, key: string): string | null {
     const value = (data as Record<string, unknown>)[key];
     return typeof value === "string" ? value : null;
   }
-
   return null;
 }
 

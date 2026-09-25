@@ -29,6 +29,7 @@ jest.mock("../context/ThemeContext", () => ({
 }));
 
 let mockPeriod = "yearly";
+
 jest.mock("../store/wrapStore", () => ({
   useWrapStore: () => ({
     address: "test-address",
@@ -56,7 +57,11 @@ describe("SharePageClient", () => {
   beforeEach(() => {
     originalWindow = global.window;
     global.window = Object.create(window);
-    global.window.location = { href: "https://example.com/share" } as any;
+
+    global.window.location = {
+      href: "https://example.com/share",
+    } as any;
+
     // Mock window.open
     global.window.open = jest.fn();
   });
@@ -68,12 +73,15 @@ describe("SharePageClient", () => {
 
   it("should render share button", () => {
     render(<SharePageClient />);
+
     const shareButton = screen.getByRole("button");
+
     expect(shareButton).toBeInTheDocument();
   });
 
   it("should open share menu when share button is clicked", () => {
     render(<SharePageClient />);
+
     const shareButton = screen.getByRole("button");
     fireEvent.click(shareButton);
 
@@ -85,6 +93,7 @@ describe("SharePageClient", () => {
 
   it("should call handleShare with correct platform for WhatsApp button", () => {
     render(<SharePageClient />);
+
     const shareButton = screen.getByRole("button");
     fireEvent.click(shareButton);
 
@@ -94,12 +103,13 @@ describe("SharePageClient", () => {
     expect(global.window.open).toHaveBeenCalledWith(
       expect.stringContaining("wa.me"),
       "_blank",
-      expect.any(String)
+      expect.any(String),
     );
   });
 
   it("should call handleShare with correct platform for X button", () => {
     render(<SharePageClient />);
+
     const shareButton = screen.getByRole("button");
     fireEvent.click(shareButton);
 
@@ -109,12 +119,13 @@ describe("SharePageClient", () => {
     expect(global.window.open).toHaveBeenCalledWith(
       expect.stringContaining("twitter.com"),
       "_blank",
-      expect.any(String)
+      expect.any(String),
     );
   });
 
   it("should generate different share URLs for different platforms", () => {
     render(<SharePageClient />);
+
     const shareButton = screen.getByRole("button");
     fireEvent.click(shareButton);
 
@@ -122,10 +133,13 @@ describe("SharePageClient", () => {
     const whatsappButton = screen.getByText("WhatsApp").closest("button");
 
     fireEvent.click(xButton!);
+
     const xCall = (global.window.open as jest.Mock).mock.calls[0][0];
 
     (global.window.open as jest.Mock).mockClear();
+
     fireEvent.click(whatsappButton!);
+
     const whatsappCall = (global.window.open as jest.Mock).mock.calls[0][0];
 
     // Verify URLs are different
@@ -136,6 +150,7 @@ describe("SharePageClient", () => {
 
   it("should prevent platform-to-handler mismatches - WhatsApp should not open Twitter", () => {
     render(<SharePageClient />);
+
     const shareButton = screen.getByRole("button");
     fireEvent.click(shareButton);
 
@@ -151,6 +166,7 @@ describe("SharePageClient", () => {
 
   it("should prevent platform-to-handler mismatches - X should not open WhatsApp", () => {
     render(<SharePageClient />);
+
     const shareButton = screen.getByRole("button");
     fireEvent.click(shareButton);
 
@@ -166,9 +182,11 @@ describe("SharePageClient", () => {
 
   it("should include period in share text for weekly", () => {
     const { __setMockPeriod } = require("../store/wrapStore") as any;
+
     __setMockPeriod("weekly");
 
     render(<SharePageClient />);
+
     const shareButton = screen.getByRole("button");
     fireEvent.click(shareButton);
 
@@ -176,14 +194,19 @@ describe("SharePageClient", () => {
     fireEvent.click(xButton!);
 
     const callUrl = (global.window.open as jest.Mock).mock.calls[0][0];
-    expect(decodeURIComponent(callUrl)).toContain("weekly Stellar Wrapped");
+
+    expect(decodeURIComponent(callUrl)).toContain(
+      "weekly Stellar Wrapped",
+    );
   });
 
   it("should include period in share text for monthly", () => {
     const { __setMockPeriod } = require("../store/wrapStore") as any;
+
     __setMockPeriod("monthly");
 
     render(<SharePageClient />);
+
     const shareButton = screen.getByRole("button");
     fireEvent.click(shareButton);
 
@@ -191,14 +214,19 @@ describe("SharePageClient", () => {
     fireEvent.click(xButton!);
 
     const callUrl = (global.window.open as jest.Mock).mock.calls[0][0];
-    expect(decodeURIComponent(callUrl)).toContain("monthly Stellar Wrapped");
+
+    expect(decodeURIComponent(callUrl)).toContain(
+      "monthly Stellar Wrapped",
+    );
   });
 
   it("should include period in share text for yearly", () => {
     const { __setMockPeriod } = require("../store/wrapStore") as any;
+
     __setMockPeriod("yearly");
 
     render(<SharePageClient />);
+
     const shareButton = screen.getByRole("button");
     fireEvent.click(shareButton);
 
@@ -206,6 +234,9 @@ describe("SharePageClient", () => {
     fireEvent.click(xButton!);
 
     const callUrl = (global.window.open as jest.Mock).mock.calls[0][0];
-    expect(decodeURIComponent(callUrl)).toContain("yearly Stellar Wrapped");
+
+    expect(decodeURIComponent(callUrl)).toContain(
+      "yearly Stellar Wrapped",
+    );
   });
 });

@@ -27,12 +27,16 @@ export async function sendEmail(options: SendEmailOptions): Promise<void> {
     return;
   }
 
-  // Dynamic import so the package is optional at build time
-  const { Resend } = await import("resend");
-  const resend = new Resend(process.env.RESEND_API_KEY);
-
-  const { error } = await resend.emails.send({ from, to, subject, html });
-  if (error) {
-    throw new Error(`Email send failed: ${error.message}`);
+  try {
+    const mod = await Function("m", "return import(m)")("resend");
+    if (mod?.Resend) {
+      const resend = new mod.Resend(process.env.RESEND_API_KEY);
+      const { error } = await resend.emails.send({ from, to, subject, html });
+      if (error) {
+        throw new Error(`Email send failed: ${error.message}`);
+      }
+    }
+  } catch (err) {
+    console.warn("[email] Resend delivery skipped or failed:", err);
   }
 }

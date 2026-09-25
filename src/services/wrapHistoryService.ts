@@ -20,7 +20,7 @@ export interface WrapRecord {
 }
 
 /** Generate monthly period keys for the last N months (e.g. "2026-01") */
-export function generateMonthlyPeriods(count = 12): { key: string; label: string }[] {
+export function generateMonthlyPeriods(count = 12, locale = "en"): { key: string; label: string }[] {
   const periods: { key: string; label: string }[] = [];
   const now = new Date();
 
@@ -29,7 +29,7 @@ export function generateMonthlyPeriods(count = 12): { key: string; label: string
     const year = d.getFullYear();
     const month = String(d.getMonth() + 1).padStart(2, "0");
     const key = `${year}-${month}`;
-    const label = d.toLocaleDateString("en-US", { month: "short", year: "numeric" });
+    const label = d.toLocaleDateString(locale, { month: "short", year: "numeric" });
     periods.push({ key, label });
   }
 
@@ -129,8 +129,9 @@ export async function fetchUserWrapHistory(
   network: Network,
   currentArchetype?: string,
   currentTxCount?: number,
+  locale = "en",
 ): Promise<WrapRecord[]> {
-  const allPeriods = [...STANDARD_PERIODS, ...generateMonthlyPeriods(12)];
+  const allPeriods = [...STANDARD_PERIODS, ...generateMonthlyPeriods(12, locale)];
 
   const results: WrapRecord[] = [];
 
@@ -161,7 +162,7 @@ export async function fetchUserWrapHistory(
     return [
       {
         period: "current",
-        periodLabel: new Date().toLocaleDateString("en-US", { month: "short", year: "numeric" }),
+        periodLabel: new Date().toLocaleDateString(locale, { month: "short", year: "numeric" }),
         archetype: currentArchetype,
         transactionCount: currentTxCount ?? 0,
       },

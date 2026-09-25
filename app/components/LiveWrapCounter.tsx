@@ -1,32 +1,26 @@
 "use client";
 
-import { motion, useMotionValue, useTransform, animate } from 'framer-motion';
+import { motion, useMotionValue, animate } from 'framer-motion';
 import { useEffect, useState } from 'react';
+import { useFormatter } from 'next-intl';
 
 interface LiveWrapCounterProps {
   className?: string;
 }
 
 export function LiveWrapCounter({ className }: LiveWrapCounterProps) {
-  const [isLoading, setIsLoading] = useState(true);
-  const [targetCount, setTargetCount] = useState(0);
-  const [walletCount, setWalletCount] = useState(0);
+  const format = useFormatter();
+  const [targetCount] = useState(() => {
+    if (typeof window === 'undefined') return 12847;
+    const storedCount = localStorage.getItem('stellarWrap_totalWraps');
+    return storedCount ? (parseInt(storedCount, 10) || 12847) : 12847;
+  });
+  const [walletCount] = useState(3241);
   const count = useMotionValue(0);
   const [displayCount, setDisplayCount] = useState(0);
 
-  // Format numbers with commas
-  const formatNumber = (num: number) => num.toLocaleString();
-
-  // Load from localStorage on initial mount
-  useEffect(() => {
-    const storedCount = localStorage.getItem('stellarWrap_totalWraps');
-    if (storedCount) {
-      setTargetCount(parseInt(storedCount, 10) || 12847);
-    } else {
-      setTargetCount(12847); // Default fallback value
-    }
-    setWalletCount(3241); // Default wallet count
-  }, []);
+  // Format numbers with active locale
+  const formatNumber = (num: number) => format.number(num);
 
   // Update displayCount as count animates
   useEffect(() => {

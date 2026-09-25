@@ -59,6 +59,7 @@ function ShareCardVisualFixture() {
           themeColor={themeColors[theme].primary}
           archetypeImage={archetypeImage}
           data={scenarioData[scenario]}
+          qrCodeDataUrl={null}
         />
       </div>
     </main>

@@ -32,9 +32,9 @@ export interface VirtualTransaction {
   };
 }
 
-function formatCompact(n: number): string {
+function formatCompact(n: number, locale = "en"): string {
   try {
-    return new Intl.NumberFormat(undefined, {
+    return new Intl.NumberFormat(locale, {
       notation: "compact",
       maximumFractionDigits: 1,
     }).format(n);
@@ -43,16 +43,16 @@ function formatCompact(n: number): string {
   }
 }
 
-function formatAmount(amount: number): string {
+function formatAmount(amount: number, locale = "en"): string {
   if (!Number.isFinite(amount)) return "0";
-  return new Intl.NumberFormat(undefined, {
+  return new Intl.NumberFormat(locale, {
     maximumFractionDigits: 2,
   }).format(amount);
 }
 
-function formatDateTime(epochMs: number): string {
+function formatDateTime(epochMs: number, locale = "en"): string {
   const d = new Date(epochMs);
-  return d.toLocaleString(undefined, {
+  return d.toLocaleString(locale, {
     year: "numeric",
     month: "short",
     day: "2-digit",

@@ -2,6 +2,8 @@
 
 import { useEffect, useState, type CSSProperties } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useFormatter } from "next-intl";
+import { formatXlmAmount } from "@/app/utils/formatters";
 import { useWrapStore } from "@/app/store/wrapStore";
 import { getArchetypeStyle } from "@/src/data/archetypeConfig";
 import {
@@ -16,6 +18,7 @@ interface PersonaEvolutionTimelineProps {
 }
 
 export function PersonaEvolutionTimeline({ useDemo = false }: PersonaEvolutionTimelineProps) {
+  const format = useFormatter();
   const { address, network, result, period } = useWrapStore();
   const [wraps, setWraps] = useState<WrapRecord[]>([]);
   const [selected, setSelected] = useState<WrapRecord | null>(null);
@@ -215,14 +218,14 @@ export function PersonaEvolutionTimeline({ useDemo = false }: PersonaEvolutionTi
               <div>
                 <p className="text-white/40 text-xs uppercase">Transactions</p>
                 <p className="font-bold text-white">
-                  {selected.transactionCount.toLocaleString()}
+                  {format.number(selected.transactionCount)}
                 </p>
               </div>
               {selected.totalVolume != null && (
                 <div>
                   <p className="text-white/40 text-xs uppercase">Volume</p>
                   <p className="font-bold text-white">
-                    {selected.totalVolume.toLocaleString()} XLM
+                    {formatXlmAmount(selected.totalVolume)} XLM
                   </p>
                 </div>
               )}

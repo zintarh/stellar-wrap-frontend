@@ -21,7 +21,7 @@ function evaluateBudget({ name, actualBytes, budgetBytes }) {
 }
 
 function main() {
-  const reportPath = process.env.SIZE_LIMIT_REPORT || path.join(process.cwd(), '.size-limit.json');
+  const reportPath = process.env.SIZE_LIMIT_REPORT || path.join(process.cwd(), '.size-limit-report.json');
   const budgetsPath = path.join(process.cwd(), '.size-limit.json');
 
   if (!fs.existsSync(reportPath)) {
