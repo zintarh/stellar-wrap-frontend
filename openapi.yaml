@@ -1013,5 +1013,21 @@ components:
       properties:
         error:
           type: string
-        details:
+          description: Human-readable error message safe for clients.
+        code:
           type: string
+          description: Stable machine-readable error code.
+          enum:
+            - INVALID_WALLET
+            - INVALID_PUSH_SUBSCRIPTION
+            - INVALID_EMAIL
+            - INVALID_REQUEST
+            - NOT_FOUND
+            - INVALID_CONFIRMATION_TOKEN
+            - INVALID_UNSUBSCRIBE_TOKEN
+            - UNAUTHORIZED
+            - INTERNAL_ERROR
+        requestId:
+          type: string
+          format: uuid
+          description: Correlation id included for internal failures.

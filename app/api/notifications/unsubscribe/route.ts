@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { kvGet, kvSet, kvKeys, kvSRem, SUB_KEY, PERIOD_KEY } from "../_lib/kv";
 import type { SubscriptionRecord } from "@/app/types/notifications";
 import { logger } from "@/app/utils/logger";
+import { apiError, internalApiError } from "@/app/api/_lib/apiError";
 
 const VALID_PERIODS = ["weekly", "monthly", "yearly"] as const;
 
@@ -33,13 +34,13 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ ok: true }, { status: 200 });
         }
       }
-      return NextResponse.json({ error: "Token not found" }, { status: 404 });
+      return apiError("INVALID_UNSUBSCRIBE_TOKEN", "Token not found", 401);
     }
 
     if (body.walletAddress && body.channel) {
       const record = await kvGet<SubscriptionRecord>(SUB_KEY(body.walletAddress));
       if (!record) {
-        return NextResponse.json({ error: "No subscription found" }, { status: 404 });
+        return apiError("NOT_FOUND", "No subscription found", 404);
       }
 
       const updated: SubscriptionRecord =
@@ -54,12 +55,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: true }, { status: 200 });
     }
 
-    return NextResponse.json(
-      { error: "Provide either token or walletAddress and channel" },
-      { status: 400 }
-    );
+    return apiError("INVALID_REQUEST", "Provide either token or walletAddress and channel", 400);
   } catch (err) {
-    logger.error("Internal error processing unsubscribe:", err);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return internalApiError(logger, err);
   }
 }

@@ -23,6 +23,7 @@ import {
 import { isValidEmail } from "@/app/utils/notifications/emailValidator";
 import { generateUnsubscribeToken } from "@/app/utils/notifications/unsubscribeToken";
 import type { SubscriptionRecord, PeriodPrefs } from "@/app/types/notifications";
+import { apiError, internalApiError } from "@/app/api/_lib/apiError";
 
 function isValidWallet(address: string): boolean {
   return typeof address === "string" && address.startsWith("G") && address.length === 56;
@@ -34,7 +35,7 @@ export async function POST(request: NextRequest) {
     const ipLimitResult = await checkRateLimit(
       `ratelimit:ip:subscribe-email:${ip}`,
       SUBSCRIBE_EMAIL_IP_LIMIT,
-      SUBSCRIBE_EMAIL_IP_WINDOW,
+      SUBSCRIBE_EMAIL_IP_WINDOW
     );
 
     if (!ipLimitResult.allowed) {
@@ -49,11 +50,11 @@ export async function POST(request: NextRequest) {
     };
 
     if (!isValidWallet(walletAddress)) {
-      return NextResponse.json({ error: "Invalid wallet address" }, { status: 400 });
+      return apiError("INVALID_WALLET", "Invalid wallet address", 400);
     }
 
     if (!isValidEmail(email)) {
-      return NextResponse.json({ error: "Invalid email address" }, { status: 400 });
+      return apiError("INVALID_EMAIL", "Invalid email address", 400);
     }
 
     const normalizedEmail = email.trim().toLowerCase();
@@ -61,13 +62,13 @@ export async function POST(request: NextRequest) {
     const emailLimitResult = await checkRateLimit(
       `ratelimit:email:subscribe-email:${normalizedEmail}`,
       SUBSCRIBE_EMAIL_TARGET_LIMIT,
-      SUBSCRIBE_EMAIL_TARGET_WINDOW,
+      SUBSCRIBE_EMAIL_TARGET_WINDOW
     );
 
     if (!emailLimitResult.allowed) {
       return rateLimitResponse(
         emailLimitResult.resetInSeconds,
-        "Too many requests for this email address. Please try again later.",
+        "Too many requests for this email address. Please try again later."
       );
     }
 
@@ -80,13 +81,15 @@ export async function POST(request: NextRequest) {
     const isSameEmail = existing.email?.address?.trim().toLowerCase() === normalizedEmail;
     const isAlreadyActive = isSameEmail && existing.email?.status === "active";
 
-    const confirmationToken = isSameEmail && existing.email?.confirmationToken
-      ? existing.email.confirmationToken
-      : generateUnsubscribeToken();
+    const confirmationToken =
+      isSameEmail && existing.email?.confirmationToken
+        ? existing.email.confirmationToken
+        : generateUnsubscribeToken();
 
-    const unsubscribeToken = isSameEmail && existing.email?.unsubscribeToken
-      ? existing.email.unsubscribeToken
-      : generateUnsubscribeToken();
+    const unsubscribeToken =
+      isSameEmail && existing.email?.unsubscribeToken
+        ? existing.email.unsubscribeToken
+        : generateUnsubscribeToken();
 
     const status = isAlreadyActive ? "active" : "pending";
 
@@ -98,9 +101,10 @@ export async function POST(request: NextRequest) {
         confirmationToken,
         unsubscribeToken,
         periods: periods ?? { weekly: false, monthly: false, yearly: false },
-        createdAt: isSameEmail && existing.email?.createdAt
-          ? existing.email.createdAt
-          : new Date().toISOString(),
+        createdAt:
+          isSameEmail && existing.email?.createdAt
+            ? existing.email.createdAt
+            : new Date().toISOString(),
       },
     };
 
@@ -123,7 +127,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ ok: true, status }, { status: 200 });
   } catch (err) {
-    log.error("Internal error creating email subscription:", err);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return internalApiError(log, err);
   }
 }

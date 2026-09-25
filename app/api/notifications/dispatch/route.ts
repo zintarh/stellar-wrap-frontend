@@ -14,15 +14,12 @@ import { kvGet, kvSet, kvKeys, SUB_KEY, LOG_KEY } from "../_lib/kv";
 import { sendEmail } from "../_lib/email";
 import { formatPushPayload } from "@app/utils/notifications/pushPayloadFormatter";
 import { renderEmailTemplate } from "@app/utils/notifications/emailTemplate";
-import {
-  getPeriodKey,
-  getActivePeriodsForNow,
-} from "@app/utils/notifications/periodKey";
-import type {
-  SubscriptionRecord,
-  DispatchLogEntry,
-  WrapPeriod,
-} from "@app/types/notifications";
+import { logger } from "@/app/utils/logger";
+import { getPeriodKey, getActivePeriodsForNow } from "@app/utils/notifications/periodKey";
+import type { SubscriptionRecord, DispatchLogEntry, WrapPeriod } from "@app/types/notifications";
+import { apiError, internalApiError } from "@/app/api/_lib/apiError";
+
+const log = logger.child("api:dispatch");
 
 const PERIOD_LABEL: Record<WrapPeriod, string> = {
   weekly: "Weekly",
@@ -32,10 +29,7 @@ const PERIOD_LABEL: Record<WrapPeriod, string> = {
 
 // ─── Retry with exponential backoff ──────────────────────────────────────────
 
-async function withRetry<T>(
-  fn: () => Promise<T>,
-  maxRetries = 3,
-): Promise<T> {
+async function withRetry<T>(fn: () => Promise<T>, maxRetries = 3): Promise<T> {
   let lastError: unknown;
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
@@ -55,7 +49,7 @@ async function withRetry<T>(
 async function sendPushNotification(
   subscription: PushSubscriptionJSON,
   walletAddress: string,
-  period: WrapPeriod,
+  period: WrapPeriod
 ): Promise<void> {
   const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY;
   const vapidPublicKey = process.env.VAPID_PUBLIC_KEY;
@@ -75,7 +69,7 @@ async function sendPushNotification(
     await withRetry(async () => {
       const result = await webPush.sendNotification(
         subscription as Parameters<typeof webPush.sendNotification>[0],
-        JSON.stringify(payload),
+        JSON.stringify(payload)
       );
       return result;
     });
@@ -97,7 +91,7 @@ async function sendPushNotification(
 async function sendEmailNotification(
   emailAddress: string,
   unsubscribeToken: string,
-  period: WrapPeriod,
+  period: WrapPeriod
 ): Promise<void> {
   const baseUrl = process.env.APP_BASE_URL ?? "http://localhost:3000";
   const physicalAddress =
@@ -116,7 +110,7 @@ async function sendEmailNotification(
       to: emailAddress,
       subject: `Your ${PERIOD_LABEL[period]} Stellar Wrapped is ready! 🎉`,
       html,
-    }),
+    })
   );
 }
 
@@ -126,32 +120,22 @@ export async function POST(request: NextRequest) {
   // Verify cron secret — fail closed if not configured
   const cronSecret = process.env.CRON_SECRET;
   if (!cronSecret) {
-    console.error(
-      "[dispatch] CRON_SECRET is not configured — refusing to serve requests",
-    );
-    return NextResponse.json(
-      { error: "Server misconfiguration" },
-      { status: 500 },
-    );
+    log.error("CRON_SECRET is not configured — refusing to serve requests");
+    return apiError("INTERNAL_ERROR", "Server misconfiguration", 500);
   }
 
   const authHeader = request.headers.get("authorization");
-  const token = authHeader?.startsWith("Bearer ")
-    ? authHeader.slice(7)
-    : "";
+  const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : "";
 
   const secretBuf = Buffer.from(cronSecret);
   const tokenBuf = Buffer.from(token);
 
-  if (
-    secretBuf.length !== tokenBuf.length ||
-    !crypto.timingSafeEqual(secretBuf, tokenBuf)
-  ) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (secretBuf.length !== tokenBuf.length || !crypto.timingSafeEqual(secretBuf, tokenBuf)) {
+    return apiError("UNAUTHORIZED", "Unauthorized", 401);
   }
 
   try {
-    const body = await request.json().catch(() => ({})) as { periods?: WrapPeriod[] };
+    const body = (await request.json().catch(() => ({}))) as { periods?: WrapPeriod[] };
     const now = new Date();
     const activePeriods: WrapPeriod[] = body.periods ?? getActivePeriodsForNow(now);
 
@@ -180,11 +164,7 @@ export async function POST(request: NextRequest) {
             let attempts = 1;
 
             try {
-              await sendPushNotification(
-                record.push.subscription,
-                record.walletAddress,
-                period,
-              );
+              await sendPushNotification(record.push.subscription, record.walletAddress, period);
             } catch {
               status = "failed";
               attempts = 4; // 1 initial + 3 retries
@@ -221,7 +201,7 @@ export async function POST(request: NextRequest) {
               await sendEmailNotification(
                 record.email.address,
                 record.email.unsubscribeToken,
-                period,
+                period
               );
             } catch {
               status = "failed";
@@ -246,7 +226,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ ok: true, dispatched, periods: activePeriods });
   } catch (err) {
-    log.error("Internal error during dispatch:", err);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return internalApiError(log, err);
   }
 }

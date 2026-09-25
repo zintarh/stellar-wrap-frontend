@@ -11,6 +11,7 @@ import { kvGet, kvSet, kvDel, kvKeys, SUB_KEY } from "../../_lib/kv";
 import { sendEmail } from "../../_lib/email";
 import { logger, maskAddress } from "@/app/utils/logger";
 import type { SubscriptionRecord } from "@/app/types/notifications";
+import { apiError, internalApiError } from "@/app/api/_lib/apiError";
 
 const log = logger.child("api:data-delete");
 
@@ -27,7 +28,7 @@ export async function DELETE(_request: NextRequest, { params }: RouteParams) {
     const { wallet } = await params;
 
     if (!isValidWallet(wallet)) {
-      return NextResponse.json({ error: "Invalid wallet address" }, { status: 400 });
+      return apiError("INVALID_WALLET", "Invalid wallet address", 400);
     }
 
     const record = await kvGet<SubscriptionRecord>(SUB_KEY(wallet));
@@ -67,7 +68,6 @@ export async function DELETE(_request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json({ ok: true }, { status: 200 });
   } catch (err) {
-    log.error("Internal error purging notification data:", err);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return internalApiError(log, err);
   }
 }

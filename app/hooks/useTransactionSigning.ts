@@ -62,13 +62,21 @@ export function useTransactionSigning(): UseTransactionSigningResult {
       if (result.ok) {
         setSignedXdr(result.signedXdr);
         setStatus("signed");
+      } else if (result.code === "rejected") {
+        // Declining a wallet prompt is a neutral user action, not an app
+        // failure. Return to the pre-signing state and do not render an error
+        // banner or make callers retry automatically.
+        setFailure(null);
+        setSignedXdr(null);
+        setProvider(null);
+        setStatus("idle");
       } else {
         setFailure(result);
         setStatus("failed");
       }
       return result;
     },
-    [],
+    []
   );
 
   const reset = useCallback(() => {

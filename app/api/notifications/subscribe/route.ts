@@ -9,6 +9,7 @@ import {
   SUBSCRIBE_IP_WINDOW,
 } from "../_lib/rateLimit";
 import type { SubscriptionRecord, PeriodPrefs } from "@/app/types/notifications";
+import { apiError, internalApiError } from "@/app/api/_lib/apiError";
 
 const VALID_PERIODS = ["weekly", "monthly", "yearly"] as const;
 
@@ -59,11 +60,11 @@ export async function POST(request: NextRequest) {
     };
 
     if (!isValidWallet(walletAddress)) {
-      return NextResponse.json({ error: "Invalid wallet address" }, { status: 400 });
+      return apiError("INVALID_WALLET", "Invalid wallet address", 400);
     }
 
     if (!subscription?.endpoint) {
-      return NextResponse.json({ error: "Invalid push subscription" }, { status: 400 });
+      return apiError("INVALID_PUSH_SUBSCRIPTION", "Invalid push subscription", 400);
     }
 
     const existing = (await kvGet<SubscriptionRecord>(SUB_KEY(walletAddress))) ?? {
@@ -95,7 +96,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ ok: true }, { status: 200 });
   } catch (err) {
-    logger.error("Internal error creating push subscription:", err);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return internalApiError(logger, err);
   }
 }

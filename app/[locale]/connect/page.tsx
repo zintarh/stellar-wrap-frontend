@@ -18,6 +18,7 @@ import { MuteToggle } from "../../components/MuteToggle";
 import { ConnectWalletButton } from "../../components/ConnectWalletButton";
 import {
   connectFreighter,
+  getFreighterNetwork,
   connectAlbedo,
   connectXBull,
   isXBullInstalled,
@@ -33,13 +34,20 @@ import {
   clearDemoMode,
 } from "@/app/data/demoAccount";
 
+const log = logger.child("connect");
+
 export default function ConnectPage() {
   const router = useRouter();
   const t = useTranslations("ConnectPage");
   const { setAddress, setError, setStatus, network, reset } = useWrapStore();
   const { resetTransaction } = useTransactionStore();
   const { reset: resetMultiTimeframe } = useMultiTimeframeStore();
-  const { connect: connectWalletSession } = useWalletStore();
+  const {
+    connect: connectWalletSession,
+    address: connectedAddress,
+    provider: connectedProvider,
+    isConnected,
+  } = useWalletStore();
   const { playSound } = useSound();
   const isOnline = useOnlineStatus();
 
@@ -79,6 +87,7 @@ export default function ConnectPage() {
   const backButtonRef = useRef<HTMLButtonElement>(null);
   const addressInputRef = useRef<HTMLInputElement>(null);
   const connectButtonRef = useRef<HTMLButtonElement>(null);
+  const freighterButtonRef = useRef<HTMLButtonElement>(null);
   const demoButtonRef = useRef<HTMLButtonElement>(null);
 
   // Load last-used address from localStorage on mount
@@ -95,6 +104,34 @@ export default function ConnectPage() {
       mainContentRef.current.focus();
     }
   }, []);
+
+  // Freighter does not provide a reliable cross-browser network-change event.
+  // Poll its read-only network details while connected so a switch in the
+  // extension is surfaced persistently and cannot be bypassed at Continue.
+  useEffect(() => {
+    if (!isConnected || connectedProvider !== "freighter" || !connectedAddress) {
+      return;
+    }
+
+    let active = true;
+    const checkNetwork = async () => {
+      const actual = await getFreighterNetwork();
+      if (!active || actual === null) return;
+
+      if (actual !== network) {
+        setNetworkMismatch({ expected: network, actual });
+      } else {
+        setNetworkMismatch(null);
+      }
+    };
+
+    void checkNetwork();
+    const interval = window.setInterval(checkNetwork, 3_000);
+    return () => {
+      active = false;
+      window.clearInterval(interval);
+    };
+  }, [connectedAddress, connectedProvider, isConnected, network]);
 
   /**
    * Persist the most recently used wallet address to localStorage so it can
@@ -347,6 +384,7 @@ export default function ConnectPage() {
   };
 
   const handleContinue = () => {
+    if (networkMismatch) return;
     router.push("/loading");
   };
 
@@ -884,8 +922,6 @@ export default function ConnectPage() {
                   <p className="font-bold mb-1">{t("networkMismatchTitle")}</p>
                   <p className="text-yellow-400/80 text-xs mb-3">
                     {t.rich("networkMismatchDescription", {
-                      actual: networkMismatch.actual,
-                      expected: networkMismatch.expected,
                       actual: (chunks) => (
                         <span className="font-bold text-yellow-300">{chunks}</span>
                       ),
@@ -963,6 +999,7 @@ export default function ConnectPage() {
                   </div>
                   <motion.button
                     onClick={handleContinue}
+                    disabled={Boolean(networkMismatch)}
                     className="w-full mt-4 px-6 py-3 rounded-xl font-bold text-black bg-theme-primary hover:bg-theme-primary/90 transition-colors flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-theme-primary focus:ring-offset-2 focus:ring-offset-black"
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
