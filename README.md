@@ -619,3 +619,8 @@ feat(store): consolidate state into wrapStore
 
 BREAKING CHANGE: legacy store exports removed; update imports to useWrapStore.
 ```
+
+## Handsoff notes
+
+<!-- handsoff-issue-411 -->
+- #411: Refactor Wallet Connection state to use Zustand
