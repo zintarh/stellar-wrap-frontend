@@ -26,6 +26,7 @@ const customJestConfig = {
     'app/components/Pagination.tsx',
     'app/components/paginationStore.ts',
     'app/components/usePaginationController.ts',
+    'app/components/Footer.tsx',
     '!src/services/**/__tests__/**',
     '!src/services/**/types.ts',
     '!**/*.d.ts',
