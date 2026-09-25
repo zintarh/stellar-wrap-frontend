@@ -32,6 +32,33 @@ export function IndexingSkeleton({
     metrics,
   } = useWrapStore();
 
+  // Cancel affordance: hidden for the first 3s of indexing (avoids flashing
+  // a cancel option for fast/cached loads), then a two-step confirm before
+  // actually calling onCancel.
+  const [showCancel, setShowCancel] = useState(false);
+  const [confirmCancel, setConfirmCancel] = useState(false);
+
+  useEffect(() => {
+    if (!isLoading) {
+      return undefined;
+    }
+    const timer = setTimeout(() => setShowCancel(true), 3000);
+    // Reset in the cleanup (runs when isLoading flips false, or on
+    // unmount) rather than synchronously in the effect body — avoids
+    // the cascading-render risk of setState directly in an effect.
+    return () => {
+      clearTimeout(timer);
+      setShowCancel(false);
+      setConfirmCancel(false);
+    };
+  }, [isLoading]);
+
+  const handleCancelClick = () => setConfirmCancel(true);
+  const handleConfirmCancel = () => {
+    setConfirmCancel(false);
+    onCancel?.();
+  };
+
   const formatTime = (ms: number): string => {
     const seconds = Math.ceil(ms / 1000);
     if (seconds < 60) {
@@ -116,6 +143,11 @@ export function IndexingSkeleton({
     >
       {/* Main Progress Container with Neon/Cyberpunk aesthetic */}
       <div className="relative rounded-2xl border border-white/10 bg-linear-to-b from-white/5 to-transparent backdrop-blur-xl p-6 md:p-8 space-y-6 shadow-2xl">
+        {/* Screen Reader Progress Announcer */}
+        <div className="sr-only" aria-live="polite" aria-atomic="true">
+          {!indexingError && (currentStep ? `Step ${completedSteps + 1} of ${totalSteps}: ${INDEXING_STEPS[currentStep].label}. ${Math.floor(overallProgress / 20) * 20}% complete.` : "Preparing your data...")}
+        </div>
+
         {/* Neon glow effect */}
         <div
           className="absolute -inset-0.5 rounded-2xl opacity-20 blur-xl"
@@ -250,7 +282,7 @@ export function IndexingSkeleton({
             aria-valuenow={currentStep ? stepProgress[currentStep] : 0}
             aria-valuemin={0}
             aria-valuemax={100}
-            aria-label={`${currentStepLabel} progress`}
+            aria-label={`${currentStep ? INDEXING_STEPS[currentStep].label : "Initializing"} progress`}
           >
             <div
               className="h-full rounded-full transition-[width] duration-300 ease-out"
@@ -414,6 +446,8 @@ export function IndexingSkeleton({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 space-y-3"
+              role="alert"
+              aria-live="assertive"
             >
               <div className="flex items-start gap-3">
                 <AlertCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />

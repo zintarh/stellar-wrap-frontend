@@ -3,6 +3,8 @@
 import { motion } from 'motion/react';
 import { Share2, X, Link2, Check } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { useNativeShare, nativeShare } from '../hooks/useNativeShare';
+import { trackEvent } from '../utils/plausible';
 
 interface ShareButtonsProps {
   title: string;
@@ -41,10 +43,32 @@ export function ShareButtons({
   const [appUrl, setAppUrl] = useState('');
   const [shareOgUrl, setShareOgUrl] = useState('');
   const [copied, setCopied] = useState(false);
-  
+  const [copyError, setCopyError] = useState<string | null>(null);
+  const { isSupported: canNativeShare } = useNativeShare();
+
+  const handleCopyLink = async () => {
+    if (typeof window === 'undefined' || !shareUrl) return;
+    setCopyError(null);
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      const textarea = document.createElement('textarea');
+      textarea.value = shareUrl;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    // Defer state update to avoid synchronous setState in effect body
     const id = window.requestAnimationFrame(() => {
       setShareUrl(window.location.href);
       setAppUrl(window.location.origin);
@@ -81,30 +105,10 @@ export function ShareButtons({
   const toggleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
-      setIsOpen(!isOpen);
+      void handlePrimaryShare();
     }
     if (e.key === "Escape" && isOpen) {
       setIsOpen(false);
-    }
-  };
-
-  const handleCopyLink = async () => {
-    if (typeof window === 'undefined' || !shareUrl) return;
-    try {
-      await navigator.clipboard.writeText(shareUrl);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 2000);
-    } catch {
-      const textarea = document.createElement('textarea');
-      textarea.value = shareUrl;
-      textarea.style.position = 'fixed';
-      textarea.style.opacity = '0';
-      document.body.appendChild(textarea);
-      textarea.select();
-      document.execCommand('copy');
-      document.body.removeChild(textarea);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 2000);
     }
   };
 
@@ -120,6 +124,36 @@ export function ShareButtons({
         // Silently ignore share cancellation or errors from native share
       }
     }
+
+    trackEvent('share_clicked', { platform: 'native' });
+
+    const outcome = await nativeShare({ title, text, url: shareUrl });
+
+    if (outcome === 'shared') {
+      trackEvent('share_completed', { platform: 'native' });
+      return;
+    }
+
+    if (outcome === 'cancelled') {
+      // User dismissed the share sheet — expected, so no error surfaces.
+      trackEvent('share_cancelled', { platform: 'native' });
+      return;
+    }
+
+    // Unsupported payload or a genuine failure: fall back to the social menu.
+    setIsOpen(true);
+  };
+
+  // The always-visible main button: closes the menu if it's already open
+  // (matches the icon's rotate-to-X animation below), otherwise tries
+  // native share first, falling back to opening the menu via
+  // handleNativeShare's own unsupported/failure handling.
+  const handlePrimaryShare = async () => {
+    if (isOpen) {
+      setIsOpen(false);
+      return;
+    }
+    await handleNativeShare();
   };
 
   return (
@@ -248,8 +282,16 @@ export function ShareButtons({
               whileHover={{ scale: 1.05, x: 5 }}
               whileTap={{ scale: 0.95 }}
               onClick={handleCopyLink}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  handleCopyLink();
+                }
+              }}
               className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all group"
               style={{ backgroundColor: 'rgba(138, 180, 248, 0.1)' }}
+              aria-live="polite"
+              aria-label={copied ? "Link copied to clipboard" : "Copy link to clipboard"}
             >
               <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: copied ? '#22c55e' : '#6366f1' }}>
                 {copied ? (
@@ -262,6 +304,12 @@ export function ShareButtons({
                 {copied ? 'Copied!' : 'Copy link'}
               </span>
             </motion.button>
+
+            {copyError && (
+              <p className="text-xs text-red-400" aria-live="assertive">
+                {copyError}
+              </p>
+            )}
 
             {/* Native Share (Mobile) */}
             {typeof navigator !== 'undefined' && 'share' in navigator && typeof navigator.share === 'function' && (
@@ -289,7 +337,7 @@ export function ShareButtons({
 
         {/* Main share button */}
         <motion.button
-          onClick={() => setIsOpen(!isOpen)}
+          onClick={handlePrimaryShare}
           onKeyDown={toggleKeyDown}
           className="w-14 h-14 sm:w-16 sm:h-16 rounded-full flex items-center justify-center backdrop-blur-xl border group relative overflow-hidden"
           style={{
@@ -298,7 +346,9 @@ export function ShareButtons({
           }}
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.95 }}
-          aria-expanded={isOpen}
+          aria-label={canNativeShare ? 'Share' : 'Share options'}
+          aria-expanded={canNativeShare ? undefined : isOpen}
+          aria-haspopup={canNativeShare ? undefined : 'menu'}
         >
           <motion.div
             className="absolute inset-0  from-transparent via-white/10 to-transparent"

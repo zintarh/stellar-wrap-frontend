@@ -1,6 +1,10 @@
 import { ImageResponse } from '@vercel/og';
 import { NextRequest } from 'next/server';
 import React from "react";
+import { parseSharePreviewParams } from '@/app/utils/sharePreviewParams';
+import en from '@/messages/en.json';
+import es from '@/messages/es.json';
+import fr from '@/messages/fr.json';
 
 export const runtime = 'edge';
 
@@ -9,14 +13,25 @@ const CACHE_CONTROL = 'public, s-maxage=86400, stale-while-revalidate=604800';
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const username = searchParams.get('username') || 'StellarUser';
-    const transactions = searchParams.get('transactions') || '0';
-    const persona = searchParams.get('persona') || 'Network Pioneer';
-    const topVibe = searchParams.get('topVibe') || 'Steady';
-    const vibePercentage = searchParams.get('vibePercentage') || '0';
-    const archetypeImagePath = searchParams.get('archetypeImage') ||
-      `/archetypes/${persona.toLowerCase().replace(/^the\s+/, '').replace(/\s+/g, '-')}.png`;
+    const requestedLocale = searchParams.get('locale');
+    const locale: 'en' | 'es' | 'fr' = requestedLocale === 'es' || requestedLocale === 'fr' ? requestedLocale : 'en';
+    const messages = { en, es, fr }[locale];
+    const labels = messages.ShareCard;
+   const {
+  username,
+  transactions,
+  persona,
+  topVibe,
+  vibePercentage,
+  archetypeImage,
+} = parseSharePreviewParams(searchParams);
 
+const archetypeImagePath =
+  archetypeImage ??
+  `/archetypes/${persona
+    .toLowerCase()
+    .replace(/^the\s+/, "")
+    .replace(/\s+/g, "-")}.png`;
     const baseUrl = req.nextUrl.origin;
     let archetypeImageSrc: string | null = null;
     try {
@@ -84,7 +99,7 @@ export async function GET(req: NextRequest) {
                       color: 'rgba(255,255,255,0.7)',
                     }}
                   >
-                    STELLAR WRAPPED 2026
+                    {labels.stellarWrapped}
                   </span>
                 </div>
                 <h1
@@ -118,10 +133,10 @@ export async function GET(req: NextRequest) {
                     border: '1px solid rgba(255, 255, 255, 0.1)'
                 }}>
                     <span style={{ fontSize: '28px', fontWeight: 700, color: 'rgba(255,255,255,0.6)', marginBottom: '15px' }}>
-                        Total Transactions
+                        {labels.totalTransactions}
                     </span>
                     <span style={{ fontSize: '100px', fontWeight: 900, lineHeight: 1 }}>
-                        {transactions}
+                        {String(transactions)}
                     </span>
                 </div>
 
@@ -134,11 +149,11 @@ export async function GET(req: NextRequest) {
                     border: '1px solid rgba(255, 255, 255, 0.1)'
                 }}>
                     <span style={{ fontSize: '28px', fontWeight: 700, color: 'rgba(255,255,255,0.6)', marginBottom: '20px' }}>
-                        Persona
+                        {labels.persona}
                     </span>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '30px' }}>
                       {archetypeImageSrc && (
-                        // eslint-disable-next-line @next/next/no-img-element
+                        // eslint-disable-next-line @next/next/no-img-element -- Vercel OG image generation (satori) requires plain <img>; Next.js <Image> is not available in edge runtime
                         <img
                           src={archetypeImageSrc}
                           alt={persona}
@@ -167,10 +182,10 @@ export async function GET(req: NextRequest) {
                     border: '1px solid rgba(255, 255, 255, 0.1)'
                 }}>
                     <span style={{ fontSize: '28px', fontWeight: 700, color: 'rgba(255,255,255,0.6)', marginBottom: '15px' }}>
-                        Top Vibe
+                        {labels.topVibe}
                     </span>
                     <span style={{ fontSize: '50px', fontWeight: 900, color: 'white' }}>
-                        {vibePercentage}% {topVibe}
+                        {String(vibePercentage)}% {topVibe}
                     </span>
                 </div>
             </div>
@@ -203,7 +218,7 @@ export async function GET(req: NextRequest) {
     return imageResponse;
   } catch (e) {
     if (e instanceof Error) {
-      console.error(e.message);
+      log.error("OG image generation failed:", e.message);
     }
     return new Response(`Failed to generate the image`, { status: 500 });
   }

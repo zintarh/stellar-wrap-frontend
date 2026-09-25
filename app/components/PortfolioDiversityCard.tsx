@@ -1,8 +1,8 @@
 "use client";
 
-import { motion, useAnimation, useInView } from "framer-motion";
+import { motion, useInView } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
-import { PieChart, List, Hash } from "lucide-react";
+import { PieChart } from "lucide-react";
 import type { PortfolioDiversitySummary } from "@/app/utils/indexer";
 
 interface PortfolioDiversityCardProps {
@@ -55,23 +55,36 @@ export function PortfolioDiversityCard({
       transition={{ delay: 0.8, type: "spring", stiffness: 120 }}
       className="mt-8 sm:mt-10 md:mt-12"
     >
-      <h3 className="text-xs sm:text-sm font-black tracking-[0.25em] text-white/50 mb-3 sm:mb-4">
+      <h3
+        id="portfolio-diversity-heading"
+        className="mb-3 text-xs font-black tracking-[0.25em] text-white/50 sm:mb-4 sm:text-sm"
+      >
         PORTFOLIO DIVERSITY
       </h3>
       <div
-        className="p-5 sm:p-6 md:p-8 rounded-2xl sm:rounded-3xl border border-white/10 backdrop-blur-md relative overflow-hidden"
-        style={{ backgroundColor: "rgba(255, 255, 255, 0.03)" }}
+        className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-md sm:rounded-3xl sm:p-6 md:p-8"
       >
         <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 sm:gap-8">
           {/* Circular Gauge */}
-          <div className="relative flex-shrink-0 w-32 h-32 flex items-center justify-center">
-            <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+          <div
+            className="relative flex h-32 w-32 flex-shrink-0 items-center justify-center"
+            role="progressbar"
+            aria-labelledby="portfolio-diversity-heading"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={displayScore}
+          >
+            <svg
+              className="h-full w-full -rotate-90"
+              viewBox="0 0 100 100"
+              aria-hidden="true"
+            >
               <circle
                 cx="50"
                 cy="50"
                 r={circleRadius}
                 fill="transparent"
-                stroke="rgba(255,255,255,0.1)"
+                className="stroke-white/10"
                 strokeWidth="8"
               />
               <motion.circle
@@ -79,7 +92,7 @@ export function PortfolioDiversityCard({
                 cy="50"
                 r={circleRadius}
                 fill="transparent"
-                stroke="var(--color-theme-primary)"
+                className="stroke-[var(--color-theme-primary)]"
                 strokeWidth="8"
                 strokeDasharray={circumference}
                 strokeDashoffset={strokeDashoffset}
@@ -113,7 +126,12 @@ export function PortfolioDiversityCard({
                 {summary.topAssets.map((asset, idx) => (
                   <div key={asset.assetCode} className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: "var(--color-theme-primary)", opacity: 1 - idx * 0.3 }} />
+                      <div
+                        className={`h-2 w-2 rounded-full bg-[var(--color-theme-primary)] ${
+                          ["opacity-100", "opacity-70", "opacity-40", "opacity-10"][idx] ?? "opacity-10"
+                        }`}
+                        aria-hidden="true"
+                      />
                       <span className="text-sm font-medium text-white/90">{asset.assetCode}</span>
                     </div>
                     <span className="text-sm font-bold text-white/70">{asset.percentage}%</span>

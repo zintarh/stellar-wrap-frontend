@@ -8,6 +8,11 @@ on:
     branches:
       - '**'
 
+# Allow the Lighthouse action to post score comments on pull requests.
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
   lighthouse:
     name: Lighthouse Audit
@@ -20,23 +25,30 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.25.0
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'yarn'
-
-      - name: Enable Corepack
-        run: corepack enable
+          cache: pnpm
 
       - name: Install dependencies
-        run: yarn install --immutable
+        run: pnpm install --frozen-lockfile
 
       - name: Build Next.js app
-        run: yarn build
+        run: pnpm build
 
       - name: Run Lighthouse CI
-        run: yarn lhci autorun
+        uses: treosh/lighthouse-ci-action@v12
+        with:
+          configPath: './lighthouserc.json'
+          uploadArtifacts: true
+          temporaryPublicStorage: true
+          runs: 3
         env:
           LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
 
@@ -47,11 +59,3 @@ jobs:
           name: lighthouse-reports-${{ github.run_id }}-${{ github.run_attempt }}
           path: .lighthouseci/
           retention-days: 90
-
-      - name: Upload Lighthouse reports (PR comment)
-        uses: treosh/lighthouse-ci-action@v12
-        if: github.event_name == 'pull_request'
-        with:
-          configPath: './lighthouserc.json'
-          uploadArtifacts: true
-          temporaryPublicStorage: true

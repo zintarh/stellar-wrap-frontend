@@ -1,28 +1,56 @@
 "use client";
 
+import { type ReactNode, useEffect, useState } from "react";
 import { ThemeProvider } from "./context/ThemeContext";
-import { useEffect } from "react";
 import { initWalletKit } from "./utils/walletKit";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ServiceWorkerManager } from "./components/ServiceWorkerManager";
+import { OfflineWrapHydrator } from "./components/OfflineWrapHydrator";
+import { OfflineBanner } from "./components/OfflineBanner";
+import { PwaInstallPrompt } from "./components/PwaInstallPrompt";"use client";
+
+import { type ReactNode, useEffect, useState } from "react";
+import { ThemeProvider } from "./context/ThemeContext";
+import { initWalletKit } from "./utils/walletKit";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ServiceWorkerManager } from "./components/ServiceWorkerManager";
 import { OfflineWrapHydrator } from "./components/OfflineWrapHydrator";
 import { OfflineBanner } from "./components/OfflineBanner";
 import { PwaInstallPrompt } from "./components/PwaInstallPrompt";
 
 export function Providers({ children }: { children: React.ReactNode }) {
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            staleTime: 60 * 1000,
+            retry: 2,
+            refetchOnWindowFocus: false,
+          },
+        },
+      }),
+  );
+
   useEffect(() => {
-    // Dynamically initialize walletKit client-side
     if (typeof window !== "undefined") {
-      initWalletKit();
+      import("@/app/utils/wallet")
+        .then(({ initWalletKit }) => {
+          initWalletKit();
+        })
+        .catch(console.error);
     }
   }, []);
 
   return (
-    <ThemeProvider>
-      <ServiceWorkerManager />
-      <OfflineWrapHydrator />
-      <OfflineBanner />
-      {children}
-      <PwaInstallPrompt />
-    </ThemeProvider>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider>
+        <ServiceWorkerManager />
+        <OfflineWrapHydrator />
+        <OfflineBanner />
+        {children}
+        <PwaInstallPrompt />
+      </ThemeProvider>
+    </QueryClientProvider>
   );
 }

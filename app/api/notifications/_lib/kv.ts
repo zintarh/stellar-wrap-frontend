@@ -1,77 +1,242 @@
-/**
- * KV storage abstraction for notification data.
- *
- * Uses Vercel KV (@vercel/kv) when the environment variables are present,
- * falling back to a lightweight in-process Map for local development and tests.
- *
- * Install Vercel KV when deploying:
- *   pnpm add @vercel/kv   (or yarn add @vercel/kv)
- * Then set KV_REST_API_URL and KV_REST_API_TOKEN in your environment.
- */
+import { render, screen, fireEvent } from "@testing-library/react";
+import SharePageClient from "../SharePageClient";
 
-// Lazy-import so the package is optional at build time
-async function getKv() {
-  if (
-    process.env.KV_REST_API_URL &&
-    process.env.KV_REST_API_TOKEN
-  ) {
-    try {
-      const mod = await Function("m", "return import(m)")("@vercel/kv");
-      if (mod?.kv) return mod.kv;
-    } catch {
-      return localKv;
-    }
-  }
-  return localKv;
-}
+// Mock the dependencies
+jest.mock("next/navigation", () => ({
+  useSearchParams: () => new URLSearchParams(),
+}));
 
-// ─── In-process fallback (dev / test) ────────────────────────────────────────
-
-const store = new Map<string, unknown>();
-
-const localKv = {
-  async get<T>(key: string): Promise<T | null> {
-    return (store.get(key) as T) ?? null;
+jest.mock("@/app/data/mockData", () => ({
+  mockData: {
+    username: "testuser",
+    transactions: 100,
+    persona: "Explorer",
+    vibes: [{ label: "Curious", percentage: 85 }],
   },
-  async set(key: string, value: unknown): Promise<void> {
-    store.set(key, value);
+}));
+
+jest.mock("@/src/data/mockData", () => ({
+  GOLDEN_USER: {
+    archetype: { image: "test-image.png" },
   },
-  async del(key: string): Promise<void> {
-    store.delete(key);
+}));
+
+jest.mock("../context/ThemeContext", () => ({
+  useTheme: () => ({ color: "green" }),
+  themeColors: {
+    green: { primary: "#00ff00" },
   },
-  async keys(pattern: string): Promise<string[]> {
-    const prefix = pattern.replace("*", "");
-    return [...store.keys()].filter((k) => k.startsWith(prefix));
+}));
+
+let mockPeriod = "yearly";
+
+jest.mock("../store/wrapStore", () => ({
+  useWrapStore: () => ({
+    address: "test-address",
+    network: "mainnet",
+    period: mockPeriod,
+    result: {
+      username: "testuser",
+      totalTransactions: 100,
+      persona: "Explorer",
+      vibes: [{ label: "Curious", percentage: 85 }],
+    },
+  }),
+  __setMockPeriod: (period: string) => {
+    mockPeriod = period;
   },
-};
+}));
 
-// ─── Public helpers ───────────────────────────────────────────────────────────
+jest.mock("../../utils/plausible", () => ({
+  trackEvent: jest.fn(),
+}));
 
-export async function kvGet<T>(key: string): Promise<T | null> {
-  const kv = await getKv();
-  return kv.get<T>(key);
-}
+describe("SharePageClient", () => {
+  let originalWindow: Window;
 
-export async function kvSet(key: string, value: unknown): Promise<void> {
-  const kv = await getKv();
-  // @vercel/kv uses set(key, value), local uses set(key, value)
-  await kv.set(key, value);
-}
+  beforeEach(() => {
+    originalWindow = global.window;
+    global.window = Object.create(window);
 
-export async function kvDel(key: string): Promise<void> {
-  const kv = await getKv();
-  await kv.del(key);
-}
+    global.window.location = {
+      href: "https://example.com/share",
+    } as any;
 
-export async function kvKeys(pattern: string): Promise<string[]> {
-  const kv = await getKv();
-  return kv.keys(pattern);
-}
+    // Mock window.open
+    global.window.open = jest.fn();
+  });
 
-export const SUB_KEY = (wallet: string) => `notif:sub:${wallet}`;
-export const LOG_KEY = (
-  wallet: string,
-  channel: string,
-  period: string,
-  periodKey: string,
-) => `notif:log:${wallet}:${channel}:${period}:${periodKey}`;
+  afterEach(() => {
+    global.window = originalWindow;
+    jest.clearAllMocks();
+  });
+
+  it("should render share button", () => {
+    render(<SharePageClient />);
+
+    const shareButton = screen.getByRole("button");
+
+    expect(shareButton).toBeInTheDocument();
+  });
+
+  it("should open share menu when share button is clicked", () => {
+    render(<SharePageClient />);
+
+    const shareButton = screen.getByRole("button");
+    fireEvent.click(shareButton);
+
+    // Check if share menu items appear
+    expect(screen.getByText("x")).toBeInTheDocument();
+    expect(screen.getByText("WhatsApp")).toBeInTheDocument();
+    expect(screen.getByText("Facebook")).toBeInTheDocument();
+  });
+
+  it("should call handleShare with correct platform for WhatsApp button", () => {
+    render(<SharePageClient />);
+
+    const shareButton = screen.getByRole("button");
+    fireEvent.click(shareButton);
+
+    const whatsappButton = screen.getByText("WhatsApp").closest("button");
+    fireEvent.click(whatsappButton!);
+
+    expect(global.window.open).toHaveBeenCalledWith(
+      expect.stringContaining("wa.me"),
+      "_blank",
+      expect.any(String),
+    );
+  });
+
+  it("should call handleShare with correct platform for X button", () => {
+    render(<SharePageClient />);
+
+    const shareButton = screen.getByRole("button");
+    fireEvent.click(shareButton);
+
+    const xButton = screen.getByText("x").closest("button");
+    fireEvent.click(xButton!);
+
+    expect(global.window.open).toHaveBeenCalledWith(
+      expect.stringContaining("twitter.com"),
+      "_blank",
+      expect.any(String),
+    );
+  });
+
+  it("should generate different share URLs for different platforms", () => {
+    render(<SharePageClient />);
+
+    const shareButton = screen.getByRole("button");
+    fireEvent.click(shareButton);
+
+    const xButton = screen.getByText("x").closest("button");
+    const whatsappButton = screen.getByText("WhatsApp").closest("button");
+
+    fireEvent.click(xButton!);
+
+    const xCall = (global.window.open as jest.Mock).mock.calls[0][0];
+
+    (global.window.open as jest.Mock).mockClear();
+
+    fireEvent.click(whatsappButton!);
+
+    const whatsappCall = (global.window.open as jest.Mock).mock.calls[0][0];
+
+    // Verify URLs are different
+    expect(xCall).not.toBe(whatsappCall);
+    expect(xCall).toContain("twitter.com");
+    expect(whatsappCall).toContain("wa.me");
+  });
+
+  it("should prevent platform-to-handler mismatches - WhatsApp should not open Twitter", () => {
+    render(<SharePageClient />);
+
+    const shareButton = screen.getByRole("button");
+    fireEvent.click(shareButton);
+
+    const whatsappButton = screen.getByText("WhatsApp").closest("button");
+    fireEvent.click(whatsappButton!);
+
+    const callUrl = (global.window.open as jest.Mock).mock.calls[0][0];
+
+    // WhatsApp should NOT open Twitter URL
+    expect(callUrl).not.toContain("twitter.com");
+    expect(callUrl).toContain("wa.me");
+  });
+
+  it("should prevent platform-to-handler mismatches - X should not open WhatsApp", () => {
+    render(<SharePageClient />);
+
+    const shareButton = screen.getByRole("button");
+    fireEvent.click(shareButton);
+
+    const xButton = screen.getByText("x").closest("button");
+    fireEvent.click(xButton!);
+
+    const callUrl = (global.window.open as jest.Mock).mock.calls[0][0];
+
+    // X should NOT open WhatsApp URL
+    expect(callUrl).not.toContain("wa.me");
+    expect(callUrl).toContain("twitter.com");
+  });
+
+  it("should include period in share text for weekly", () => {
+    const { __setMockPeriod } = require("../store/wrapStore") as any;
+
+    __setMockPeriod("weekly");
+
+    render(<SharePageClient />);
+
+    const shareButton = screen.getByRole("button");
+    fireEvent.click(shareButton);
+
+    const xButton = screen.getByText("x").closest("button");
+    fireEvent.click(xButton!);
+
+    const callUrl = (global.window.open as jest.Mock).mock.calls[0][0];
+
+    expect(decodeURIComponent(callUrl)).toContain(
+      "weekly Stellar Wrapped",
+    );
+  });
+
+  it("should include period in share text for monthly", () => {
+    const { __setMockPeriod } = require("../store/wrapStore") as any;
+
+    __setMockPeriod("monthly");
+
+    render(<SharePageClient />);
+
+    const shareButton = screen.getByRole("button");
+    fireEvent.click(shareButton);
+
+    const xButton = screen.getByText("x").closest("button");
+    fireEvent.click(xButton!);
+
+    const callUrl = (global.window.open as jest.Mock).mock.calls[0][0];
+
+    expect(decodeURIComponent(callUrl)).toContain(
+      "monthly Stellar Wrapped",
+    );
+  });
+
+  it("should include period in share text for yearly", () => {
+    const { __setMockPeriod } = require("../store/wrapStore") as any;
+
+    __setMockPeriod("yearly");
+
+    render(<SharePageClient />);
+
+    const shareButton = screen.getByRole("button");
+    fireEvent.click(shareButton);
+
+    const xButton = screen.getByText("x").closest("button");
+    fireEvent.click(xButton!);
+
+    const callUrl = (global.window.open as jest.Mock).mock.calls[0][0];
+
+    expect(decodeURIComponent(callUrl)).toContain(
+      "yearly Stellar Wrapped",
+    );
+  });
+});

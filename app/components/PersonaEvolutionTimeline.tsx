@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useFormatter } from "next-intl";
 import { formatXlmAmount } from "@/app/utils/formatters";
@@ -162,7 +162,11 @@ export function PersonaEvolutionTimeline({ useDemo = false }: PersonaEvolutionTi
                     style={{
                       borderColor: style.color,
                       background: style.gradient,
-                      ringColor: isCurrent ? style.color : undefined,
+                      // `ring-2` above reads its color from this CSS custom
+                      // property, not a `ringColor` inline style (not a
+                      // real CSS property — Tailwind's ring utilities are
+                      // box-shadow-based).
+                      ...(isCurrent ? { "--tw-ring-color": style.color } as CSSProperties : {}),
                     }}
                   >
                     <Icon className="w-6 h-6 text-white" />
