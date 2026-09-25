@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   CheckCircle,
@@ -14,6 +14,7 @@ import { useWrapStore } from "@/app/store/wrapStore";
 import { useOfferStore, type Offer, type OfferStatus } from "@/app/store/offerStore";
 import { createOffer, type OfferServiceError } from "@/src/services/offerService";
 import { ProgressIndicator } from "@/app/components/ProgressIndicator";
+import { useVirtualizer } from '@tanstack/react-virtual';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -63,13 +64,8 @@ function OfferRow({
   onDismiss: (id: string) => void;
 }) {
   return (
-    <motion.li
-      layout
+    <li
       key={offer.id}
-      initial={{ opacity: 0, x: -16 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: 16 }}
-      transition={{ duration: 0.25 }}
       className="flex items-start justify-between gap-3 rounded-xl border border-slate-700/60 bg-slate-900/50 px-4 py-3"
     >
       <div className="min-w-0 flex-1">
@@ -112,7 +108,7 @@ function OfferRow({
           </button>
         )}
       </div>
-    </motion.li>
+    </li>
   );
 }
 
@@ -247,6 +243,16 @@ export default function OffersPage() {
     },
     [dismissFailedOffer],
   );
+
+  // Virtualizer for the offers list — only renders visible items
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const offerVirtualizer = useVirtualizer({
+    count: offers.length,
+    getScrollElement: () => containerRef.current,
+    estimateSize: () => 80,
+    overscan: 5,
+  });
 
   // ─── Render ─────────────────────────────────────────────────────────────────
   return (
@@ -463,17 +469,47 @@ export default function OffersPage() {
               </p>
             </div>
           ) : (
-            <ul className="flex flex-col gap-2" role="list" aria-live="polite">
-              <AnimatePresence initial={false}>
-                {offers.map((offer) => (
-                  <OfferRow
-                    key={offer.id}
-                    offer={offer}
-                    onDismiss={handleDismiss}
-                  />
-                ))}
-              </AnimatePresence>
-            </ul>
+            <div
+              ref={containerRef}
+              style={{ maxHeight: '600px', overflow: 'auto' }}
+            >
+              <ul
+                className="flex flex-col gap-2"
+                role="list"
+                aria-live="polite"
+                style={{
+                  height: `${offerVirtualizer.getTotalSize()}px`,
+                  position: 'relative',
+                }}
+              >
+                <AnimatePresence initial={false}>
+                  {offerVirtualizer.getVirtualItems().map((virtualRow) => {
+                    const offer = offers[virtualRow.index];
+                    return (
+                      <motion.li
+                        key={offer.id}
+                        initial={{ opacity: 0, x: -16 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 16 }}
+                        transition={{ duration: 0.25 }}
+                        style={{
+                          position: 'absolute',
+                          top: 0,
+                          left: 0,
+                          width: '100%',
+                          transform: `translateY(${virtualRow.start}px)`,
+                        }}
+                      >
+                        <OfferRow
+                          offer={offer}
+                          onDismiss={handleDismiss}
+                        />
+                      </motion.li>
+                    );
+                  })}
+                </AnimatePresence>
+              </ul>
+            </div>
           )}
         </section>
       </div>
