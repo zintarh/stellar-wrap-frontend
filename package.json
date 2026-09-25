@@ -9,8 +9,11 @@
   },
   "scripts": {
     "dev": "next dev",
+    "build": "next build",
     "start": "next start",
     "lint": "eslint .",
+    "size-limit": "node scripts/measure-bundle-size.js && node scripts/bundle-budget.mjs",
+    "build:size-limit": "pnpm build && pnpm size-limit",
     "test:visual": "playwright test",
     "test:visual:update": "playwright test --update-snapshots",
     "vitest": "vitest",

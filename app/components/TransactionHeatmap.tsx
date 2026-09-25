@@ -6,14 +6,16 @@ import { Star } from "lucide-react";
 import type { WrapPeriod } from "@/app/store/wrapStore";
 import { PERIODS } from "@/app/utils/indexer";
 
+import { useLocale } from "next-intl";
+
 interface TransactionHeatmapProps {
   dailyActivity: Record<string, number>;
   period: WrapPeriod;
 }
 
-function formatTooltipDate(dateKey: string): string {
+function formatTooltipDate(dateKey: string, locale: string = "en"): string {
   const [y, m, d] = dateKey.split("-").map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString("en-US", {
+  return new Date(y, m - 1, d).toLocaleDateString(locale, {
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -33,6 +35,7 @@ export function TransactionHeatmap({
   dailyActivity,
   period,
 }: TransactionHeatmapProps) {
+  const locale = useLocale();
   const [tooltip, setTooltip] = useState<{
     date: string;
     count: number;
@@ -67,7 +70,7 @@ export function TransactionHeatmap({
     for (let i = 0; i < 7; i++) {
       const d = new Date(start);
       d.setDate(start.getDate() + i);
-      labels.push(d.toLocaleDateString("en-US", { weekday: "narrow" }));
+      labels.push(d.toLocaleDateString(locale, { weekday: "narrow" }));
     }
 
     return {
@@ -76,7 +79,7 @@ export function TransactionHeatmap({
       mostActiveDay: peak,
       dayLabels: labels,
     };
-  }, [dailyActivity, period]);
+  }, [dailyActivity, period, locale]);
 
   const cols = period === "yearly" ? 53 : period === "monthly" ? 7 : 7;
   const isScrollable = period === "yearly";
@@ -137,7 +140,7 @@ export function TransactionHeatmap({
                     y: 0,
                   })
                 }
-                title={`${cell.count} transaction${cell.count === 1 ? "" : "s"} on ${formatTooltipDate(cell.date)}`}
+                title={`${cell.count} transaction${cell.count === 1 ? "" : "s"} on ${formatTooltipDate(cell.date, locale)}`}
               >
                 {isPeak && (
                   <Star className="absolute -top-1 -right-1 w-2.5 h-2.5 text-yellow-400 fill-yellow-400" />
@@ -169,7 +172,7 @@ export function TransactionHeatmap({
       {tooltip && (
         <div className="mt-2 text-center text-sm text-white/70 font-medium">
           {tooltip.count} transaction{tooltip.count === 1 ? "" : "s"} on{" "}
-          {formatTooltipDate(tooltip.date)}
+          {formatTooltipDate(tooltip.date, locale)}
         </div>
       )}
     </motion.div>

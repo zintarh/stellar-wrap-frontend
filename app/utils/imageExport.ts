@@ -1,52 +1,3 @@
-/**
- * Downloads the ShareImageCard as a PNG image.
- *
- * html2canvas (~200 KB) is dynamically imported here so it is only loaded
- * when this function is actually invoked — i.e. on the /share page when the
- * user clicks "Download Image".  It never ends up in the initial bundle.
- *
- * @param element - The DOM element to capture (ShareImageCard ref)
- * @returns Promise that resolves when download is triggered
- * @throws Error if canvas generation or download fails
- */
-export async function downloadShareImage(element: HTMLElement): Promise<void> {
-  // Dynamic import: html2canvas is only loaded when this function is called.
-  const html2canvas = (await import("html2canvas")).default;
-
-  try {
-    // Step 1: Clone the element
-    const clone = element.cloneNode(true) as HTMLElement;
-    clone.style.position = "absolute";
-    clone.style.left = "-9999px";
-    clone.style.top = "0";
-    document.body.appendChild(clone);
-
-    // Step 2: Get all elements and force computed styles
-    const processElement = (original: Element, cloned: Element) => {
-      if (original instanceof HTMLElement && cloned instanceof HTMLElement) {
-        const computed = window.getComputedStyle(original);
-        
-        // List of all color-related properties to override
-        const colorProperties = [
-          'backgroundColor',
-          'color',
-          'borderColor',
-          'borderTopColor',
-          'borderRightColor',
-          'borderBottomColor',
-          'borderLeftColor',
-          'outlineColor',
-        ];
-
-        // Apply computed RGB values to override any oklab/oklch
-        colorProperties.forEach(prop => {
-          const kebabProp = prop.replace(/[A-Z]/g, m => `-${m.toLowerCase()}`);
-          const value = computed.getPropertyValue(kebabProp);
-          
-          if (value && value !== 'rgba(0, 0, 0, 0)' && value !== 'transparent') {
-            cloned.style.setProperty(kebabProp, value, 'important');
-          }
-        });
 import html2canvas from "html2canvas";
 
 const GENERATION_TIMEOUT_MS = 10_000;
@@ -62,16 +13,12 @@ export interface ShareImageExportResult {
   durationMs: number;
 }
 
-function isMobileDevice(): boolean {
-  if (typeof window === "undefined") return false;
-  return (
-    window.innerWidth < 768 ||
-    /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
-  );
-}
-
+/**
+  * Scale is pinned to a constant factor (3) to ensure deterministic rendering
+  * across all environments regardless of screen resolution, DPI, or mobile/desktop.
+  */
 function getCaptureScale(): number {
-  return isMobileDevice() ? 2 : 3;
+  return 3;
 }
 
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
@@ -94,6 +41,35 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
         reject(error);
       });
   });
+}
+
+/**
+ * Freeze CSS animations, transitions, and keyframes on an element tree
+ * to prevent half-rendered or mid-transition captures.
+ */
+function freezeAnimations(clone: HTMLElement): void {
+  const freezeStyle = document.createElement("style");
+  freezeStyle.textContent = `
+    *, *::before, *::after {
+      animation: none !important;
+      transition: none !important;
+      animation-play-state: paused !important;
+    }
+  `;
+  clone.appendChild(freezeStyle);
+
+  const applyFreeze = (el: HTMLElement) => {
+    el.style.setProperty("animation", "none", "important");
+    el.style.setProperty("transition", "none", "important");
+    el.style.setProperty("animation-play-state", "paused", "important");
+    for (let i = 0; i < el.children.length; i++) {
+      const child = el.children[i];
+      if (child instanceof HTMLElement) {
+        applyFreeze(child);
+      }
+    }
+  };
+  applyFreeze(clone);
 }
 
 function processElementStyles(original: Element, cloned: Element): void {
@@ -127,7 +103,9 @@ function processElementStyles(original: Element, cloned: Element): void {
   }
 
   for (let i = 0; i < original.children.length; i++) {
-    processElementStyles(original.children[i], cloned.children[i]);
+    if (original.children[i] && cloned.children[i]) {
+      processElementStyles(original.children[i], cloned.children[i]);
+    }
   }
 }
 
@@ -232,7 +210,9 @@ function triggerDownload(blob: Blob, filename: string = "stellar-wrapped-2026.pn
 }
 
 /**
- * Downloads the ShareImageCard as a PNG image
+ * Downloads the ShareImageCard as a PNG image cleanly and deterministically.
+ * Ensures custom web fonts are loaded and ready, pins scale factor, and freezes animations.
+ *
  * @param element - The DOM element to capture (ShareImageCard ref)
  * @returns Export metadata including worker usage and duration
  */
@@ -243,6 +223,11 @@ export async function downloadShareImage(
   const startTime = performance.now();
   const scale = getCaptureScale();
   const format = options?.format || "square";
+
+  // Ensure fonts are fully loaded before capturing
+  if (typeof document !== "undefined" && "fonts" in document) {
+    await document.fonts.ready;
+  }
 
   const getDimensions = (fmt: "square" | "stories") => {
     return fmt === "stories"
@@ -262,6 +247,7 @@ export async function downloadShareImage(
 
       try {
         processElementStyles(element, clone);
+        freezeAnimations(clone);
 
         const canvas = await html2canvas(clone, {
           scale,
@@ -282,7 +268,9 @@ export async function downloadShareImage(
           durationMs: Math.round(performance.now() - startTime),
         };
       } finally {
-        document.body.removeChild(clone);
+        if (clone.parentNode) {
+          clone.parentNode.removeChild(clone);
+        }
       }
     })(),
     GENERATION_TIMEOUT_MS,

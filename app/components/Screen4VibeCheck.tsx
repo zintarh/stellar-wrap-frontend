@@ -42,12 +42,13 @@ const vibeIcons: Record<VibeIconKey, React.ComponentType<{ className?: string }>
   dev: Code,
 };
 
-export function Screen4VibeCheck({ vibes, dapps = [], dexTradingSummary, sorobanBuilderSummary, portfolioDiversitySummary, biggestDaySummary }: Screen4VibeCheckProps) {
 export function Screen4VibeCheck({
   vibes,
   dapps = [],
-  dailyActivity = {},
-  period = "monthly",
+  dexTradingSummary,
+  sorobanBuilderSummary,
+  portfolioDiversitySummary,
+  biggestDaySummary,
 }: Screen4VibeCheckProps) {
   const topDapps = useMemo(
     () => [...dapps].sort((a, b) => b.interactions - a.interactions).slice(0, TOP_DAPPS_LIMIT),
@@ -364,5 +365,6 @@ export function Screen4VibeCheck({
         </div>
       </div>
     </div>
-  );
+  </div>
+);
 }

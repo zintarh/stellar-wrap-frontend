@@ -2,6 +2,39 @@
 
 import { useState, useRef, useEffect, KeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
+import { useWrapStore } from "@/app/store/wrapStore";
+import { useTransactionStore } from "@/app/store/transactionStore";
+import { useMultiTimeframeStore } from "@/app/store/multiTimeframeStore";
+import { useSound } from "@/app/hooks/useSound";
+import { SOUND_NAMES } from "@/app/utils/soundManager";
+import { useOnlineStatus } from "@/app/hooks/useOnlineStatus";
+import { useStellarAddressValidation } from "@/app/hooks/useStellarAddressValidation";
+import { ProgressIndicator } from "@/app/components/ProgressIndicator";
+import { MuteToggle } from "@/app/components/MuteToggle";
+import {
+  connectFreighter,
+  saveAddressToLocalStorage,
+  clearSavedAddress,
+} from "@/app/services/freighterService";
+import { fetchAccountPreview } from "@/app/services/accountService";
+import {
+  connectAlbedo,
+  connectXBull,
+  isXBullInstalled,
+} from "@/app/utils/walletConnect";
+import { connectWalletConnect } from "@/app/utils/walletConnectManager";
+import {
+  ArrowLeft,
+  CheckCircle2,
+  AlertCircle,
+  QrCode,
+  Wallet,
+  CheckCircle,
+  Copy,
+  XCircle,
+  ChevronRight,
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function ConnectPage() {
   const router = useRouter();
@@ -21,6 +54,11 @@ export default function ConnectPage() {
 
   const [isConnecting, setIsConnecting] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
+  const [lastUsedAddress, setLastUsedAddress] = useState<string | null>(null);
+  const [showPreview, setShowPreview] = useState(false);
+  const [previewBalance, setPreviewBalance] = useState<string>("0.00");
+  const [previewTxCount, setPreviewTxCount] = useState<number>(0);
+  const [previewLoading, setPreviewLoading] = useState(false);
 
   // Refs for focus management
   const mainContentRef = useRef<HTMLDivElement>(null);
@@ -42,8 +80,6 @@ export default function ConnectPage() {
     }
   }, []);
 
-  };
-
   const handleFreighterConnect = async () => {
     if (!isOnline) {
       setLocalError("Wallet connect is unavailable offline.");
@@ -64,7 +100,16 @@ export default function ConnectPage() {
       saveAddressToLocalStorage(publicKey);
       setError(null);
       playSound(SOUND_NAMES.SLIDE_WHOOSH);
-      await fetchAccountPreview(publicKey);
+      setPreviewLoading(true);
+      const preview = await fetchAccountPreview(publicKey);
+      if (preview) {
+        setPreviewBalance(preview.balance);
+        setPreviewTxCount(preview.txCount);
+        setShowPreview(true);
+      } else {
+        router.push("/loading");
+      }
+      setPreviewLoading(false);
     } catch (error: unknown) {
       const errorMessage =
         error instanceof Error ? error.message : "Failed to connect wallet";
@@ -96,7 +141,16 @@ export default function ConnectPage() {
       saveAddressToLocalStorage(publicKey);
       setError(null);
       playSound(SOUND_NAMES.SLIDE_WHOOSH);
-      await fetchAccountPreview(publicKey);
+      setPreviewLoading(true);
+      const preview = await fetchAccountPreview(publicKey);
+      if (preview) {
+        setPreviewBalance(preview.balance);
+        setPreviewTxCount(preview.txCount);
+        setShowPreview(true);
+      } else {
+        router.push("/loading");
+      }
+      setPreviewLoading(false);
     } catch (error: unknown) {
       const errorMessage =
         error instanceof Error ? error.message : "Failed to connect wallet";
@@ -209,7 +263,17 @@ export default function ConnectPage() {
     setAddress(trimmedAddress);
     saveAddressToLocalStorage(trimmedAddress);
     playSound(SOUND_NAMES.SLIDE_WHOOSH);
-    fetchAccountPreview(walletAddress.trim());
+    setPreviewLoading(true);
+    fetchAccountPreview(trimmedAddress).then((preview) => {
+      if (preview) {
+        setPreviewBalance(preview.balance);
+        setPreviewTxCount(preview.txCount);
+        setShowPreview(true);
+      } else {
+        router.push("/loading");
+      }
+      setPreviewLoading(false);
+    });
   };
 
   const handleContinue = () => {
@@ -863,7 +927,6 @@ export default function ConnectPage() {
               </div>
             </motion.button>
             )}
-            </AnimatePresence>
 
             {/* Wallet Connect Options */}
             <div className="mt-6 pt-6 border-t border-white/10 space-y-3">

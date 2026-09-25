@@ -33,7 +33,8 @@ const customJestConfig = {
       statements: 80,
     },
   },
-  modulePathIgnorePatterns: ['<rootDir>/.next/'],
+  modulePathIgnorePatterns: ['<rootDir>/.next/', '<rootDir>/tests/'],
+  testPathIgnorePatterns: ['<rootDir>/.next/', '<rootDir>/tests/'],
 };
 
 // createJestConfig is exported this way to ensure next/jest can load the

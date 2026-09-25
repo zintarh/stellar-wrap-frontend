@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useState, type RefObject } from "react";
 import { Download } from "lucide-react";
-import html2canvas from "html2canvas";
+import { downloadShareImage } from "../utils/imageExport";
 import { mockData } from "../data/mockData";
 
 interface ShareImageCardVibe {
@@ -20,22 +20,46 @@ interface ShareImageCardData {
 
 interface ShareImageCardProps {
   themeColor: string;
-  archetypeImage?: string | null; // e.g. '/archetypes/wizard.png'; null hides the image fallback.
+  archetypeImage?: string | null;
   data?: ShareImageCardData;
-  archetypeImage?: string;
   shareUrl?: string;
+  /** Pre-rendered QR code data URL. When provided, used directly instead of
+   * fetching from an external API, ensuring deterministic visual output.
+   * Pass `null` explicitly to suppress the QR section entirely. */
+  qrCodeDataUrl?: string | null;
 }
+
+export function ShareImageCard({
+  themeColor,
+  archetypeImage,
+  data,
+  shareUrl,
+  qrCodeDataUrl,
+}: ShareImageCardProps) {
+  const username = data?.username ?? mockData.username;
+  const transactions = data?.transactions ?? mockData.transactions;
+  const persona = data?.persona ?? mockData.persona;
+  const vibes = data?.vibes ?? mockData.vibes;
 
   const topVibe = vibes[0];
   const resolvedArchetypeImage =
     archetypeImage === undefined
       ? `/archetypes/${persona.toLowerCase().replace(/^the\s+/, "").replace(/\s+/g, "-")}.png`
       : archetypeImage;
+  // Always use a fixed locale so the formatted number is identical across
+  // environments regardless of the OS/browser locale setting.
   const formattedTransactions = new Intl.NumberFormat("en-US").format(transactions);
 
-  const qrCodeUrl = shareUrl
-    ? `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(shareUrl)}`
-    : null;
+  // Prefer an injected data URL (deterministic, works offline, no external
+  // network request).  Fall back to the external API only in production when
+  // shareUrl is provided and no pre-rendered data URL was supplied.
+  const resolvedQrCodeUrl: string | null = (() => {
+    if (qrCodeDataUrl !== undefined) return qrCodeDataUrl; // explicit override (incl. null)
+    if (shareUrl) {
+      return `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(shareUrl)}`;
+    }
+    return null;
+  })();
 
   const getRgbValues = (color: string): string => {
     const rgbMatch = color.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
@@ -272,10 +296,10 @@ interface ShareImageCardProps {
               gap: "8px",
             }}
           >
-            {qrCodeUrl && (
+            {resolvedQrCodeUrl && (
               <>
                 <img
-                  src={qrCodeUrl}
+                  src={resolvedQrCodeUrl}
                   alt="Scan to view"
                   style={{
                     width: "120px",
@@ -297,7 +321,7 @@ interface ShareImageCardProps {
                 </div>
               </>
             )}
-            {!qrCodeUrl && (
+            {!resolvedQrCodeUrl && (
               <div
                 style={{
                   width: "40px",
@@ -340,40 +364,7 @@ export function DownloadPngButton({ cardRef, address }: DownloadPngButtonProps) 
     if (!cardRef.current || isDownloading) return;
     setIsDownloading(true);
     try {
-      const clone = cardRef.current.cloneNode(true) as HTMLElement;
-      clone.style.position = "absolute";
-      clone.style.left = "-9999px";
-      clone.style.top = "0";
-      document.body.appendChild(clone);
-
-      const canvas = await html2canvas(clone, {
-        scale: 3,
-        backgroundColor: "#020202",
-        useCORS: true,
-        allowTaint: true,
-        logging: false,
-        width: 1080,
-        height: 1080,
-      });
-
-      document.body.removeChild(clone);
-
-      const blob = await new Promise<Blob>((resolve, reject) => {
-        canvas.toBlob((b) => {
-          if (b) resolve(b);
-          else reject(new Error("Failed to generate image blob"));
-        }, "image/png", 1.0);
-      });
-
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      const addressShort = address ? address.slice(0, 8) : "unknown";
-      link.href = url;
-      link.download = `stellar-wrap-${addressShort}.png`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      setTimeout(() => URL.revokeObjectURL(url), 100);
+      await downloadShareImage(cardRef.current);
     } catch {
       // Silently fail
     } finally {

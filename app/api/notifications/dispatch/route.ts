@@ -65,7 +65,7 @@ async function sendPushNotification(
     return;
   }
 
-  const webPush = await import("web-push");
+  const webPush = await Function("m", "return import(m)")("web-push");
   webPush.setVapidDetails(vapidSubject, vapidPublicKey, vapidPrivateKey);
 
   const payload = formatPushPayload(period);

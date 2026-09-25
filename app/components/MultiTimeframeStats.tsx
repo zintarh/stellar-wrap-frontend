@@ -10,6 +10,7 @@
  */
 
 import React from "react";
+import { useFormatter } from "next-intl";
 import {
   useMultiTimeframeStore,
   selectIsComplete,
@@ -41,6 +42,7 @@ function changeLabel(pct: number): string {
 // ── Sub-components ────────────────────────────────────────────────────────────
 
 function TimeframeCard({ tf }: { tf: Timeframe }) {
+  const format = useFormatter();
   const status = useMultiTimeframeStore((s) => s.statuses[tf]);
   const progress = useMultiTimeframeStore((s) => s.progress[tf]);
   const data = useMultiTimeframeStore((s) => s.results[tf].data);
@@ -94,7 +96,7 @@ function TimeframeCard({ tf }: { tf: Timeframe }) {
           <div className="flex justify-between text-xs">
             <span className="text-gray-400">Transactions</span>
             <span className="text-white font-medium tabular-nums">
-              {data.totalTransactions.toLocaleString()}
+              {format.number(data.totalTransactions)}
             </span>
           </div>
           <div className="flex justify-between text-xs">
@@ -106,7 +108,7 @@ function TimeframeCard({ tf }: { tf: Timeframe }) {
           <div className="flex justify-between text-xs">
             <span className="text-gray-400">Contracts</span>
             <span className="text-white font-medium tabular-nums">
-              {data.contractCalls.toLocaleString()}
+              {format.number(data.contractCalls)}
             </span>
           </div>
           <div className="flex justify-between text-xs">

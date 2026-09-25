@@ -6,7 +6,16 @@ import { motion, useAnimation, AnimatePresence } from "framer-motion";
 import { Home, Share2, ChevronRight, X } from "lucide-react";
 import Link from "next/link";
 import { readStreamableValue } from "ai/rsc";
-import { getArchetypeDescription } from "@/data/archetypeConfig";
+import { getArchetypeDescription } from "@/src/data/archetypeConfig";
+import { useSound } from "@/app/hooks/useSound";
+import { useWrapStore } from "@/app/store/wrapStore";
+import { useNotificationStore } from "@/app/store/notificationStore";
+import { generatePersonaDescription } from "@/app/actions/generate-persona";
+import { SOUND_NAMES } from "@/app/utils/soundManager";
+import { ProgressIndicator } from "@/app/components/ProgressIndicator";
+import { MuteToggle } from "@/app/components/MuteToggle";
+import { PersonaEvolutionTimeline } from "@/app/components/PersonaEvolutionTimeline";
+import { NotificationPrompt } from "@/app/components/NotificationPrompt";
 
 // Removed theme system - using standard CSS variables from globals.css
 const useConfetti = (color?: string) => {
@@ -199,7 +208,7 @@ export default function ArchetypeReveal(): JSX.Element {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [result]);
 
-  const handleShareKeyDown = (platform: string) => (e: React.KeyboardEvent) => {
+  const _handleShareKeyDown = (platform: string) => (e: React.KeyboardEvent) => {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
       handleShare(platform);
@@ -775,7 +784,6 @@ export default function ArchetypeReveal(): JSX.Element {
               transition={{ delay: 1 }}
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.95 }}
-              aria-label="Next step"
             >
               <div className="flex h-12 w-12 sm:h-16 sm:w-16 items-center justify-center rounded-full border border-white/10 bg-black/60 text-white backdrop-blur-md transition hover:bg-white/5">
                 <ChevronRight

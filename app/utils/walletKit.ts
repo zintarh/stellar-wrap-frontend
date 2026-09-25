@@ -30,15 +30,7 @@ function getStringProperty(data: unknown, key: string): string | null {
     const value = (data as Record<string, unknown>)[key];
     return typeof value === "string" ? value : null;
   }
-
   return null;
-function getStringField(data: unknown, field: string): string | null {
-  if (!data || typeof data !== "object" || !(field in data)) {
-    return null;
-  }
-
-  const value = (data as Record<string, unknown>)[field];
-  return typeof value === "string" ? value : null;
 }
 
 export function initWalletKit(): void {

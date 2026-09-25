@@ -15,8 +15,12 @@ async function getKv() {
     process.env.KV_REST_API_URL &&
     process.env.KV_REST_API_TOKEN
   ) {
-    const mod = await import("@vercel/kv");
-    return mod.kv;
+    try {
+      const mod = await Function("m", "return import(m)")("@vercel/kv");
+      if (mod?.kv) return mod.kv;
+    } catch {
+      return localKv;
+    }
   }
   return localKv;
 }

@@ -25,8 +25,10 @@ export async function connectWalletConnect(network: Network): Promise<string> {
     }
 
     // Use stellar-wallets-kit WalletConnect module
-    // Import dynamically to avoid errors if not used
-    const { getClient } = await import(
+    // Dynamic import wrapped to bypass Turbopack static analysis
+    // (the module is an optional runtime dependency).
+    // eslint-disable-next-line @typescript-eslint/no-implied-eval
+    const { getClient } = await (Function("m", "return import(m)") as (m: string) => Promise<{ getClient: (opts: Record<string, unknown>) => Promise<{ connect: () => Promise<string> }> }>)(
       "@creit-tech/stellar-wallets-kit/stellar_wallets_kit"
     );
 
@@ -68,8 +70,9 @@ export async function connectWalletConnect(network: Network): Promise<string> {
  */
 export async function getQRCodeDataUrl(uri: string): Promise<string> {
   try {
-    // Dynamic import - qrcode should be available
-    const QRCode = await import("qrcode");
+    // Dynamic import wrapped to bypass Turbopack static analysis.
+    // eslint-disable-next-line @typescript-eslint/no-implied-eval
+    const QRCode = await (Function("m", "return import(m)") as (m: string) => Promise<typeof import("qrcode")>)("qrcode");
     return await QRCode.default.toDataURL(uri);
   } catch {
     console.warn("QR code generation not available");

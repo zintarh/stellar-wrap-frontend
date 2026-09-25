@@ -12,6 +12,7 @@ test.describe("ShareImageCard visual regression", () => {
   for (const theme of themes) {
     test(`matches ${theme} theme baseline`, async ({ page }) => {
       await page.goto(`/visual-tests/share-card?theme=${theme}&scenario=max`);
+      await page.evaluate(() => document.fonts.ready);
       await expect(page.getByTestId("share-image-card")).toHaveScreenshot(`theme-${theme}.png`);
     });
   }
@@ -19,6 +20,7 @@ test.describe("ShareImageCard visual regression", () => {
   for (const scenario of scenarios) {
     test(`matches ${scenario.name} baseline`, async ({ page }) => {
       await page.goto(`/visual-tests/share-card?theme=green&${scenario.query}`);
+      await page.evaluate(() => document.fonts.ready);
       await expect(page.getByTestId("share-image-card")).toHaveScreenshot(`${scenario.name}.png`);
     });
   }
