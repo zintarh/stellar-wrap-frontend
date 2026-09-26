@@ -8,6 +8,15 @@ import { kvGet, kvSet, SUB_KEY } from "../../_lib/kv";
 import { logger } from "@/app/utils/logger";
 import type { SubscriptionRecord } from "@/app/types/notifications";
 import { apiError, internalApiError } from "@/app/api/_lib/apiError";
+import {
+  getClientIp,
+  checkRateLimit,
+  rateLimitDenialResponse,
+  PREFERENCES_IP_LIMIT,
+  PREFERENCES_IP_WINDOW,
+  PREFERENCES_WALLET_LIMIT,
+  PREFERENCES_WALLET_WINDOW,
+} from "../../_lib/rateLimit";
 
 const log = logger.child("api:preferences");
 
@@ -43,8 +52,34 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
     const { wallet } = await params;
 
+    // PUT is a public write, so throttle it on both the source IP and the
+    // wallet being written to.
+    const ipDenial = rateLimitDenialResponse(
+      await checkRateLimit(
+        `ratelimit:ip:preferences:${getClientIp(request)}`,
+        PREFERENCES_IP_LIMIT,
+        PREFERENCES_IP_WINDOW
+      )
+    );
+
+    if (ipDenial) {
+      return ipDenial;
+    }
+
     if (!isValidWallet(wallet)) {
       return apiError("INVALID_WALLET", "Invalid wallet address", 400);
+    }
+
+    const walletDenial = rateLimitDenialResponse(
+      await checkRateLimit(
+        `ratelimit:wallet:preferences:${wallet}`,
+        PREFERENCES_WALLET_LIMIT,
+        PREFERENCES_WALLET_WINDOW
+      )
+    );
+
+    if (walletDenial) {
+      return walletDenial;
     }
 
     const body = (await request.json()) as Partial<SubscriptionRecord>;
