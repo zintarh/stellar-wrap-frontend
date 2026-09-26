@@ -1,8 +1,7 @@
 "use client";
 
-import { type ReactNode, useEffect } from "react";
-import { ThemeProvider } from "./context/ThemeContext";
 import { useEffect, useState } from "react";
+import { ThemeProvider } from "./context/ThemeContext";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ServiceWorkerManager } from "./components/ServiceWorkerManager";
 import { OfflineWrapHydrator } from "./components/OfflineWrapHydrator";
