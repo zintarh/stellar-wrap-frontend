@@ -11,13 +11,33 @@ export function Footer() {
       <div className="mx-auto flex max-w-6xl flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="font-semibold text-white">Stellar Wrap</p>
-          <p className="mt-1 text-xs text-white/40">Your on-chain year in review.</p>
+          <p className="mt-1 text-xs text-white/60">Your on-chain year in review.</p>
         </div>
         <nav aria-label="Footer navigation" className="flex flex-wrap items-center gap-4">
-          <Link className="transition-colors hover:text-white focus-visible:text-white" href="/">Home</Link>
+          <Link
+            className="transition-colors hover:text-white focus-visible:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-1 focus-visible:ring-offset-black rounded"
+            href="/"
+          >
+            Home
+          </Link>
           {SOCIAL_LINKS.map(({ label, href, icon }) => (
-            <a key={label} className="inline-flex items-center gap-1.5 transition-colors hover:text-white focus-visible:text-white" href={href} target="_blank" rel="noreferrer">
-              <svg aria-hidden="true" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8">
+            <a
+              key={label}
+              aria-label={label}
+              className="inline-flex items-center gap-1.5 transition-colors hover:text-white focus-visible:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-1 focus-visible:ring-offset-black rounded"
+              href={href}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <svg
+                aria-hidden="true"
+                focusable="false"
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth="1.8"
+              >
                 <path strokeLinecap="round" strokeLinejoin="round" d={icon} />
               </svg>
               <span>{label}</span>
