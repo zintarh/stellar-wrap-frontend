@@ -155,7 +155,11 @@ function buildComparison(
 // ── Main function ─────────────────────────────────────────────────────────────
 
 /**
- * Index an account across all three timeframes in parallel.
+ * Index an account across all three timeframes.
+ *
+ * Fetches the widest period (1 month) first, then derives the narrower
+ * timeframes (2 weeks, 1 week) from the wider cached result in memory.
+ * This avoids duplicate Horizon requests across overlapping timeframes.
  *
  * - Uses `Promise.allSettled` so a failure in one timeframe does not abort
  *   the others — partial results are always returned.
@@ -256,10 +260,11 @@ export async function indexAccountMultiTimeframe(
     }
   }
 
-  // ── Parallel fetch ──────────────────────────────────────────────────────────
-  // Run all three timeframes concurrently.  allSettled guarantees we always
-  // get back three results regardless of individual failures.
-  const timeframes: Timeframe[] = ["1w", "2w", "1m"];
+  // ── Sequential widest-first fetch ────────────────────────────────────
+  // Fetch the widest period (1 month) first so its raw transactions are
+  // cached and can serve the narrower 2-week and 1-week requests without
+  // additional Horizon round-trips.
+  const timeframes: Timeframe[] = ["1m", "2w", "1w"];
 
   const settled = await Promise.allSettled(
     timeframes.map((tf) => indexOneTimeframe(tf))

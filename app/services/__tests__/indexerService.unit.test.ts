@@ -254,6 +254,56 @@ describe('IndexerService - indexAccount', () => {
 
       expect(transactionsCallMock).toHaveBeenCalled();
     }, 15000);
+
+    it('should use wider cached transactions to serve a narrower period without a Horizon request', async () => {
+      const now = new Date();
+      const sixDaysAgo = new Date(now);
+      sixDaysAgo.setDate(sixDaysAgo.getDate() - 6);
+      const eightDaysAgo = new Date(now);
+      eightDaysAgo.setDate(eightDaysAgo.getDate() - 8);
+
+      const widerTransactions = [
+        {
+          id: '1',
+          created_at: sixDaysAgo.toISOString(),
+          paging_token: 'token1',
+          operations: jest.fn().mockResolvedValue({ records: [{ type: 'payment', amount: '100.0' }] }),
+        },
+        {
+          id: '2',
+          created_at: eightDaysAgo.toISOString(),
+          paging_token: 'token2',
+          operations: jest.fn().mockResolvedValue({ records: [{ type: 'payment', amount: '50.0' }] }),
+        },
+      ];
+
+      // Monthly cache has valid data with raw transactions; biweekly misses
+      (getCacheEntry as jest.Mock)
+        .mockResolvedValueOnce(null) // exact-period miss for weekly
+        .mockResolvedValueOnce(null) // biweekly miss
+        .mockResolvedValueOnce({
+          result: {
+            accountId: 'GABCDEF123456789',
+            totalTransactions: 2,
+            totalVolume: 150,
+            mostActiveAsset: 'XLM',
+            contractCalls: 0,
+            gasSpent: 0,
+            dapps: [],
+            vibes: [],
+          },
+          timestamp: Date.now(),
+          transactions: widerTransactions,
+        }); // monthly hit
+
+      (isCacheValid as jest.Mock).mockReturnValue(true);
+
+      const result = await indexAccount('GABCDEF123456789', 'mainnet', 'weekly');
+
+      // Should derive result from wider cache — no Horizon request needed
+      expect(mockServer.transactions).not.toHaveBeenCalled();
+      expect(result.totalTransactions).toBe(1); // only the 6-days-ago tx is within 7 days
+    });
   });
 
   describe('Network Support', () => {

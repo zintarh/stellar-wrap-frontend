@@ -96,6 +96,8 @@ export interface CacheEntry {
   result: IndexerResult;
   timestamp: number;
   version?: number;
+  /** Raw transactions stored so wider periods can serve narrower cache hits. */
+  transactions?: unknown[];
 }
 
 export interface CacheStore {
