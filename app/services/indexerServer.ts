@@ -15,7 +15,7 @@ export async function indexAccount(
   network: "mainnet" | "testnet" = "mainnet",
   period: WrapPeriod = "monthly",
 ): Promise<IndexerResultWithMeta> {
-  const result = await runIndexingCore(accountId, network, period, false);
+  const { result } = await runIndexingCore(accountId, network, period, false);
   return {
     result,
     fromCache: false,

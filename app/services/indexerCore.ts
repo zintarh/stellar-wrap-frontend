@@ -132,13 +132,15 @@ async function animateStep<T>(
 
 /**
  * Internal: run full Horizon indexing. When background is true, no step events are emitted.
+ * Returns both the computed result and the raw transactions within the period,
+ * so callers can derive narrower timeframes from the wider fetch.
  */
 export async function runIndexingCore(
   accountId: string,
   network: "mainnet" | "testnet",
   period: WrapPeriod,
   background: boolean,
-): Promise<IndexerResult> {
+): Promise<{ result: IndexerResult; transactions: unknown[] }> {
   const emitter = IndexerEventEmitter.getInstance();
   const server = getHorizonServer(network);
   const days = PERIODS[period];
@@ -450,7 +452,7 @@ export async function runIndexingCore(
     }, background);
 
     emit(() => emitter.emitIndexingComplete(result));
-    return result;
+    return { result, transactions: allTransactions };
   } catch (error) {
     if (isAbortError(error)) {
       throw error;
