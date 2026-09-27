@@ -8,6 +8,15 @@ import { kvGet, kvSet, SUB_KEY } from "../../_lib/kv";
 import { logger } from "@/app/utils/logger";
 import type { SubscriptionRecord } from "@/app/types/notifications";
 import { apiError, internalApiError } from "@/app/api/_lib/apiError";
+import {
+  getClientIp,
+  checkRateLimit,
+  rateLimitResponse,
+  WRITE_IP_LIMIT,
+  WRITE_IP_WINDOW,
+  WRITE_TARGET_LIMIT,
+  WRITE_TARGET_WINDOW,
+} from "../../_lib/rateLimit";
 
 const log = logger.child("api:preferences");
 
@@ -45,6 +54,27 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
     if (!isValidWallet(wallet)) {
       return apiError("INVALID_WALLET", "Invalid wallet address", 400);
+    }
+
+    const ip = getClientIp(request);
+    const ipLimit = await checkRateLimit(
+      `ratelimit:ip:preferences:${ip}`,
+      WRITE_IP_LIMIT,
+      WRITE_IP_WINDOW
+    );
+    if (!ipLimit.allowed) {
+      return rateLimitResponse(ipLimit.resetInSeconds);
+    }
+    const walletLimit = await checkRateLimit(
+      `ratelimit:wallet:preferences:${wallet}`,
+      WRITE_TARGET_LIMIT,
+      WRITE_TARGET_WINDOW
+    );
+    if (!walletLimit.allowed) {
+      return rateLimitResponse(
+        walletLimit.resetInSeconds,
+        "Too many requests for this wallet. Please try again later."
+      );
     }
 
     const body = (await request.json()) as Partial<SubscriptionRecord>;
