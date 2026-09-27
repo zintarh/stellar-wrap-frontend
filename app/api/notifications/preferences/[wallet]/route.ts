@@ -8,15 +8,12 @@ import { kvGet, kvSet, SUB_KEY } from "../../_lib/kv";
 import { logger } from "@/app/utils/logger";
 import type { SubscriptionRecord } from "@/app/types/notifications";
 import { apiError, internalApiError } from "@/app/api/_lib/apiError";
+import { isValidWalletAddress as isValidWallet } from "@/src/utils/validateStellarAddress";
 
 const log = logger.child("api:preferences");
 
 interface RouteParams {
   params: Promise<{ wallet: string }>;
-}
-
-function isValidWallet(address: string): boolean {
-  return typeof address === "string" && address.startsWith("G") && address.length === 56;
 }
 
 export async function GET(_request: NextRequest, { params }: RouteParams) {
