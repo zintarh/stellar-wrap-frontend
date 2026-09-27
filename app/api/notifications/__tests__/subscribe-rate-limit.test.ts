@@ -14,7 +14,8 @@ jest.mock("../_lib/email", () => ({
 }));
 
 const VALID_WALLET_1 = "GDRZZGQDRBLJBAY24O3EMZFDGZ4EY6A7L24OERKQTPLT4T7SZKLUAZVQ";
-const VALID_WALLET_2 = "GBDTABC1234567890123456789012345678901234567890123456789";
+// Checksum-valid (issue #635 unified validation rejects bad checksums).
+const VALID_WALLET_2 = "GD6ROJBYLKQMOW3E7N4M2YBPUHMZD7PL65VRHRMO24BOVSBV5H3BQRSL";
 
 function createPostRequest(
   url: string,

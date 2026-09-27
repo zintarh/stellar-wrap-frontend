@@ -24,10 +24,7 @@ import { isValidEmail } from "@/app/utils/notifications/emailValidator";
 import { generateUnsubscribeToken } from "@/app/utils/notifications/unsubscribeToken";
 import type { SubscriptionRecord, PeriodPrefs } from "@/app/types/notifications";
 import { apiError, internalApiError } from "@/app/api/_lib/apiError";
-
-function isValidWallet(address: string): boolean {
-  return typeof address === "string" && address.startsWith("G") && address.length === 56;
-}
+import { isValidWalletAddress as isValidWallet } from "@/src/utils/validateStellarAddress";
 
 export async function POST(request: NextRequest) {
   try {

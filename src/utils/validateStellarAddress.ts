@@ -89,6 +89,65 @@ export const validateStellarAddress = (address: string, _network: Network): Vali
 };
 
 /**
+ * Address families this application accepts, per context:
+ * - `G` — Ed25519 account addresses (wallets; every call site).
+ * - `M` — muxed (M-address) accounts sharing an underlying G account.
+ * - `C` — contract addresses (only where a contract id is expected).
+ *
+ * Both mainnet and testnet use the same prefixes; network existence is
+ * checked separately via Horizon. Callers opt into non-`G` families
+ * explicitly so a contract id can never pass where a wallet is required.
+ */
+export type StellarAddressPrefix = "G" | "M" | "C";
+
+export interface WalletValidationOptions {
+  /** Families to accept. Defaults to `["G"]` (plain wallets only). */
+  allowedPrefixes?: readonly StellarAddressPrefix[];
+}
+
+/**
+ * Single shared wallet-address predicate backing every call site (UI hook
+ * and API routes). Trims whitespace, enforces the 56-char strkey shape,
+ * restricts the prefix, and verifies the checksum with the Stellar SDK.
+ */
+/** Encoded strkey length per family: G/C are 56 chars, M is 69 chars. */
+const PREFIX_LENGTHS: Record<StellarAddressPrefix, number> = {
+  G: 56,
+  M: 69,
+  C: 56,
+};
+
+export const isValidWalletAddress = (
+  address: unknown,
+  options?: WalletValidationOptions,
+): boolean => {
+  if (typeof address !== "string") return false;
+  const trimmed = address.trim();
+  if (trimmed.length === 0) return false;
+
+  const allowed = options?.allowedPrefixes ?? (["G"] as const);
+  const prefix = trimmed[0] as StellarAddressPrefix;
+  if (!(allowed as readonly string[]).includes(prefix)) return false;
+  if (!(prefix in PREFIX_LENGTHS)) return false;
+  if (trimmed.length !== PREFIX_LENGTHS[prefix]) return false;
+
+  try {
+    switch (prefix) {
+      case "G":
+        return StrKey.isValidEd25519PublicKey(trimmed);
+      case "M":
+        return StrKey.isValidMed25519PublicKey(trimmed);
+      case "C":
+        return StrKey.isValidContract(trimmed);
+      default:
+        return false;
+    }
+  } catch {
+    return false;
+  }
+};
+
+/**
  * Check if an address prefix matches the expected network
  * Note: Stellar mainnet and testnet both use 'G' prefix, so this primarily
  * validates format. Network existence is checked via Horizon API.

@@ -12,15 +12,12 @@ import { sendEmail } from "../../_lib/email";
 import { logger, maskAddress } from "@/app/utils/logger";
 import type { SubscriptionRecord } from "@/app/types/notifications";
 import { apiError, internalApiError } from "@/app/api/_lib/apiError";
+import { isValidWalletAddress as isValidWallet } from "@/src/utils/validateStellarAddress";
 
 const log = logger.child("api:data-delete");
 
 interface RouteParams {
   params: Promise<{ wallet: string }>;
-}
-
-function isValidWallet(address: string): boolean {
-  return typeof address === "string" && address.startsWith("G") && address.length === 56;
 }
 
 export async function DELETE(_request: NextRequest, { params }: RouteParams) {
