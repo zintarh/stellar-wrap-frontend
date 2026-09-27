@@ -12,6 +12,15 @@ import { sendEmail } from "../../_lib/email";
 import { logger, maskAddress } from "@/app/utils/logger";
 import type { SubscriptionRecord } from "@/app/types/notifications";
 import { apiError, internalApiError } from "@/app/api/_lib/apiError";
+import {
+  getClientIp,
+  checkRateLimit,
+  rateLimitResponse,
+  WRITE_IP_LIMIT,
+  WRITE_IP_WINDOW,
+  WRITE_TARGET_LIMIT,
+  WRITE_TARGET_WINDOW,
+} from "../../_lib/rateLimit";
 
 const log = logger.child("api:data-delete");
 
@@ -23,12 +32,33 @@ function isValidWallet(address: string): boolean {
   return typeof address === "string" && address.startsWith("G") && address.length === 56;
 }
 
-export async function DELETE(_request: NextRequest, { params }: RouteParams) {
+export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
     const { wallet } = await params;
 
     if (!isValidWallet(wallet)) {
       return apiError("INVALID_WALLET", "Invalid wallet address", 400);
+    }
+
+    // Destructive + sends email: throttle by IP and by targeted wallet.
+    const ipLimit = await checkRateLimit(
+      `ratelimit:ip:data-delete:${getClientIp(request)}`,
+      WRITE_IP_LIMIT,
+      WRITE_IP_WINDOW
+    );
+    if (!ipLimit.allowed) {
+      return rateLimitResponse(ipLimit.resetInSeconds);
+    }
+    const walletLimit = await checkRateLimit(
+      `ratelimit:wallet:data-delete:${wallet}`,
+      WRITE_TARGET_LIMIT,
+      WRITE_TARGET_WINDOW
+    );
+    if (!walletLimit.allowed) {
+      return rateLimitResponse(
+        walletLimit.resetInSeconds,
+        "Too many requests for this wallet. Please try again later."
+      );
     }
 
     const record = await kvGet<SubscriptionRecord>(SUB_KEY(wallet));

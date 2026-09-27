@@ -16,6 +16,8 @@ export interface RateLimitResult {
   allowed: boolean;
   remaining: number;
   resetInSeconds: number;
+  /** Present when the decision was forced by a backend failure. */
+  reason?: "kv_unavailable";
 }
 
 // Default rate limits
@@ -27,6 +29,14 @@ export const SUBSCRIBE_EMAIL_IP_WINDOW = 60; // per 60 seconds
 
 export const SUBSCRIBE_EMAIL_TARGET_LIMIT = 3; // 3 requests
 export const SUBSCRIBE_EMAIL_TARGET_WINDOW = 60; // per 60 seconds
+
+// Write-route limits (issue #617): every public write route is rate-limited
+// by caller IP, plus by the targeted wallet/email where one exists.
+export const WRITE_IP_LIMIT = 10; // 10 requests
+export const WRITE_IP_WINDOW = 60; // per 60 seconds
+
+export const WRITE_TARGET_LIMIT = 5; // 5 requests
+export const WRITE_TARGET_WINDOW = 60; // per 60 seconds
 
 /**
  * Extracts the client's IP address from a NextRequest.
@@ -53,6 +63,9 @@ export function getClientIp(request: NextRequest): string {
 /**
  * Checks and updates rate limit counter for a specific key in KV.
  *
+ * Fail-closed: if KV itself is unavailable the request is denied rather
+ * than allowed unlimited requests (reason: "kv_unavailable").
+ *
  * @param key KV key for rate limiting (e.g. `ratelimit:ip:subscribe:1.2.3.4`)
  * @param limit Maximum allowed requests within the time window
  * @param windowSeconds Time window duration in seconds
@@ -63,11 +76,30 @@ export async function checkRateLimit(
   windowSeconds: number,
 ): Promise<RateLimitResult> {
   const now = Date.now();
-  const record = await kvGet<RateLimitRecord>(key);
+  let record: RateLimitRecord | null;
+  try {
+    record = await kvGet<RateLimitRecord>(key);
+  } catch {
+    return {
+      allowed: false,
+      remaining: 0,
+      resetInSeconds: windowSeconds,
+      reason: "kv_unavailable",
+    };
+  }
 
   if (!record || now >= record.resetAt) {
     const resetAt = now + windowSeconds * 1000;
-    await kvSet(key, { count: 1, resetAt });
+    try {
+      await kvSet(key, { count: 1, resetAt });
+    } catch {
+      return {
+        allowed: false,
+        remaining: 0,
+        resetInSeconds: windowSeconds,
+        reason: "kv_unavailable",
+      };
+    }
     return {
       allowed: true,
       remaining: limit - 1,
@@ -85,7 +117,16 @@ export async function checkRateLimit(
   }
 
   const updatedCount = record.count + 1;
-  await kvSet(key, { count: updatedCount, resetAt: record.resetAt });
+  try {
+    await kvSet(key, { count: updatedCount, resetAt: record.resetAt });
+  } catch {
+    return {
+      allowed: false,
+      remaining: 0,
+      resetInSeconds: windowSeconds,
+      reason: "kv_unavailable",
+    };
+  }
   return {
     allowed: true,
     remaining: limit - updatedCount,

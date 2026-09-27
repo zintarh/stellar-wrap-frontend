@@ -10,6 +10,13 @@ import { kvGet, kvSet, SUB_KEY } from "../_lib/kv";
 import { logger } from "@/app/utils/logger";
 import type { SubscriptionRecord } from "@/app/types/notifications";
 import { apiError, internalApiError } from "@/app/api/_lib/apiError";
+import {
+  getClientIp,
+  checkRateLimit,
+  rateLimitResponse,
+  WRITE_IP_LIMIT,
+  WRITE_IP_WINDOW,
+} from "../_lib/rateLimit";
 
 const log = logger.child("api:confirm-email");
 
@@ -21,6 +28,16 @@ export async function GET(request: NextRequest) {
 
     if (!token || !wallet) {
       return apiError("INVALID_REQUEST", "Missing token or wallet parameter", 400);
+    }
+
+    // Token-guessing protection: this endpoint mutates subscription state.
+    const ipLimit = await checkRateLimit(
+      `ratelimit:ip:confirm-email:${getClientIp(request)}`,
+      WRITE_IP_LIMIT,
+      WRITE_IP_WINDOW
+    );
+    if (!ipLimit.allowed) {
+      return rateLimitResponse(ipLimit.resetInSeconds);
     }
 
     const record = await kvGet<SubscriptionRecord>(SUB_KEY(wallet));

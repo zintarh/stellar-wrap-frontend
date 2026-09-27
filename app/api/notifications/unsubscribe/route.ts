@@ -3,6 +3,15 @@ import { kvGet, kvSet, kvKeys, kvSRem, SUB_KEY, PERIOD_KEY } from "../_lib/kv";
 import type { SubscriptionRecord } from "@/app/types/notifications";
 import { logger } from "@/app/utils/logger";
 import { apiError, internalApiError } from "@/app/api/_lib/apiError";
+import {
+  getClientIp,
+  checkRateLimit,
+  rateLimitResponse,
+  WRITE_IP_LIMIT,
+  WRITE_IP_WINDOW,
+  WRITE_TARGET_LIMIT,
+  WRITE_TARGET_WINDOW,
+} from "../_lib/rateLimit";
 
 const VALID_PERIODS = ["weekly", "monthly", "yearly"] as const;
 
@@ -17,6 +26,16 @@ async function removeFromPeriodIndexes(walletAddress: string) {
 
 export async function POST(request: NextRequest) {
   try {
+    const ip = getClientIp(request);
+    const ipLimit = await checkRateLimit(
+      `ratelimit:ip:unsubscribe:${ip}`,
+      WRITE_IP_LIMIT,
+      WRITE_IP_WINDOW
+    );
+    if (!ipLimit.allowed) {
+      return rateLimitResponse(ipLimit.resetInSeconds);
+    }
+
     const body = (await request.json()) as {
       token?: string;
       walletAddress?: string;
@@ -24,6 +43,17 @@ export async function POST(request: NextRequest) {
     };
 
     if (body.token) {
+      const tokenLimit = await checkRateLimit(
+        `ratelimit:token:unsubscribe:${body.token}`,
+        WRITE_TARGET_LIMIT,
+        WRITE_TARGET_WINDOW
+      );
+      if (!tokenLimit.allowed) {
+        return rateLimitResponse(
+          tokenLimit.resetInSeconds,
+          "Too many requests for this unsubscribe link. Please try again later."
+        );
+      }
       const keys = await kvKeys("notif:sub:*");
       for (const key of keys) {
         const record = await kvGet<SubscriptionRecord>(key);
@@ -38,6 +68,17 @@ export async function POST(request: NextRequest) {
     }
 
     if (body.walletAddress && body.channel) {
+      const walletLimit = await checkRateLimit(
+        `ratelimit:wallet:unsubscribe:${body.walletAddress}`,
+        WRITE_TARGET_LIMIT,
+        WRITE_TARGET_WINDOW
+      );
+      if (!walletLimit.allowed) {
+        return rateLimitResponse(
+          walletLimit.resetInSeconds,
+          "Too many requests for this wallet. Please try again later."
+        );
+      }
       const record = await kvGet<SubscriptionRecord>(SUB_KEY(body.walletAddress));
       if (!record) {
         return apiError("NOT_FOUND", "No subscription found", 404);
