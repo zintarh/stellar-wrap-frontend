@@ -9,3 +9,5 @@ export const SUB_KEY = (wallet: string) => `notif:sub:${wallet}`;
 export const PERIOD_KEY = (period: string) => `notif:period:${period}`;
 export const LOG_KEY = (wallet: string, channel: string, period: string, periodKey: string) =>
   `notif:log:${wallet}:${channel}:${period}:${periodKey}`;
+export const PRUNE_KEY = (wallet: string, timestamp: string) => `notif:prune:${wallet}:${timestamp}`;
+
