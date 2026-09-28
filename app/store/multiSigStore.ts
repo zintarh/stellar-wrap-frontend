@@ -22,12 +22,12 @@ import type {
   MultiSigProposal,
   MultiSigTxState,
   MultiSigError,
-} from '../../src/types/multiSig';
+} from '@/src/types/multiSig';
 import {
   countSignatures,
   isThresholdMet,
   isProposalExpired,
-} from '../../src/services/sorobanMultiSigService';
+} from '@/src/services/sorobanMultiSigService';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

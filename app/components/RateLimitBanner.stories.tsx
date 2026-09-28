@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs";
 import { RateLimitBanner } from "./RateLimitBanner";
-import { useRateLimitStore } from "../../src/store/rateLimitStore";
+import { useRateLimitStore } from "@/app/store/rateLimitStore";
 import { withStore } from "../../.storybook/withStore";
 
 const meta = {

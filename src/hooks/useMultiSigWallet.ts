@@ -45,7 +45,7 @@ import {
   executeMultiSigProposal,
   clearMultiSigSimulationCache,
 } from '../services/sorobanMultiSigService';
-import { useMultiSigStore } from '../store/multiSigStore';
+import { useMultiSigStore } from '@/app/store/multiSigStore';
 import { useWrapStore } from '../../app/store/wrapStore';
 
 import type {
@@ -58,7 +58,7 @@ import type {
   MultiSigError,
   MultiSigContractArgs,
 } from '../types/multiSig';
-import type { MultiSigDisplayState } from '../store/multiSigStore';
+import type { MultiSigDisplayState } from '@/app/store/multiSigStore';
 import type { Network } from '../config';
 
 // ─── Public interface ─────────────────────────────────────────────────────────

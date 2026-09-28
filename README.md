@@ -157,7 +157,7 @@ flowchart TD
 |-----------|----------|---------|
 | **Horizon API** | `src/services/horizonIndexer.ts` | Fetches account data, payments, and transactions from Stellar Horizon |
 | **Indexer Service** | `app/services/indexerService.ts` | Orchestrates indexing with caching and rate limiting |
-| **Zustand Stores** | `app/store/`, `src/store/` | Manages application state (wrap data, transactions, rate limits) |
+| **Zustand Stores** | `app/store/` | Manages application state (wrap data, transactions, rate limits) |
 | **Contract Bridge** | `app/utils/contractBridge.ts` | Interfaces with Soroban smart contracts for minting |
 | **Persona Generator** | `app/actions/generate-persona.ts` | AI-powered persona description generation |
 

@@ -8,7 +8,7 @@ import {
   BASE_BACKOFF_MS,
 } from "@/app/types/indexingRecovery";
 import { STEP_ORDER } from "@/app/types/indexing";
-import { useRateLimitStore } from "@/src/store/rateLimitStore";
+import { useRateLimitStore } from "@/app/store/rateLimitStore";
 
 
 describe("classifyError", () => {

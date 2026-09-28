@@ -3,7 +3,7 @@ import { IndexerEventEmitter } from "@/app/utils/indexerEventEmitter";
 import { STEP_ORDER, type IndexingStep } from "@/app/types/indexing";
 import type { IndexerResult, WrapPeriod } from "@/app/utils/indexer";
 import { indexerErrorLogger } from "@/app/utils/indexerErrorLogger";
-import { useRateLimitStore } from "@/src/store/rateLimitStore";
+import { useRateLimitStore } from "@/app/store/rateLimitStore";
 import {
   backoffDelay,
   classifyError,

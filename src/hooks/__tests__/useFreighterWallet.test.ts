@@ -81,7 +81,7 @@ vi.mock("../../utils/horizonRequestQueue", () => ({
   },
 }));
 
-vi.mock("../../store/rateLimitStore", () => ({
+vi.mock("@/app/store/rateLimitStore", () => ({
   useRateLimitStore: () => mocks.useRateLimitStore(),
 }));
 

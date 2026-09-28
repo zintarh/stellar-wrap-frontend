@@ -1,57 +1,69 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
-
-interface DappData {
-  name: string;
-  logo?: string;
-  interactions: number;
-  isFanFavorite?: boolean;
-}
+import { WrappedData } from "@/src/types";
+import { GOLDEN_USER } from "@/src/data/mockData";
+import { buildApiUrl } from "@/src/utils/networkUtils";
+import { Network } from "@/src/config";
 
 interface WrapperStore {
-  address: string | null;
-  isConnected: boolean;
-  isConnecting: boolean;
+  data: WrappedData | null;
+  isLoading: boolean;
+  isMock: boolean;
   error: string | null;
-  data: {
-    topDapps: DappData[];
-  };
-  setAddress: (address: string) => void;
-  setConnecting: (isConnecting: boolean) => void;
+  fetchData: (address: string, network: Network) => Promise<void>;
+  toggleMockMode: () => void;
+  setLoading: (isLoading: boolean) => void;
+  setData: (data: WrappedData | null) => void;
   setError: (error: string | null) => void;
-  setTopDapps: (dapps: DappData[]) => void;
-  disconnect: () => void;
 }
 
-export const useWrapperStore = create<WrapperStore>()(
-  persist(
-    (set) => ({
-      address: null,
-      isConnected: false,
-      isConnecting: false,
-      error: null,
-      data: {
-        topDapps: [
-          { name: "Mercurius", interactions: 187, isFanFavorite: true },
-          { name: "Phoenix", interactions: 142 },
-          { name: "Blend", interactions: 91 },
-        ],
-      },
-      setAddress: (address: string) =>
-        set({ address, isConnected: true, isConnecting: false, error: null }),
-      setConnecting: (isConnecting: boolean) => set({ isConnecting, error: null }),
-      setError: (error: string | null) => set({ error, isConnecting: false }),
-      setTopDapps: (topDapps: DappData[]) =>
-        set((state) => ({ data: { ...state.data, topDapps } })),
-      disconnect: () => set({ address: null, isConnected: false, error: null }),
-    }),
-    {
-      name: "wrapper-store",
-      partialize: (state: WrapperStore) => ({
-        address: state.address,
-        isConnected: state.isConnected,
-        data: state.data,
-      }),
+export const useWrapperStore = create<WrapperStore>((set, get) => ({
+  data: null,
+  isLoading: false,
+  isMock: false,
+  error: null,
+
+  setLoading: (isLoading) => set({ isLoading }),
+
+  setData: (data) => set({ data }),
+
+  setError: (error) => set({ error }),
+
+  toggleMockMode: () => {
+    const nextMockValue = !get().isMock;
+    set({ isMock: nextMockValue });
+
+    if (nextMockValue) {
+      set({ data: GOLDEN_USER, error: null });
+    } else {
+      set({ data: null });
     }
-  )
-);
+  },
+
+  fetchData: async (address: string, network: Network) => {
+    set({ isLoading: true, error: null });
+
+    try {
+      if (get().isMock) {
+        // Simulate network delay
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        set({ data: GOLDEN_USER, isLoading: false });
+      } else {
+        // Build API URL with network parameter
+        const apiUrl = buildApiUrl(`/api/wrapped/${address}`, network);
+        const response = await fetch(apiUrl);
+
+        if (!response.ok) {
+          throw new Error(`API request failed: ${response.statusText}`);
+        }
+
+        const result = await response.json();
+        set({ data: result, isLoading: false });
+      }
+    } catch (err) {
+      set({
+        error: err instanceof Error ? err.message : "Failed to fetch data",
+        isLoading: false,
+      });
+    }
+  },
+}));

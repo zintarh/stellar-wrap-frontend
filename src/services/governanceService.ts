@@ -23,7 +23,7 @@ import {
   NETWORK_PASSPHRASES,
   SOROBAN_RPC_URLS,
 } from "../config";
-import type { Proposal, VoteChoice } from "../store/governanceStore";
+import type { Proposal, VoteChoice } from "@/app/store/governanceStore";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 

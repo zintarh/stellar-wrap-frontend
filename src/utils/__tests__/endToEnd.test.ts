@@ -10,7 +10,7 @@ import { validateStellarAddress } from '../validateStellarAddress';
 import { validateIndexedStats, buildContractArgs, type ContractStatsInput } from '../contractArgsBuilder';
 import { toScVal, fromScVal } from '../sorobanConverter';
 import { getRpcEndpoint, parseNetworkParam} from '../networkUtils';
-import { useWrapperStore } from '../../store/useWrapperStore';
+import { useWrapperStore } from '@/app/store/useWrapperStore';
 import { GOLDEN_USER } from '../../data/mockData';
 
 // ─── Test Helpers ───────────────────────────────────────────────────────────
