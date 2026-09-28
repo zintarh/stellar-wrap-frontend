@@ -8,6 +8,9 @@ on:
   pull_request:
     branches:
       - "**"
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
 
 jobs: 
   check-lock-files:
@@ -31,6 +34,8 @@ jobs:
           fi
           echo "⌈ Lock file validation passed"
 
+  # The single authoritative unit test run. Lint, formatting and type checks
+  # live in code-quality.yml; Storybook is built in storybook.yml.
   unit-tests:
     name: Unit Tests
     runs-on: ubuntu-latest
@@ -40,19 +45,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@~4
+      - name: Setup
+        uses: ./.github/actions/setup
         with:
-          version: 9
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
+          frozen-lockfile: "false"
 
       - name: Test with coverage
         run: pnpm test:coverage
@@ -65,7 +61,8 @@ jobs:
           path: coverage/
           retention-days: 30
 
-  build-and-test:
+  build:
+    name: Build
     runs-on: ubuntu-latest
     needs: check-lock-files
     
@@ -73,61 +70,19 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
       
-      - name: Setup pnpm
-        uses: pnpm/action-setup@~4
+      - name: Setup
+        uses: ./.github/actions/setup
         with:
-          version: 9
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-      
-      - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
+          frozen-lockfile: "false"
       
       - name: Validate environment variables
         run: node scripts/validate-env.js
       
       - name: Validate locale catalogs
         run: pnpm validate:i18n
-      
-      - name: Lint
-        run: pnpm lint
-
-      - name: Test
-        run: pnpm test
-
-      - name: Test components
-        run: pnpm test:components
-      
-      - name: Type check
-        run: pnpm typecheck
 
       - name: Build
         run: pnpm build
-      
-      - name: Build Storybook
-        run: pnpm build-storybook
-
-      - name: Upload Storybook
-        uses: actions/upload-artifact@v4
-        with:
-          name: storybook-${{ github.run_id }}-${{ github.run_attempt }}
-          path: storybook-static
-          retention-days: 30
-
-      - name: Test with coverage
-        run: pnpm test:coverage
-      
-      - name: Upload coverage report
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: coverage-report-${{ github.run_id }}-${{ github.run_attempt }}
-          path: coverage/
-          retention-days: 30
 
   visual-regression:
     runs-on: ubuntu-latest
@@ -137,19 +92,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@~4
+      - name: Setup
+        uses: ./.github/actions/setup
         with:
-          version: 9
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
+          frozen-lockfile: "false"
 
       # Pin the rendering environment so font availability matches the
       # committed baselines. Baselines are generated and verified on this

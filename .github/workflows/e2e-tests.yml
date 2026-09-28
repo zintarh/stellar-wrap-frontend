@@ -4,6 +4,9 @@ on:
   pull_request:
     branches:
       - "**"
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
 
 # Avoid running heavy E2E suites in parallel on rapid pushes to the same PR.
 concurrency:
@@ -23,17 +26,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Setup
+        uses: ./.github/actions/setup
         with:
-          node-version: 22
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
+          frozen-lockfile: "false"
 
       - name: Install Playwright browsers
         run: pnpm exec playwright install --with-deps chromium

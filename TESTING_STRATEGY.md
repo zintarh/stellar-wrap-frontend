@@ -81,15 +81,25 @@ pnpm test:visual:update  # Update snapshots
 
 ## CI Pipeline
 
-The CI runs tests in this order:
+Each check runs in exactly one workflow:
 
-1. **Lint** - Code quality checks
-2. **Jest unit tests** - Fast unit tests with mocks
-3. **Vitest integration tests** - Comprehensive integration tests
-4. **Build** - Ensure code compiles
-5. **Playwright visual tests** - Visual regression (separate workflow)
+| Workflow | Responsibility |
+|----------|----------------|
+| `code-quality.yml` | ESLint, Prettier and TypeScript (the authoritative lint check) |
+| `ci.yml` | Lock file validation, unit tests with coverage, production build, visual regression |
+| `storybook.yml` | Storybook build (and GitHub Pages deploy on `main`) |
+| `e2e-tests.yml` | Playwright end-to-end tests |
+| `lighthouse.yml` | Lighthouse audits |
+| `bundle-size.yml` | Bundle analyzer report |
+| `dependency-audit.yml` | `pnpm audit` when dependencies change |
+| `openapi-lint.yml` | OpenAPI spec lint and route coverage |
 
-All test suites must pass for PR approval.
+pnpm, Node.js, the dependency cache and the install are shared through the
+`.github/actions/setup` composite action. Pull requests that only change
+Markdown or `docs/` skip the code quality, test, build, Storybook, E2E,
+Lighthouse and bundle size workflows.
+
+All checks must pass for PR approval.
 
 ## Coverage
 
