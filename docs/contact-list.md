@@ -15,8 +15,8 @@ business logic.
 
 | Path | Responsibility |
 | --- | --- |
-| `components/contact-list/` | Presentational components for the list, rows, and empty/loading states. |
-| `components/contact-list/ContactList.tsx` | Top-level container that wires state to the presentational components. |
+| `app/components/contact-list/` | Presentational components for the list, rows, and empty/loading states. |
+| `app/components/contact-list/ContactList.tsx` | Top-level container that wires state to the presentational components. |
 | `hooks/` | Reusable hooks (e.g. contact fetching, filtering, selection) consumed by the container. |
 | `types/` | Shared TypeScript types for contacts and related view models. |
 

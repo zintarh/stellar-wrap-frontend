@@ -52,6 +52,20 @@ const eslintConfig = defineConfig([
       "no-console": "error",
     },
   },
+  // Components live only in app/components (see CONTRIBUTING.md). Any file
+  // added back to the retired component trees fails linting.
+  {
+    files: ["components/**/*.{ts,tsx,js,jsx}", "src/components/**/*.{ts,tsx,js,jsx}"],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: "Program",
+          message: "Components live in app/components. Move this file there (see CONTRIBUTING.md).",
+        },
+      ],
+    },
+  },
 ]);
 
 export default eslintConfig;

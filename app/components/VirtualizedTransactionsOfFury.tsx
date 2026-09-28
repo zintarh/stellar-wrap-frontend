@@ -11,7 +11,7 @@ import React, {
 } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { ChevronUp } from "lucide-react";
-import { useWrapStore } from "../../app/store/wrapStore";
+import { useWrapStore } from "../store/wrapStore";
 
 type TxType = "payment" | "trade" | "account";
 

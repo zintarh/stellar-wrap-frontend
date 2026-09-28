@@ -1,5 +1,17 @@
 # Contributing to Stellar Wrap
 
+## Where components live
+
+All React components go in `app/components/`, grouped into subfolders when a
+feature has several (for example `app/components/Loading/`). This follows the
+Next.js App Router convention of keeping app code under `app/`, next to the
+routes, hooks, store, and utils that components import. Route-specific UI that
+is not shared can still sit next to its route in `app/[locale]/...`.
+
+The top-level `components/` and `src/components/` trees are retired: ESLint
+fails on any file added there. Non-component code in `src/` (hooks, services,
+store, utils) is unaffected.
+
 ## Contact List architecture
 
 The Contact List is the reusable address book used across the app to
@@ -9,7 +21,7 @@ different flows (e.g. withdraw) without duplicating logic.
 
 ### Key files
 
-- `components/contact-list/` — presentational components for the list,
+- `app/components/contact-list/` — presentational components for the list,
   rows, and the add/edit form. These are intentionally dumb: they render
   props and emit callbacks, and hold no persistence logic.
 - `hooks/use-contact-list.ts` — the single source of truth for Contact
