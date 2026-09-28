@@ -1,8 +1,10 @@
 /**
- * Environment variable validation script for CI
- * Validates .env.example documentation and contract address formats
- * 
- * Usage: node scripts/validate-env.js
+ * Environment variable validation script
+ * Validates .env.example documentation and contract address formats. With
+ * --build (run by `prebuild`), validates the values set in the environment
+ * instead, so a build missing a required variable fails.
+ *
+ * Usage: node scripts/validate-env.js [--build]
  * Exit codes:
  *   0 - All validations passed
  *   1 - Validation failed
@@ -48,20 +50,30 @@ function info(message) {
   log(`ℹ️  ${message}`, colors.blue);
 }
 
-// Required environment variables that must be documented
-const REQUIRED_ENV_VARS = [
-  'NEXT_PUBLIC_CONTRACT_ADDRESS_MAINNET',
-  'NEXT_PUBLIC_CONTRACT_ADDRESS_TESTNET',
-  'CRON_SECRET',
+// Every variable in .env.example (kept in sync by __tests__/validate-env.test.ts).
+// phase "build": NEXT_PUBLIC_* values are inlined into the bundle by `next build`,
+//   so a missing one cannot be fixed without rebuilding. Missing + required fails the build.
+// phase "runtime": read by server code per request, so the deployment can provide it
+//   after the build. Missing + required only warns at build time.
+const ENV_VARS = [
+  { name: 'NEXT_PUBLIC_CONTRACT_ADDRESS_MAINNET', phase: 'build', required: false },
+  { name: 'NEXT_PUBLIC_CONTRACT_ADDRESS_TESTNET', phase: 'build', required: false },
+  { name: 'NEXT_PUBLIC_CONTRACT_ADDRESS', phase: 'build', required: false },
+  { name: 'NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID', phase: 'build', required: false },
+  { name: 'NEXT_PUBLIC_PLAUSIBLE_DOMAIN', phase: 'build', required: false },
+  { name: 'NEXT_PUBLIC_SOROBAN_RPC_URL_MAINNET', phase: 'build', required: false },
+  { name: 'NEXT_PUBLIC_SOROBAN_RPC_URL_TESTNET', phase: 'build', required: false },
+  { name: 'CRON_SECRET', phase: 'runtime', required: true },
+  { name: 'RATE_LIMIT_WINDOW_SECONDS', phase: 'runtime', required: false },
+  { name: 'RATE_LIMIT_IP_MAX', phase: 'runtime', required: false },
+  { name: 'RATE_LIMIT_ACCOUNT_MAX', phase: 'runtime', required: false },
 ];
 
-// Optional but recommended environment variables
-const OPTIONAL_ENV_VARS = [
+// At least one contract address must be set at build time (see .env.example).
+const CONTRACT_ADDRESS_VARS = [
+  'NEXT_PUBLIC_CONTRACT_ADDRESS_MAINNET',
+  'NEXT_PUBLIC_CONTRACT_ADDRESS_TESTNET',
   'NEXT_PUBLIC_CONTRACT_ADDRESS',
-  'NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID',
-  'NEXT_PUBLIC_PLAUSIBLE_DOMAIN',
-  'NEXT_PUBLIC_SOROBAN_RPC_URL_MAINNET',
-  'NEXT_PUBLIC_SOROBAN_RPC_URL_TESTNET',
 ];
 
 // Soroban contract address validation (C + 55 base32 chars = 56 total)
@@ -72,6 +84,68 @@ function isValidContractAddress(address) {
     return false;
   }
   return CONTRACT_ADDRESS_REGEX.test(address);
+}
+
+/** Variable names declared in .env.example content. */
+function parseEnvExample(content) {
+  return content
+    .split('\n')
+    .map((line) => line.match(/^([A-Z_][A-Z0-9_]*)=/))
+    .filter(Boolean)
+    .map((match) => match[1]);
+}
+
+/** Checks the values in `env` for a build; returns error and warning messages. */
+function checkBuildEnv(env) {
+  const errors = [];
+  const warnings = [];
+  const isSet = (name) => Boolean(env[name] && env[name].trim());
+
+  if (!CONTRACT_ADDRESS_VARS.some(isSet)) {
+    errors.push(
+      `Missing required build-time variable: set at least one of ${CONTRACT_ADDRESS_VARS.join(', ')}`
+    );
+  }
+
+  CONTRACT_ADDRESS_VARS.filter(isSet).forEach((name) => {
+    if (!isValidContractAddress(env[name].trim())) {
+      errors.push(
+        `${name} is not a valid contract address (56 characters: C followed by 55 base32 chars)`
+      );
+    }
+  });
+
+  ENV_VARS.filter((v) => v.required && !isSet(v.name)).forEach(({ name, phase }) => {
+    if (phase === 'build') {
+      errors.push(`Missing required build-time variable: ${name}`);
+    } else {
+      warnings.push(
+        `Missing runtime variable: ${name} (required at runtime; set it in the deployment environment)`
+      );
+    }
+  });
+
+  return { errors, warnings };
+}
+
+function validateBuildEnv() {
+  log('\n' + '='.repeat(70), colors.bold);
+  log('Build Environment Validation', colors.bold);
+  log('='.repeat(70) + '\n', colors.bold);
+
+  // Load .env files with the same loader and precedence `next build` uses.
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- CommonJS script, like the requires above
+  const { loadEnvConfig } = require(
+    require.resolve('@next/env', { paths: [require.resolve('next')] })
+  );
+  loadEnvConfig(rootDir);
+
+  const { errors, warnings } = checkBuildEnv(process.env);
+  errors.forEach(error);
+  warnings.forEach(warning);
+  if (errors.length === 0) {
+    success('Required build-time variables are set');
+  }
 }
 
 function validateEnvExample() {
@@ -92,35 +166,21 @@ function validateEnvExample() {
 
   // Read .env.example
   const envExampleContent = fs.readFileSync(envExamplePath, 'utf8');
-  const documentedVars = new Set();
+  const documentedVars = new Set(parseEnvExample(envExampleContent));
 
-  // Parse documented variables
-  envExampleContent.split('\n').forEach((line) => {
-    const match = line.match(/^([A-Z_][A-Z0-9_]*)=/);
-    if (match) {
-      documentedVars.add(match[1]);
+  log('\n📋 Checking environment variables are documented...\n');
+
+  ENV_VARS.forEach(({ name }) => {
+    if (documentedVars.has(name)) {
+      success(`${name} is documented`);
+    } else {
+      error(`${name} is not documented in .env.example`);
     }
   });
 
-  log('\n📋 Checking required environment variables...\n');
-
-  // Check required variables are documented
-  REQUIRED_ENV_VARS.forEach((varName) => {
-    if (documentedVars.has(varName)) {
-      success(`${varName} is documented`);
-    } else {
-      error(`${varName} is not documented in .env.example`);
-    }
-  });
-
-  log('\n📋 Checking optional environment variables...\n');
-
-  // Check optional variables
-  OPTIONAL_ENV_VARS.forEach((varName) => {
-    if (documentedVars.has(varName)) {
-      success(`${varName} is documented`);
-    } else {
-      info(`${varName} could be documented (optional)`);
+  documentedVars.forEach((name) => {
+    if (!ENV_VARS.some((v) => v.name === name)) {
+      error(`${name} is in .env.example but not in ENV_VARS in scripts/validate-env.js`);
     }
   });
 
@@ -250,9 +310,13 @@ function validateREADME() {
 function main() {
   log('\n🚀 Starting environment variable validation...\n', colors.bold);
 
-  validateEnvExample();
-  validateContractConfig();
-  validateREADME();
+  if (process.argv.includes('--build')) {
+    validateBuildEnv();
+  } else {
+    validateEnvExample();
+    validateContractConfig();
+    validateREADME();
+  }
 
   // Summary
   log('\n' + '='.repeat(70), colors.bold);
@@ -274,4 +338,8 @@ function main() {
   }
 }
 
-main();
+if (require.main === module) {
+  main();
+}
+
+module.exports = { ENV_VARS, CONTRACT_ADDRESS_VARS, parseEnvExample, checkBuildEnv };

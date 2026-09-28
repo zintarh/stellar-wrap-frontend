@@ -374,15 +374,24 @@ corepack prepare pnpm@9.0.0 --activate
 
 ### Environment variables
 
-Copy `.env.example` to `.env.local` and set:
+Copy `.env.example` to `.env.local` and set the values below. `pnpm build` runs `pnpm validate:env --build` first (the `prebuild` script), which fails the build and names the variable when a required value is missing.
 
-| Variable | Description |
-|----------|-------------|
-| `NEXT_PUBLIC_CONTRACT_ADDRESS_MAINNET` | Soroban contract address on mainnet (56-char, `C...`). |
-| `NEXT_PUBLIC_CONTRACT_ADDRESS_TESTNET` | Soroban contract address on testnet (56-char, `C...`). |
-| `NEXT_PUBLIC_CONTRACT_ADDRESS` | (Optional) Legacy: used for both networks if the two above are not set. |
-| `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` | WalletConnect project ID (optional). |
-| `NEXT_PUBLIC_PLAUSIBLE_DOMAIN` | Plausible Analytics domain for privacy-friendly page-view tracking (optional). |
+- **Build-time** variables (`NEXT_PUBLIC_*`) are inlined into the client bundle by `next build`, so they must be set when building; changing one requires a rebuild. A missing required one fails the build.
+- **Runtime** variables are read by server code on each request, so the deployment can supply them after the build. A missing required one only warns at build time, then fails the requests that need it.
+
+| Variable | Phase | Required | Description | Where to get a value |
+|----------|-------|----------|-------------|----------------------|
+| `NEXT_PUBLIC_CONTRACT_ADDRESS_MAINNET` | Build | One of the three contract addresses | Soroban contract address on mainnet (56-char, `C...`). | The contract ID printed by `stellar contract deploy --network mainnet`, or from the maintainers. |
+| `NEXT_PUBLIC_CONTRACT_ADDRESS_TESTNET` | Build | One of the three contract addresses | Soroban contract address on testnet (56-char, `C...`). | The contract ID printed by `stellar contract deploy --network testnet`, or from the maintainers. |
+| `NEXT_PUBLIC_CONTRACT_ADDRESS` | Build | One of the three contract addresses | Legacy: used for both networks if the two above are not set. | Same as above. |
+| `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` | Build | No | WalletConnect project ID. | Create a project at [cloud.reown.com](https://cloud.reown.com). |
+| `NEXT_PUBLIC_PLAUSIBLE_DOMAIN` | Build | No | Plausible Analytics domain for privacy-friendly page-view tracking. | The site domain registered in your [Plausible](https://plausible.io) account. |
+| `NEXT_PUBLIC_SOROBAN_RPC_URL_MAINNET` | Build | No | Soroban RPC endpoint for mainnet (a default is provided). | A mainnet RPC provider from the [Stellar RPC providers list](https://developers.stellar.org/docs/data/apis/rpc/providers). |
+| `NEXT_PUBLIC_SOROBAN_RPC_URL_TESTNET` | Build | No | Soroban RPC endpoint for testnet (a default is provided). | A testnet RPC provider from the [Stellar RPC providers list](https://developers.stellar.org/docs/data/apis/rpc/providers). |
+| `CRON_SECRET` | Runtime | Yes | Bearer token that authorizes `/api/notifications/dispatch` cron requests. | Generate a random string, e.g. `openssl rand -hex 32`, and set the same value in your deployment (Vercel sends it to cron jobs). |
+| `RATE_LIMIT_WINDOW_SECONDS` | Runtime | No | `/api/wrapped` rate-limit window in seconds (default `60`). | Choose a value. |
+| `RATE_LIMIT_IP_MAX` | Runtime | No | Maximum `/api/wrapped` requests per IP per window (default `30`). | Choose a value. |
+| `RATE_LIMIT_ACCOUNT_MAX` | Runtime | No | Maximum `/api/wrapped` requests per queried Stellar account per window (default `10`). | Choose a value. |
 
 Contract addresses are loaded per network; the app uses the selected network (mainnet/testnet) to choose the contract. When you switch networks in the UI, the contract instance is re-loaded for the new network.
 

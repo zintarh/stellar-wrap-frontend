@@ -41,6 +41,10 @@ jobs:
 
       - name: Build Next.js app
         run: pnpm build
+        env:
+          # Placeholder contract address: satisfies the prebuild env check and
+          # the app treats it as "no contract configured".
+          NEXT_PUBLIC_CONTRACT_ADDRESS_TESTNET: CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 
       - name: Run Lighthouse CI
         uses: treosh/lighthouse-ci-action@v12
