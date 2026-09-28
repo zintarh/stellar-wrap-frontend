@@ -481,11 +481,23 @@ export function MultiSig({ initialConnectedAddress }: MultiSigProps) {
     reset,
   } = useMultiSigWallet();
 
-  // Access signer list from the store (separate selector to avoid over-rendering).
-  const signerList = useMultiSigStore(
-    (s): SignerStatus[] => (s.currentProposal ? s.getSignerStatuses() : []),
-  );
+  // signerList is derived with useMemo next to currentProposal below: the
+  // store's getSignerStatuses() builds fresh objects per call, which as an
+  // inline selector trips React's infinite-loop guard (issue #638).
   const currentProposal = useMultiSigStore((s) => s.currentProposal);
+  // Access signer list from the store (separate selector to avoid over-rendering).
+  const signerList: SignerStatus[] = React.useMemo(
+    () =>
+      currentProposal
+        ? currentProposal.signers.map((signer) => ({
+            publicKey: signer.publicKey,
+            hasSigned: signer.hasSigned,
+            signedAt: signer.signedAt,
+            isProposer: signer.publicKey === currentProposal.proposedBy,
+          }))
+        : [],
+    [currentProposal],
+  );
   const transactionHash = useMultiSigStore((s) => s.transactionHash);
   const confirmingAttempt = useMultiSigStore((s) => s.confirmingAttempt);
 

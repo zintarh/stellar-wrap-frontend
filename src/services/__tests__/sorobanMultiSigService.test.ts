@@ -915,3 +915,202 @@ describe('Rate-limit handling in executeMultiSigProposal', () => {
     ).rejects.toMatchObject({ code: 'RATE_LIMITED' });
   });
 });
+
+// ─── Issue #638: threshold levels, signer removal, cross-session ─────────────
+
+describe('requiredThresholdLevelForMethod', () => {
+  it('maps fund-moving and admin operations to high', async () => {
+    const { requiredThresholdLevelForMethod } = await import('../multiSigThresholds');
+    expect(requiredThresholdLevelForMethod('mint_wrap')).toBe('high');
+    expect(requiredThresholdLevelForMethod('update_config')).toBe('high');
+    expect(requiredThresholdLevelForMethod('custom')).toBe('high');
+  });
+
+  it('maps reporting operations to medium', async () => {
+    const { requiredThresholdLevelForMethod } = await import('../multiSigThresholds');
+    expect(requiredThresholdLevelForMethod('submit_stats')).toBe('medium');
+  });
+});
+
+// Top-level mock setups for the #638 sections below (the existing helpers
+// are scoped inside their own describes).
+function setupProposeMocks() {
+  const mockServer = {
+    getAccount: jest.fn().mockResolvedValue({
+      id: PROPOSER,
+      sequenceNumber: () => '0',
+      incrementSequenceNumber: () => {},
+      accountId: () => PROPOSER,
+    }),
+    simulateTransaction: jest.fn().mockResolvedValue({
+      cost: { cpuInsns: 1000, memBytes: 5000 },
+      footprint: { readOnly: [], readWrite: [] },
+    }),
+    sendTransaction: jest.fn(),
+    getTransaction: jest.fn(),
+  };
+  (Server as jest.Mock).mockImplementation(() => mockServer);
+  return mockServer;
+}
+
+function setupExecuteMocks(txStatus: 'SUCCESS' | 'FAILED' | 'NOT_FOUND' = 'SUCCESS') {
+  const mockServer = {
+    getAccount: jest.fn(),
+    simulateTransaction: jest.fn(),
+    sendTransaction: jest.fn().mockResolvedValue({ hash: TX_HASH, errorResult: undefined }),
+    getTransaction: jest.fn().mockResolvedValue({ status: txStatus, ledger: 100 }),
+  };
+  (Server as jest.Mock).mockImplementation(() => mockServer);
+  return mockServer;
+}
+
+describe('validateProposalThreshold', () => {
+  it('rejects thresholds below 1', async () => {
+    const { validateProposalThreshold } = await import('../multiSigThresholds');
+    expect(validateProposalThreshold(3, 0)).toMatch(/positive integer/);
+    expect(validateProposalThreshold(3, -2)).toMatch(/positive integer/);
+  });
+
+  it('rejects thresholds no signer set could satisfy', async () => {
+    const { validateProposalThreshold } = await import('../multiSigThresholds');
+    expect(validateProposalThreshold(2, 3)).toMatch(/never be met/);
+  });
+
+  it('accepts sane thresholds', async () => {
+    const { validateProposalThreshold } = await import('../multiSigThresholds');
+    expect(validateProposalThreshold(3, 1)).toBeNull();
+    expect(validateProposalThreshold(3, 3)).toBeNull();
+  });
+});
+
+describe('propose threshold validation', () => {
+  it('rejects a zero threshold instead of creating an auto-ready proposal', async () => {
+    setupProposeMocks();
+    await expect(
+      proposeMultiSigTransaction({
+        network: 'testnet',
+        proposerAddress: PROPOSER,
+        additionalSigners: [COSIGNER],
+        threshold: 0,
+        contractAddress: CONTRACT,
+        contractArgs: { method: 'mint_wrap', params: {} },
+      }),
+    ).rejects.toMatchObject({ code: 'INVALID_THRESHOLD' });
+  });
+
+  it('rejects a threshold no signer set could satisfy', async () => {
+    setupProposeMocks();
+    await expect(
+      proposeMultiSigTransaction({
+        network: 'testnet',
+        proposerAddress: PROPOSER,
+        additionalSigners: [COSIGNER],
+        threshold: 5,
+        contractAddress: CONTRACT,
+        contractArgs: { method: 'mint_wrap', params: {} },
+      }),
+    ).rejects.toMatchObject({ code: 'INVALID_THRESHOLD' });
+  });
+});
+
+describe('removeSignerFromProposal', () => {
+  it('drops the signer and their signature from the count', async () => {
+    const { removeSignerFromProposal } = await import('../sorobanMultiSigService');
+    const proposal = makeProposal({
+      threshold: 2,
+      signers: [
+        { publicKey: PROPOSER, hasSigned: true, signedAt: new Date().toISOString() },
+        { publicKey: COSIGNER, hasSigned: true, signedAt: new Date().toISOString() },
+      ] as unknown as MultiSigProposal['signers'],
+    });
+    expect(isThresholdMet(proposal)).toBe(true);
+
+    const updated = removeSignerFromProposal(proposal, COSIGNER);
+    expect(updated.signers).toHaveLength(1);
+    expect(countSignatures(updated)).toBe(1);
+    expect(isThresholdMet(updated)).toBe(false);
+    // Input untouched (immutable update).
+    expect(proposal.signers).toHaveLength(2);
+  });
+
+  it('refuses execution once removal drops the proposal below threshold', async () => {
+    const { removeSignerFromProposal } = await import('../sorobanMultiSigService');
+    setupExecuteMocks('SUCCESS');
+    const proposal = makeProposal({
+      state: 'ready',
+      threshold: 2,
+      signers: [
+        { publicKey: PROPOSER, hasSigned: true, signedAt: new Date().toISOString() },
+        { publicKey: COSIGNER, hasSigned: true, signedAt: new Date().toISOString() },
+      ] as unknown as MultiSigProposal['signers'],
+    });
+    const reduced = removeSignerFromProposal(proposal, COSIGNER);
+    await expect(executeMultiSigProposal({ proposal: reduced })).rejects.toMatchObject({
+      code: 'THRESHOLD_NOT_MET',
+    });
+  });
+});
+
+describe('proposal serialization across sessions', () => {
+  it('round-trips bigint fields without loss', async () => {
+    const { serializeProposal, deserializeProposal } = await import('../../types/multiSig');
+    const proposal = makeProposal({
+      simulationResult: { success: true, estimatedFeeStroops: 12345678901234567890n } as never,
+    });
+    const restored = deserializeProposal(serializeProposal(proposal));
+    expect(restored.simulationResult.estimatedFeeStroops).toBe(12345678901234567890n);
+    expect(restored.id).toBe(proposal.id);
+    expect(restored.signers).toHaveLength(2);
+    expect(restored.threshold).toBe(proposal.threshold);
+  });
+
+  it('round-trips signature state for resumed signing', async () => {
+    const { serializeProposal, deserializeProposal } = await import('../../types/multiSig');
+    const proposal = makeProposal({
+      signers: [
+        { publicKey: PROPOSER, hasSigned: true, signedAt: '2026-01-01T00:00:00.000Z' },
+        { publicKey: COSIGNER, hasSigned: false, signedAt: null },
+      ] as unknown as MultiSigProposal['signers'],
+    });
+    const restored = deserializeProposal(serializeProposal(proposal));
+    expect(countSignatures(restored)).toBe(1);
+    expect(isThresholdMet(restored)).toBe(false);
+  });
+
+  it('throws on malformed JSON', async () => {
+    const { deserializeProposal } = await import('../../types/multiSig');
+    expect(() => deserializeProposal('not json')).toThrow();
+  });
+});
+
+describe('displayState readiness gating', () => {
+  it('never reports thresholdMet below threshold', () => {
+    resetStore();
+    useMultiSigStore.setState({
+      currentProposal: makeProposal({ threshold: 2 }),
+      txState: 'signed',
+    });
+    const display = useMultiSigStore.getState().getDisplayState();
+    expect(display.thresholdMet).toBe(false);
+    expect(display.phase).not.toBe('execute');
+    // The Execute CTA renders only when thresholdMet && !isExpired.
+    expect(display.thresholdMet && !display.isExpired).toBe(false);
+  });
+
+  it('reports execute phase once the threshold is met', () => {
+    resetStore();
+    useMultiSigStore.setState({
+      currentProposal: makeProposal({
+        threshold: 1,
+        signers: [
+          { publicKey: PROPOSER, hasSigned: true, signedAt: new Date().toISOString() },
+          { publicKey: COSIGNER, hasSigned: false, signedAt: null },
+        ] as unknown as MultiSigProposal['signers'],
+      }),
+      txState: 'ready',
+    });
+    const display = useMultiSigStore.getState().getDisplayState();
+    expect(display.thresholdMet).toBe(true);
+    expect(display.phase).toBe('execute');
+  });
+});
