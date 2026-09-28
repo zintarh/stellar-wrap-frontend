@@ -40,6 +40,7 @@
     "validate:env": "node scripts/validate-env.js",
     "optimize:archetypes": "node scripts/optimize-archetypes.mjs",
     "check:archetype-budget": "node scripts/check-archetype-budget.mjs",
+    "check:route-casing": "node scripts/check-route-file-casing.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },
