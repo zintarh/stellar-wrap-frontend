@@ -1,5 +1,12 @@
 /**
  * Server-safe Horizon indexing core (no IndexedDB / browser globals).
+ *
+ * Indexer layering:
+ * - core:      this module — fetches Horizon history and computes the result.
+ * - transport: `indexAccount` from `indexerService` (browser, IndexedDB cache)
+ *              or `indexerServer` (API routes, always live). Callers use these,
+ *              never the core directly.
+ * - multiTimeframeIndexer runs the browser transport across several periods.
  */
 
 import { getHorizonServer } from "@/app/utils/stellarClient";

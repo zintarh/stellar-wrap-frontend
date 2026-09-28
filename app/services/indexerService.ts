@@ -152,5 +152,3 @@ export async function indexAccount(
     throw error;
   }
 }
-
-export { runIndexingCore } from "./indexerCore";

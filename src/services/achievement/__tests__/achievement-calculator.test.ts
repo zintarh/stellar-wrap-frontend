@@ -9,7 +9,7 @@
  */
 
 import type { AchievementCalculator } from '../types';
-import type { IndexedTransaction } from '../../indexer/types';
+import type { IndexedTransaction } from '../horizonTypes';
 import {
   createMockPaymentOperation,
   createMockExtendFootprintOperation,
