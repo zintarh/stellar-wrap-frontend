@@ -81,10 +81,18 @@ export async function POST(request: NextRequest) {
     const isSameEmail = existing.email?.address?.trim().toLowerCase() === normalizedEmail;
     const isAlreadyActive = isSameEmail && existing.email?.status === "active";
 
+    // Re-use the existing token (and its issuedAt) only when it is the same e-mail
+    // and the token was issued recently enough that a fresh one is not needed.
     const confirmationToken =
       isSameEmail && existing.email?.confirmationToken
         ? existing.email.confirmationToken
         : generateUnsubscribeToken();
+
+    // Track when this token was issued so confirm-email can enforce the 24 h window.
+    const tokenIssuedAt =
+      isSameEmail && existing.email?.tokenIssuedAt && existing.email?.confirmationToken === confirmationToken
+        ? existing.email.tokenIssuedAt
+        : new Date().toISOString();
 
     const unsubscribeToken =
       isSameEmail && existing.email?.unsubscribeToken
@@ -99,6 +107,7 @@ export async function POST(request: NextRequest) {
         address: normalizedEmail,
         status,
         confirmationToken,
+        tokenIssuedAt,
         unsubscribeToken,
         periods: periods ?? { weekly: false, monthly: false, yearly: false },
         createdAt:

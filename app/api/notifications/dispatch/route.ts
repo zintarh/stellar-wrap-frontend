@@ -117,7 +117,9 @@ async function sendEmailNotification(
 // ─── Route handler ────────────────────────────────────────────────────────────
 
 export async function POST(request: NextRequest) {
-  // Verify cron secret — fail closed if not configured
+  // Verify cron secret — fail closed if not configured.
+  // During a rotation window, CRON_SECRET_PREVIOUS is also accepted so the
+  // transition is not atomic with the deploy.
   const cronSecret = process.env.CRON_SECRET;
   if (!cronSecret) {
     log.error("CRON_SECRET is not configured — refusing to serve requests");
@@ -127,10 +129,16 @@ export async function POST(request: NextRequest) {
   const authHeader = request.headers.get("authorization");
   const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : "";
 
-  const secretBuf = Buffer.from(cronSecret);
-  const tokenBuf = Buffer.from(token);
+  function matchesSecret(secret: string): boolean {
+    const secretBuf = Buffer.from(secret);
+    const tokenBuf = Buffer.from(token);
+    return secretBuf.length === tokenBuf.length && crypto.timingSafeEqual(secretBuf, tokenBuf);
+  }
 
-  if (secretBuf.length !== tokenBuf.length || !crypto.timingSafeEqual(secretBuf, tokenBuf)) {
+  const previousSecret = process.env.CRON_SECRET_PREVIOUS;
+  const authorized = matchesSecret(cronSecret) || (!!previousSecret && matchesSecret(previousSecret));
+
+  if (!authorized) {
     return apiError("UNAUTHORIZED", "Unauthorized", 401);
   }
 
@@ -160,6 +168,19 @@ export async function POST(request: NextRequest) {
           const existing = await kvGet<DispatchLogEntry>(logKey);
 
           if (!existing) {
+            // Write the log entry BEFORE sending (at-most-once semantics).
+            // A retry of the whole invocation will see this key and skip the send.
+            const logEntry: DispatchLogEntry = {
+              walletAddress: record.walletAddress,
+              channel: "push",
+              period,
+              periodKey,
+              sentAt: new Date().toISOString(),
+              status: "sent",
+              attempts: 1,
+            };
+            await kvSet(logKey, logEntry);
+
             let status: "sent" | "failed" = "sent";
             let attempts = 1;
 
@@ -168,18 +189,10 @@ export async function POST(request: NextRequest) {
             } catch {
               status = "failed";
               attempts = 4; // 1 initial + 3 retries
+              // Update the log entry to reflect the failure.
+              await kvSet(logKey, { ...logEntry, status, attempts });
             }
 
-            const logEntry: DispatchLogEntry = {
-              walletAddress: record.walletAddress,
-              channel: "push",
-              period,
-              periodKey,
-              sentAt: new Date().toISOString(),
-              status,
-              attempts,
-            };
-            await kvSet(logKey, logEntry);
             if (status === "sent") dispatched++;
           }
         }
@@ -194,6 +207,18 @@ export async function POST(request: NextRequest) {
           const existing = await kvGet<DispatchLogEntry>(logKey);
 
           if (!existing) {
+            // Write the log entry BEFORE sending (at-most-once semantics).
+            const logEntry: DispatchLogEntry = {
+              walletAddress: record.walletAddress,
+              channel: "email",
+              period,
+              periodKey,
+              sentAt: new Date().toISOString(),
+              status: "sent",
+              attempts: 1,
+            };
+            await kvSet(logKey, logEntry);
+
             let status: "sent" | "failed" = "sent";
             let attempts = 1;
 
@@ -206,18 +231,9 @@ export async function POST(request: NextRequest) {
             } catch {
               status = "failed";
               attempts = 4;
+              await kvSet(logKey, { ...logEntry, status, attempts });
             }
 
-            const logEntry: DispatchLogEntry = {
-              walletAddress: record.walletAddress,
-              channel: "email",
-              period,
-              periodKey,
-              sentAt: new Date().toISOString(),
-              status,
-              attempts,
-            };
-            await kvSet(logKey, logEntry);
             if (status === "sent") dispatched++;
           }
         }

@@ -1,10 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
+import crypto from "crypto";
 import { kvGet, kvSet, kvKeys, kvSRem, SUB_KEY, PERIOD_KEY } from "../_lib/kv";
 import type { SubscriptionRecord } from "@/app/types/notifications";
 import { logger } from "@/app/utils/logger";
 import { apiError, internalApiError } from "@/app/api/_lib/apiError";
 
 const VALID_PERIODS = ["weekly", "monthly", "yearly"] as const;
+
+/**
+ * Constant-time string comparison to prevent timing attacks.
+ * Returns false immediately if lengths differ (no content leak).
+ */
+function timingSafeTokenEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  return crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
+}
 
 function isActive(record: SubscriptionRecord): boolean {
   return !!(record.push || record.email);
@@ -27,7 +37,7 @@ export async function POST(request: NextRequest) {
       const keys = await kvKeys("notif:sub:*");
       for (const key of keys) {
         const record = await kvGet<SubscriptionRecord>(key);
-        if (record?.email?.unsubscribeToken === body.token) {
+        if (record?.email?.unsubscribeToken && timingSafeTokenEqual(record.email.unsubscribeToken, body.token)) {
           const walletAddress = record.walletAddress;
           const updated: SubscriptionRecord = { ...record, email: undefined };
           await kvSet(key, updated);
