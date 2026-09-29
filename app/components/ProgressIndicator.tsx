@@ -3,12 +3,9 @@
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useState, useEffect, lazy, Suspense, KeyboardEvent } from "react";
+import { Home, ArrowRight } from "lucide-react";
 import { useSound } from "../hooks/useSound";
 import { SOUND_NAMES } from "../utils/soundManager";
-
-const HomeIcon = lazy(() => import("lucide-react/icons/home"));
-
-const ArrowRightIcon = lazy(() => import("lucide-react/icons/arrow-right"));
 
 interface ProgressIndicatorProps {
   currentStep: number;
@@ -159,12 +156,10 @@ export function ProgressIndicator({
           className="flex items-center gap-2 px-3 py-2 md:px-4 md:py-3 rounded-xl backdrop-blur-xl border border-white/20"
           style={{ backgroundColor: "rgba(0, 0, 0, 0.5)" }}
         >
-          <Suspense fallback={<div className="w-4 h-4 md:w-5 md:h-5" aria-hidden="true" />}>
-            <HomeIcon
+          <Home
               className="w-4 h-4 md:w-5 md:h-5 text-white/80 group-hover:text-white transition-colors"
               aria-hidden="true"
             />
-          </Suspense>
           <span className="text-xs md:text-sm font-black text-white/80 group-hover:text-white transition-colors hidden sm:inline">
             HOME
           </span>
@@ -301,15 +296,11 @@ export function ProgressIndicator({
                 borderColor: "rgba(255, 255, 255, 0.3)",
               }}
             >
-              <Suspense
-                fallback={<div className="w-6 h-6 md:w-7 md:h-7" aria-hidden="true" />}
-              >
-                <ArrowRightIcon
+              <ArrowRight
                   className="w-6 h-6 md:w-7 md:h-7 text-white"
                   strokeWidth={2.5}
                   aria-hidden="true"
                 />
-              </Suspense>
             </div>
           </div>
         </motion.button>

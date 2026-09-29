@@ -31,7 +31,7 @@ function LoadingVisualFixture() {
         <button className="flex flex-col items-center gap-2">
           <div className="relative">
             <div className="relative w-14 h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center border-2" style={{ backgroundColor: "#000000", borderColor: "rgba(255, 255, 255, 0.3)" }}>
-              <svg className="w-6 h-6 md:w-7 md:h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></path></svg>
+              <svg className="w-6 h-6 md:w-7 md:h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
             </div>
           </div>
           <span className="text-xs font-black text-white/60">SKIP</span>
