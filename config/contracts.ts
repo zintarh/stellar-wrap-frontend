@@ -10,7 +10,7 @@ import {
   Server,
   TransactionBuilder,
   xdr,
-} from "@stellar/stellar-sdk";
+} from "stellar-sdk";
 import { getPublicKey, isConnected, signTransaction } from "@stellar/freighter-api";
 
 import { Network, isValidNetwork } from "../src/config";

@@ -4,15 +4,16 @@
  * 1 XLM = 10,000,000 Stroops (10^7).
  * Stellar limits and balances use a signed 64-bit integer internally.
  * Maximum valid amount: 922,337,203,685.4775807 (i64 max: 9223372036854775807 stroops).
- *
- * NOTE: This is the single canonical amount-conversion module. The former
- * `src/utils/stellarAmounts.ts` (one character apart) has been merged into this
- * file; all importers should reference `src/utils/stellarAmount` only.
  */
 
-export const STROOPS_PER_UNIT = 10_000_000n;
-export const MAX_STROOPS = 9223372036854775807n;
+export const STROOPS_PER_XLM = 10_000_000n;
+export const STROOPS_PER_UNIT = STROOPS_PER_XLM;
+export const XLM_MAX_PRECISION = 7;
+export const MAX_TOTAL_STROOPS = 9223372036854775807n;
+export const MAX_STROOPS = MAX_TOTAL_STROOPS;
 export const MAX_STELLAR_LIMIT = "922337203685.4775807";
+
+export const DEFAULT_BASE_FEE_STROOPS = 100n;
 
 /**
  * Validates whether a given string is a valid positive Stellar decimal amount
@@ -149,4 +150,91 @@ export function formatStellarAmount(
   } catch {
     return str;
   }
+}
+
+export interface ParseAmountResult<T> {
+  ok: boolean;
+  value?: T;
+  reason?: string;
+}
+
+export function parseAmountToStroops(amount: string): ParseAmountResult<bigint> {
+  const trimmed = amount.trim();
+  if (!trimmed || trimmed.startsWith("-")) {
+    return { ok: false, reason: "negative" };
+  }
+  const regex = /^\d+(\.\d{1,7})?$/;
+  if (!regex.test(trimmed)) {
+    return { ok: false, reason: "invalid" };
+  }
+  if (trimmed.split(".")[1]?.length > 7) {
+    return { ok: false, reason: "too-many-decimals" };
+  }
+  try {
+    const stroops = toStroops(trimmed);
+    if (stroops > MAX_TOTAL_STROOPS) {
+      return { ok: false, reason: "overflow" };
+    }
+    return { ok: true, value: stroops };
+  } catch {
+    return { ok: false, reason: "invalid" };
+  }
+}
+
+export function xlmToStroops(amount: number): ParseAmountResult<bigint> {
+  if (!Number.isFinite(amount)) {
+    return { ok: false, reason: "invalid" };
+  }
+  if (amount < 0) {
+    return { ok: false, reason: "negative" };
+  }
+  try {
+    const stroops = toStroops(amount);
+    return { ok: true, value: stroops };
+  } catch {
+    return { ok: false, reason: "invalid" };
+  }
+}
+
+export function stroopsToXlm(stroops: bigint | string | number): number {
+  const value = typeof stroops === "bigint" ? stroops : BigInt(String(stroops).trim());
+  if (value < 0n) {
+    throw new RangeError("Stroops cannot be negative");
+  }
+  return Number(value) / Number(STROOPS_PER_XLM);
+}
+
+export function formatXlm(
+  stroops: bigint,
+  options?: { maxFractionDigits?: number }
+): string {
+  const maxDecimals = options?.maxFractionDigits ?? XLM_MAX_PRECISION;
+  const full = fromStroops(stroops, false);
+  if (maxDecimals >= XLM_MAX_PRECISION) {
+    return full;
+  }
+  const parts = full.split(".");
+  if (parts.length === 1 || maxDecimals === 0) {
+    return parts[0];
+  }
+  const dec = parts[1].slice(0, maxDecimals).padEnd(maxDecimals, "0");
+  return `${parts[0]}.${dec}`;
+}
+
+export interface TruncatePublicKeyOptions {
+  prefixLength: number;
+  suffixLength: number;
+}
+
+export function truncatePublicKey(
+  publicKey: string,
+  options: TruncatePublicKeyOptions
+): string {
+  const { prefixLength, suffixLength } = options;
+  if (publicKey.length <= prefixLength + suffixLength) {
+    return publicKey;
+  }
+  const prefix = publicKey.slice(0, prefixLength);
+  const suffix = publicKey.slice(-suffixLength);
+  return `${prefix}...${suffix}`;
 }

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Network as NetworkIcon, Loader2, AlertCircle, X } from 'lucide-react';
+import { Network as NetworkIcon, Loader2, AlertCircle, X, CheckCircle2 } from 'lucide-react';
 import { useWrapStore } from '../store/wrapStore';
 import { NETWORKS, Network } from '../../src/config';
 import { getNetworkDisplayName } from '../../src/utils/networkUtils';
@@ -10,6 +10,60 @@ import { clearContractCache } from '../utils/contractBridge';
 import { useDialogFocusManagement } from '../hooks/useDialogFocusManagement';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { verifyWalletForNetwork } from '../services/transactionSigner';
+import { useRateLimitStore } from '../../src/store/rateLimitStore';
+import { NetworkSwitchFailureReason } from '../../app/types/networkSwitch';
+import { NetworkSwitchService } from '../../src/services/networkSwitchService';
+
+const SWITCH_TIMEOUT_MS = 45000;
+const COMMIT_CLEAR_MS = 3000;
+const ERROR_AUTO_DISMISS_MS = 8000;
+
+function getErrorCopy(reason: NetworkSwitchFailureReason): string {
+  switch (reason) {
+    case "user-rejected":
+      return "Network switch was cancelled.";
+    case "timeout":
+      return "Network switch timed out. Please try again.";
+    case "rate-limited":
+      return "Rate limited. Please wait before trying again.";
+    case "network-error":
+      return "Network error. Please check your connection.";
+    case "wallet-mismatch":
+      return "Wallet network mismatch. Please switch networks in your wallet.";
+    case "unknown":
+    default:
+      return "An unexpected error occurred during network switch.";
+  }
+}
+
+async function confirmNetworkSwitch(
+  newNetwork: Network,
+  isRateLimited: boolean,
+  signal: AbortSignal
+): Promise<void> {
+  if (isRateLimited) {
+    throw new Error("rate-limited");
+  }
+  const address = useWrapStore.getState().address;
+  if (!address) {
+    throw new Error("unknown");
+  }
+  try {
+    await NetworkSwitchService.executeSwitch({
+      targetNetwork: newNetwork,
+      accountAddress: address,
+      signal,
+    });
+  } catch (err: unknown) {
+    if (err instanceof Error && err.message.includes("rejected")) {
+      throw new Error("user-rejected");
+    }
+    if (err instanceof Error && (err.message.includes("timeout") || err.name === "AbortError")) {
+      throw new Error("timeout");
+    }
+    throw err;
+  }
+}
 
 /** Upper bound for the wallet re-check on the toggle so its state never hangs. */
 const NETWORK_TOGGLE_GUARD_TIMEOUT_MS = 10_000;
@@ -199,7 +253,7 @@ export function NetworkToggle() {
   useDialogFocusManagement(showConfirmation, handleCancel, dialogRef);
 
   const isMainnet = network === NETWORKS.MAINNET;
-  const isBusy = isSwitchingDirect || isSigningSwitch;
+  const isBusy = phase === "switching" || phase === "committed" || phase === "rolled-back";
 
   const networkColor = isMainnet ? "var(--color-theme-primary)" : "#FFA500";
   const networkColorRgb = isMainnet
@@ -226,9 +280,9 @@ export function NetworkToggle() {
         <motion.button
           type="button"
           onClick={handleToggleClick}
-          disabled={isSwitching}
+          disabled={phase === "switching"}
           aria-label={
-            isSwitching
+            phase === "switching"
               ? "Switching network…"
               : `Switch to ${isMainnet ? "Testnet" : "Mainnet"}`
           }
@@ -251,7 +305,7 @@ export function NetworkToggle() {
           {/* Icon */}
           <div className="relative flex items-center justify-center min-w-[1.25rem] min-h-[1.25rem] md:min-w-5 md:min-h-5">
             <AnimatePresence mode="wait">
-              {isSwitching ? (
+              {phase === "switching" ? (
                 <motion.span
                   key="spinner"
                   initial={{ opacity: 0, scale: 0.8 }}
@@ -300,7 +354,7 @@ export function NetworkToggle() {
               className="text-xs md:text-sm font-black tracking-tight"
               style={{ color: networkColor }}
             >
-              {isSwitching
+              {phase === "switching"
                 ? "Switching…"
                 : phase === "committed"
                   ? `${getNetworkDisplayName(network)} ✓`
