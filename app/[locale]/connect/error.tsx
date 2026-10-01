@@ -1,6 +1,6 @@
 "use client";
 
-import { ErrorCard } from "@/components/ErrorCard";
+import { ErrorCard } from "@/app/components/ErrorCard";
 import { useTranslations } from "next-intl";
 
 export default function ConnectError({

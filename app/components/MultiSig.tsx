@@ -30,15 +30,15 @@ import React, {
   useState,
 } from 'react';
 
-import { useMultiSigWallet } from '../hooks/useMultiSigWallet';
-import { useMultiSigStore } from '../store/multiSigStore';
+import { useMultiSigWallet } from '../../src/hooks/useMultiSigWallet';
+import { useMultiSigStore } from '../../src/store/multiSigStore';
 
-import type { ProposeParams } from '../hooks/useMultiSigWallet';
-import type { SignerStatus } from '../store/multiSigStore';
+import type { ProposeParams } from '../../src/hooks/useMultiSigWallet';
+import type { SignerStatus } from '../../src/store/multiSigStore';
 import type {
   MultiSigContractArgs,
   MultiSigContractMethod,
-} from '../types/multiSig';
+} from '../../src/types/multiSig';
 
 // ─── Utility components ───────────────────────────────────────────────────────
 

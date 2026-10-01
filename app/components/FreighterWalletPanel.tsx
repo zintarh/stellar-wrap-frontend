@@ -38,9 +38,9 @@ import React, {
   useState,
 } from "react";
 
-import { useFreighterWallet } from "../hooks/useFreighterWallet";
-import type { FreighterWalletError } from "../hooks/useFreighterWallet";
-import type { Network } from "../config";
+import { useFreighterWallet } from "../../src/hooks/useFreighterWallet";
+import type { FreighterWalletError } from "../../src/hooks/useFreighterWallet";
+import type { Network } from "../../src/config";
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 

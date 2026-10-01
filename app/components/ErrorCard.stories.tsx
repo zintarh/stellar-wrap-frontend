@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/nextjs";
 import { ErrorCard } from "./ErrorCard";
 
 const meta = { title: "Components/ErrorCard", component: ErrorCard, parameters: { layout: "fullscreen" } } satisfies Meta<typeof ErrorCard>;
