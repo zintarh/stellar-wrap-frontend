@@ -1,6 +1,6 @@
 "use client";
 
-import { useWrapperStore } from "@/src/store/useWrapperStore";
+import { useWrapperStore } from "@/app/store/useWrapperStore";
 import { useWrapStore } from "@/app/store/wrapStore";
 import { isPlaceholderContractAddress } from "@/config/contracts";
 

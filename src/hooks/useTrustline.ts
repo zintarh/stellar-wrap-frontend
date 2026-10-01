@@ -5,7 +5,7 @@
 
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
-import { useTrustlineStore } from "../store/trustlineStore";
+import { useTrustlineStore } from "@/app/store/trustlineStore";
 import { createAssetTrustline, parseTrustlineError } from "../services/trustlineService";
 import { useWrapStore } from "@/app/store/wrapStore";
 import { useSound } from "@/app/hooks/useSound";

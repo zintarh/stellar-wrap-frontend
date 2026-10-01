@@ -8,7 +8,7 @@ import {
   useGovernanceStore,
   type Proposal,
   type VoteChoice,
-} from "@/src/store/governanceStore";
+} from "@/app/store/governanceStore";
 import {
   fetchProposals,
   castVote,

@@ -1,5 +1,5 @@
 import { parseHorizonError, StructuredHorizonError } from './horizonErrorHandler';
-import { useRateLimitStore } from '../store/rateLimitStore';
+import { useRateLimitStore } from '@/app/store/rateLimitStore';
 import { logger } from '../../app/utils/logger';
 
 const log = logger.child('horizonRequestQueue');

@@ -10,7 +10,7 @@ import { validateStellarAddress } from '../validateStellarAddress';
 import { validateIndexedStats, buildContractArgs} from '../contractArgsBuilder';
 import {  numberToScValU32, numberToScValU64, stringToScVal, stringToScValSymbol, addressToScVal, U32_MAX, U64_MAX} from '../sorobanConverter';
 import { parseNetworkParam } from '../networkUtils';
-import { useWrapperStore } from '../../store/useWrapperStore';
+import { useWrapperStore } from '@/app/store/useWrapperStore';
 
 // ─── Test Helpers ───────────────────────────────────────────────────────────
 

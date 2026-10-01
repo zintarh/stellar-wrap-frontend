@@ -4,8 +4,8 @@
 
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import type { TrustlineItem } from "../types/trustline";
-import { toStroops, isValidStellarAmount } from "../utils/stellarAmount";
+import type { TrustlineItem } from "@/src/types/trustline";
+import { toStroops, isValidStellarAmount } from "@/src/utils/stellarAmount";
 
 interface TrustlineStoreState {
   trustlines: TrustlineItem[];

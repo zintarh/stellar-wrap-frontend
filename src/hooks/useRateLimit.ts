@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useRateLimitStore } from "../store/rateLimitStore";
+import { useRateLimitStore } from "@/app/store/rateLimitStore";
 
 const DEFAULT_RPC_TIMEOUT_MS = 30_000;
 const DEFAULT_MIN_INTERVAL_MS = 250;

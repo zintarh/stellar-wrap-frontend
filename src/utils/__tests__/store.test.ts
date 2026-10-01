@@ -6,7 +6,7 @@
  * @module store.test
  */
 
-import { useWrapperStore } from '../../store/useWrapperStore';
+import { useWrapperStore } from '@/app/store/useWrapperStore';
 import { GOLDEN_USER } from '../../data/mockData';
 
 // ─── Test Helpers ───────────────────────────────────────────────────────────

@@ -5,10 +5,10 @@
 
 import { render, screen, act } from '@testing-library/react';
 import { RateLimitBanner } from './RateLimitBanner';
-import { useRateLimitStore } from '@/src/store/rateLimitStore';
+import { useRateLimitStore } from '@/app/store/rateLimitStore';
 
 // Mock the store
-jest.mock('@/src/store/rateLimitStore', () => ({
+jest.mock('@/app/store/rateLimitStore', () => ({
   useRateLimitStore: jest.fn(),
 }));
 
