@@ -281,6 +281,7 @@ export type MultiSigErrorCode =
   | 'SIMULATION_FAILED'
   | 'INSUFFICIENT_BALANCE'
   | 'THRESHOLD_NOT_MET'
+  | 'INVALID_THRESHOLD'
   | 'PROPOSAL_EXPIRED'
   | 'ALREADY_SIGNED'
   | 'NOT_AUTHORISED'
@@ -335,4 +336,39 @@ export interface SignResult {
 export interface ExecuteResult {
   transactionHash: string;
   ledger: number;
+}
+
+// ─── Cross-session persistence ────────────────────────────────────────────────
+
+const BIGINT_MARKER = '__bigint';
+
+/**
+ * Serialises a proposal to JSON for cross-session signing flows (a signer
+ * collects the proposal in one session and signs it in another).
+ *
+ * Plain `JSON.stringify` throws on bigint (e.g. `estimatedFeeStroops`), so
+ * bigints are encoded as `{ __bigint: "<digits>" }` markers.
+ */
+export function serializeProposal(proposal: MultiSigProposal): string {
+  return JSON.stringify(proposal, (_key, value: unknown) =>
+    typeof value === 'bigint' ? { [BIGINT_MARKER]: value.toString() } : (value as unknown),
+  );
+}
+
+/**
+ * Parses `serializeProposal` output back into a proposal, restoring bigint
+ * markers. Throws on malformed JSON.
+ */
+export function deserializeProposal(json: string): MultiSigProposal {
+  return JSON.parse(json, (_key, value: unknown) => {
+    if (
+      value !== null &&
+      typeof value === 'object' &&
+      !Array.isArray(value) &&
+      BIGINT_MARKER in (value as Record<string, unknown>)
+    ) {
+      return BigInt((value as Record<string, unknown>)[BIGINT_MARKER] as string);
+    }
+    return value as unknown;
+  }) as MultiSigProposal;
 }

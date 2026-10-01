@@ -76,6 +76,7 @@ import {
   MultiSigError,
   stroopsToXlm,
 } from '../types/multiSig';
+import { validateProposalThreshold } from './multiSigThresholds';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -472,10 +473,14 @@ export async function proposeMultiSigTransaction(
     signedAt: null,
   }));
 
-  const effectiveThreshold =
-    threshold !== undefined
-      ? Math.min(threshold, allSigners.length)
-      : allSigners.length;
+  if (threshold !== undefined) {
+    const problem = validateProposalThreshold(allSigners.length, threshold);
+    if (problem) {
+      throw new MultiSigError('INVALID_THRESHOLD', 'failed', problem);
+    }
+  }
+
+  const effectiveThreshold = threshold ?? allSigners.length;
 
   const unsignedXdr = transaction.toXDR();
 
@@ -888,6 +893,24 @@ export function countSignatures(proposal: MultiSigProposal): number {
  */
 export function isThresholdMet(proposal: MultiSigProposal): boolean {
   return countSignatures(proposal) >= proposal.threshold;
+}
+
+/**
+ * Remove a signer from a proposal (e.g. rotated out between assembling and
+ * submitting). Returns a new proposal; the input is not mutated.
+ *
+ * A removed signer takes their signature with them, so a proposal that was
+ * ready can drop back below threshold — callers must re-check
+ * `isThresholdMet` (and refuse execution) after any membership change.
+ */
+export function removeSignerFromProposal(
+  proposal: MultiSigProposal,
+  publicKey: string,
+): MultiSigProposal {
+  return {
+    ...proposal,
+    signers: proposal.signers.filter((s) => s.publicKey !== publicKey),
+  };
 }
 
 /**
