@@ -8,7 +8,7 @@
 import { NextRequest, NextResponse } from "next/server";
 // KV_FAILURE: LOUD — a failed write means the pending subscription was not
 // saved and no confirmation email will be sent; error propagates.
-import { kvGet, kvSet, SUB_KEY } from "../_lib/kv";
+import { kvGet, kvSet, SUB_KEY, PERIOD_KEY, kvSAdd, kvSRem } from "../_lib/kv";
 import { sendEmail } from "../_lib/email";
 import { logger } from "@/app/utils/logger";
 
@@ -111,10 +111,18 @@ export async function POST(request: NextRequest) {
     const isSameEmail = existing.email?.address?.trim().toLowerCase() === normalizedEmail;
     const isAlreadyActive = isSameEmail && existing.email?.status === "active";
 
+    // Re-use the existing token (and its issuedAt) only when it is the same e-mail
+    // and the token was issued recently enough that a fresh one is not needed.
     const confirmationToken =
       isSameEmail && existing.email?.confirmationToken
         ? existing.email.confirmationToken
         : generateUnsubscribeToken();
+
+    // Track when this token was issued so confirm-email can enforce the 24 h window.
+    const tokenIssuedAt =
+      isSameEmail && existing.email?.tokenIssuedAt && existing.email?.confirmationToken === confirmationToken
+        ? existing.email.tokenIssuedAt
+        : new Date().toISOString();
 
     const unsubscribeToken =
       isSameEmail && existing.email?.unsubscribeToken
@@ -137,6 +145,7 @@ export async function POST(request: NextRequest) {
         address: normalizedEmail,
         status,
         confirmationToken,
+        tokenIssuedAt,
         unsubscribeToken,
         periods: normalizedPeriods,
         createdAt:

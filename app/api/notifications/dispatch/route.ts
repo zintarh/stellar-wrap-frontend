@@ -119,7 +119,9 @@ async function sendEmailNotification(
 // ─── Route handler ────────────────────────────────────────────────────────────
 
 export async function POST(request: NextRequest) {
-  // Verify cron secret — fail closed if not configured
+  // Verify cron secret — fail closed if not configured.
+  // During a rotation window, CRON_SECRET_PREVIOUS is also accepted so the
+  // transition is not atomic with the deploy.
   const cronSecret = process.env.CRON_SECRET;
   if (!cronSecret) {
     log.error("CRON_SECRET is not configured — refusing to serve requests");
@@ -129,10 +131,16 @@ export async function POST(request: NextRequest) {
   const authHeader = request.headers.get("authorization");
   const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : "";
 
-  const secretBuf = Buffer.from(cronSecret);
-  const tokenBuf = Buffer.from(token);
+  function matchesSecret(secret: string): boolean {
+    const secretBuf = Buffer.from(secret);
+    const tokenBuf = Buffer.from(token);
+    return secretBuf.length === tokenBuf.length && crypto.timingSafeEqual(secretBuf, tokenBuf);
+  }
 
-  if (secretBuf.length !== tokenBuf.length || !crypto.timingSafeEqual(secretBuf, tokenBuf)) {
+  const previousSecret = process.env.CRON_SECRET_PREVIOUS;
+  const authorized = matchesSecret(cronSecret) || (!!previousSecret && matchesSecret(previousSecret));
+
+  if (!authorized) {
     return apiError("UNAUTHORIZED", "Unauthorized", 401);
   }
 
@@ -145,21 +153,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: true, dispatched: 0, message: "No active periods" });
     }
 
+    // Scan all subscription records
+    const subKeys = await kvKeys("notif:sub:*");
     let dispatched = 0;
     const dispatchedWallets = new Set<string>();
 
-    // Fetch subscribers from the period index for each active period
-    for (const period of activePeriods) {
-      const periodKey = getPeriodKey(period, now);
+    for (const key of subKeys) {
+      const record = await kvGet<SubscriptionRecord>(key);
+      if (!record || record.deletionRequested) continue;
 
-      // Get all wallets subscribed to this period from the index
-      const wallets = await getWalletsForPeriod(period);
+      const walletAddress = record.walletAddress;
 
-      log.info(`Period ${period}: found ${wallets.length} subscribers in index`);
-
-      for (const walletAddress of wallets) {
-        const record = await kvGet<SubscriptionRecord>(SUB_KEY(walletAddress));
-        if (!record || record.deletionRequested) continue;
+      for (const period of activePeriods) {
+        const periodKey = getPeriodKey(period, now);
 
         // ── Push ──
         if (record.push?.periods[period] && record.push.subscription) {
@@ -167,6 +173,19 @@ export async function POST(request: NextRequest) {
           const existing = await kvGet<DispatchLogEntry>(logKey);
 
           if (!existing) {
+            // Write the log entry BEFORE sending (at-most-once semantics).
+            // A retry of the whole invocation will see this key and skip the send.
+            const logEntry: DispatchLogEntry = {
+              walletAddress,
+              channel: "push",
+              period,
+              periodKey,
+              sentAt: new Date().toISOString(),
+              status: "sent",
+              attempts: 1,
+            };
+            await kvSet(logKey, logEntry);
+
             let status: "sent" | "failed" = "sent";
             let attempts = 1;
             let error: string | undefined;
@@ -177,19 +196,10 @@ export async function POST(request: NextRequest) {
               status = "failed";
               attempts = 4; // 1 initial + 3 retries
               error = err instanceof Error ? err.message : String(err);
+              // Update the log entry to reflect the failure.
+              await kvSet(logKey, { ...logEntry, status, attempts, ...(error && { error }) });
             }
 
-            const logEntry: DispatchLogEntry = {
-              walletAddress,
-              channel: "push",
-              period,
-              periodKey,
-              sentAt: new Date().toISOString(),
-              status,
-              attempts,
-              ...(error && { error }),
-            };
-            await kvSet(logKey, logEntry);
             if (status === "sent") dispatched++;
           }
         }
@@ -204,39 +214,37 @@ export async function POST(request: NextRequest) {
           const existing = await kvGet<DispatchLogEntry>(logKey);
 
           if (!existing) {
-            let status: "sent" | "failed" = "sent";
-            let attempts = 1;
-            let error: string | undefined;
-
-            try {
-              await sendEmailNotification(
-                record.email.address,
-                record.email.unsubscribeToken,
-                period
-              );
-            } catch (err) {
-              status = "failed";
-              attempts = 4;
-              error = err instanceof Error ? err.message : String(err);
-            }
-
+            // Write the log entry BEFORE sending (at-most-once semantics).
             const logEntry: DispatchLogEntry = {
               walletAddress,
               channel: "email",
               period,
               periodKey,
               sentAt: new Date().toISOString(),
-              status,
-              attempts,
-              ...(error && { error }),
+              status: "sent",
+              attempts: 1,
             };
             await kvSet(logKey, logEntry);
+
+            let status: "sent" | "failed" = "sent";
+            let attempts = 1;
+            let error: string | undefined;
+
+            try {
+              await sendEmailNotification(record.email.address, record.email.unsubscribeToken, period);
+            } catch (err) {
+              status = "failed";
+              attempts = 4;
+              error = err instanceof Error ? err.message : String(err);
+              await kvSet(logKey, { ...logEntry, status, attempts, ...(error && { error }) });
+            }
+
             if (status === "sent") dispatched++;
           }
         }
-
-        dispatchedWallets.add(walletAddress);
       }
+
+      dispatchedWallets.add(walletAddress);
     }
 
     return NextResponse.json({

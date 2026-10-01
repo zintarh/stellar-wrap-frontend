@@ -47,6 +47,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import crypto from "crypto";
 import { Keypair, StrKey } from "stellar-sdk";
 import { kvGet, kvSet, kvSRem, SUB_KEY, PERIOD_KEY } from "../_lib/kv";
 import type { SubscriptionRecord } from "@/app/types/notifications";
@@ -68,6 +69,15 @@ const VALID_CHANNELS = new Set<Channel>(["email", "sms", "push"]);
 const CHALLENGE_PREFIX = "stellar-wrap-notifications-unsubscribe:";
 const NONCE_RE = /^[A-Za-z0-9_\-]{1,128}$/;
 const usedNonces = new Set<string>();
+
+/**
+ * Constant-time string comparison to prevent timing attacks.
+ * Returns false immediately if lengths differ (no content leak).
+ */
+function timingSafeTokenEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  return crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
+}
 
 /** Remove email-specific period indexes if push is not subscribed to those periods. */
 async function removeEmailPeriodIndexes(walletAddress: string, record: SubscriptionRecord) {
@@ -210,8 +220,6 @@ async function handleTokenPath(fields: Record<string, unknown>): Promise<NextRes
     updated.push = undefined;
     await removePushPeriodIndexes(tokenRecord.walletAddress, subscription);
   } else if (channel === "sms") {
-    // SMS has no period indexing; just remove the field
-    // (Assuming SubscriptionRecord has an `sms` field; if not, adjust as needed)
     (updated as Record<string, unknown>).sms = undefined;
   }
 

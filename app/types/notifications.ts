@@ -53,6 +53,8 @@ export interface SubscriptionRecord {
     status: "pending" | "active";
     /** Set on pending, cleared on confirm */
     confirmationToken: string;
+    /** ISO-8601 timestamp when the confirmation token was issued (24 h expiry) */
+    tokenIssuedAt?: string;
     /** Persistent, rotated on re-subscribe */
     unsubscribeToken: string;
     periods: PeriodPrefs;
