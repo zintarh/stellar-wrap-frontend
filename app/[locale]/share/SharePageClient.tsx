@@ -240,6 +240,17 @@ export default function SharePageClient() {
     };
   }, [shareOpen]);
 
+  useEffect(() => {
+    if (shareOpen) {
+      // Small delay to ensure the motion element is mounted before focusing
+      const timer = setTimeout(() => {
+        const firstButton = shareMenuRef.current?.querySelector("button");
+        firstButton?.focus();
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [shareOpen]);
+
   const socialPlatforms = [
     { id: "x", label: t("platforms.x"), Icon: SocialIcons.X },
     { id: "whatsapp", label: t("platforms.whatsapp"), Icon: SocialIcons.WhatsApp },
@@ -272,6 +283,9 @@ export default function SharePageClient() {
                   topVibe={topVibe}
                   vibePercentage={vibePercentage}
                   themeColor={themeColor}
+                  locale={locale}
+                  archetypeImage={GOLDEN_USER.archetype.image}
+                  shareUrl={shareUrl}
                   labels={cardLabels}
                 />
               ) : (
@@ -282,6 +296,9 @@ export default function SharePageClient() {
                   topVibe={topVibe}
                   vibePercentage={vibePercentage}
                   themeColor={themeColor}
+                  locale={locale}
+                  archetypeImage={GOLDEN_USER.archetype.image}
+                  shareUrl={shareUrl}
                   labels={cardLabels}
                 />
               )}
@@ -330,6 +347,12 @@ export default function SharePageClient() {
               <button
                 type="button"
                 onClick={handleCopyLink}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    handleCopyLink();
+                  }
+                }}
                 className="inline-flex items-center gap-2 rounded-full border border-white/20 px-5 py-2.5 font-semibold text-white transition hover:bg-white/10"
               >
                 {copied ? (

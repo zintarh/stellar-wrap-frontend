@@ -57,6 +57,15 @@ export default defineConfig({
       },
     },
     {
+      name: "mobile-chromium",
+      testMatch: /mobile\/.*\.spec\.ts/,
+      use: {
+        ...devices["iPhone 15"],
+        viewport: { width: 390, height: 844 },
+        deviceScaleFactor: 3,
+      },
+    },
+    {
       name: "a11y-chromium",
       testMatch: /a11y\/.*\.spec\.ts/,
       use: { ...devices["Desktop Chrome"], channel: "chrome" },

@@ -1,0 +1,16 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#43E97B;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#38F9D7;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <g transform="translate(256, 256)">
+    <!-- Hammer icon representing The Architect -->
+    <path d="M-60 -120 L-40 -140 L40 -40 L20 -20 Z" fill="#ffffff" opacity="0.9"/>
+    <path d="M-40 -140 L-20 -120 L60 40 L40 60 Z" fill="#ffffff" opacity="0.7"/>
+    <path d="M-20 -120 L-80 80 L-60 100 L0 0 Z" fill="#ffffff" opacity="0.5"/>
+    <circle cx="0" cy="0" r="50" fill="none" stroke="#ffffff" stroke-width="4" opacity="0.3"/>
+  </g>
+</svg>

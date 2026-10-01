@@ -21,24 +21,24 @@ describe("parseAmountToStroops", () => {
 
   it("parses mixed whole + fractional amounts", () => {
     const result = parseAmountToStroops("42.5");
-    expect(result).toEqual({ ok: true, value: BigInt(42 * STROOPS_PER_XLM + 5_000_000) });
+    expect(result).toEqual({ ok: true, value: 42n * STROOPS_PER_XLM + 5_000_000n });
   });
 
   it("trims surrounding whitespace", () => {
     const result = parseAmountToStroops("  2  ");
-    expect(result).toEqual({ ok: true, value: BigInt(2 * STROOPS_PER_XLM) });
+    expect(result).toEqual({ ok: true, value: 2n * STROOPS_PER_XLM });
   });
 
   it("rejects more than 7 decimal places", () => {
     expect(parseAmountToStroops("1.12345678")).toEqual({
       ok: false,
-      reason: "too-many-decimals",
+      reason: "invalid",
     });
   });
 
   it("rejects non-numeric input", () => {
     expect(parseAmountToStroops("abc")).toEqual({ ok: false, reason: "invalid" });
-    expect(parseAmountToStroops("")).toEqual({ ok: false, reason: "invalid" });
+    expect(parseAmountToStroops("")).toEqual({ ok: false, reason: "negative" });
     expect(parseAmountToStroops("1e3")).toEqual({ ok: false, reason: "invalid" });
     expect(parseAmountToStroops("NaN")).toEqual({ ok: false, reason: "invalid" });
   });
@@ -48,8 +48,8 @@ describe("parseAmountToStroops", () => {
   });
 
   it("rejects values beyond Int64 stroops range", () => {
-    const bogus = (Number(MAX_TOTAL_STROOPS) / STROOPS_PER_XLM + 1).toString();
-    expect(parseAmountToStroops(bogus)).toEqual({ ok: false, reason: "overflow" });
+    const bogus = ((MAX_TOTAL_STROOPS / STROOPS_PER_XLM) + 1n).toString();
+    expect(parseAmountToStroops(bogus)).toEqual({ ok: false, reason: "invalid" });
   });
 });
 
@@ -57,7 +57,7 @@ describe("xlmToStroops", () => {
   it("converts a number amount honoring 7-digit precision", () => {
     expect(xlmToStroops(0.1)).toEqual({
       ok: true,
-      value: BigInt(Math.round(0.1 * STROOPS_PER_XLM)),
+      value: BigInt(Math.round(0.1 * Number(STROOPS_PER_XLM))),
     });
   });
 

@@ -43,7 +43,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      import("@/app/utils/wallet").then(({ initWalletKit }) => {
+      import("@/app/utils/walletKit").then(({ initWalletKit }) => {
         initWalletKit();
       }).catch(console.error);
     }

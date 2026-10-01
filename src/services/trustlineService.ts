@@ -21,7 +21,7 @@ import {
 import { signTransaction } from "@stellar/freighter-api";
 import { Network, NETWORK_PASSPHRASES, RPC_ENDPOINTS } from "../config";
 import { horizonQueue } from "../utils/horizonRequestQueue";
-import { isValidStellarAmount, MAX_STELLAR_LIMIT } from "../utils/stellarAmount";
+import { isValidStellarAmount, MAX_STELLAR_LIMIT } from "../utils/stellarAmounts";
 import type { CreateTrustlineParams, TrustlineResult } from "../types/trustline";
 
 export class TrustlineError extends Error {

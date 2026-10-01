@@ -6,7 +6,7 @@ import { ShieldCheck, Plus, AlertCircle, Loader2, CheckCircle2, XCircle, Externa
 import { useTrustline } from "@/src/hooks/useTrustline";
 import { useWrapStore } from "@/app/store/wrapStore";
 import { KNOWN_ASSETS } from "@/app/utils/assetConstants";
-import { isValidStellarAmount, formatStellarAmount } from "@/src/utils/stellarAmount";
+import { isValidStellarAmount, formatStellarAmount } from "@/src/utils/stellarAmounts";
 import { AssetDisplay } from "./AssetDisplay";
 
 interface PopularPreset {

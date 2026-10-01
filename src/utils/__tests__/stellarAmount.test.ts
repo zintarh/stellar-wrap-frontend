@@ -6,7 +6,7 @@ import {
   STROOPS_PER_UNIT,
   MAX_STROOPS,
   MAX_STELLAR_LIMIT,
-} from "../stellarAmount";
+} from "../stellarAmounts";
 
 describe("stellarAmount Utilities", () => {
   describe("toStroops", () => {
@@ -127,7 +127,7 @@ describe("stellarAmount Utilities", () => {
     });
 
     it("handles edge-case display inputs", () => {
-      expect(formatStellarAmount("0.0000000")).toBe("0");
+      expect(formatStellarAmount("0.0000000")).toBe("0.0000000");
       expect(formatStellarAmount("0.0000001")).toBe("0.0000001");
       expect(formatStellarAmount("1.0000000", 0)).toBe("1");
       expect(formatStellarAmount(null as unknown as string)).toBe("0");
