@@ -5,11 +5,18 @@
  *
  * Accessible pagination controls for transaction history table.
  * Implements WCAG AA standards with proper ARIA labels and keyboard navigation.
+ *
+ * Optionally displays the user's current XLM balance alongside the page
+ * indicator. Pass `xlmBalance` (a pre-formatted decimal string) and
+ * `xlmBalanceStatus` to enable the balance badge.
  */
 
 import React, { useCallback } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import clsx from 'clsx';
+
+/** Fetch status forwarded from `useXlmBalance` */
+export type XlmBalanceStatus = 'idle' | 'loading' | 'success' | 'error';
 
 interface PaginationProps {
   currentPage: number;
@@ -20,6 +27,17 @@ interface PaginationProps {
   showPageNumbers?: boolean;
   maxPageButtons?: number;
   isLoading?: boolean;
+  /**
+   * Pre-formatted XLM balance string (e.g. "1234.56").
+   * Obtained from `useXlmBalance`. When provided, a balance badge is rendered
+   * alongside the page indicator.
+   */
+  xlmBalance?: string | null;
+  /**
+   * Fetch status for the XLM balance. Controls the loading / error display
+   * inside the balance badge.
+   */
+  xlmBalanceStatus?: XlmBalanceStatus;
 }
 
 /**
@@ -59,6 +77,8 @@ export const Pagination: React.FC<PaginationProps> = ({
   showPageNumbers = true,
   maxPageButtons = 5,
   isLoading = false,
+  xlmBalance,
+  xlmBalanceStatus = 'idle',
 }) => {
   const handlePrevPage = useCallback(() => {
     if (currentPage > 1 && !isLoading) {
@@ -198,13 +218,56 @@ export const Pagination: React.FC<PaginationProps> = ({
         />
       </button>
 
-      {/* Page Info */}
+      {/* Page Info + XLM Balance */}
       <div
-        className="ml-auto text-xs text-gray-600 dark:text-gray-400"
+        className="ml-auto flex flex-col items-end gap-0.5"
         aria-live="polite"
-        role="status"
       >
-        Page {currentPage} of {totalPages}
+        {/* Page counter */}
+        <span
+          className="text-xs text-gray-600 dark:text-gray-400"
+          role="status"
+        >
+          Page {currentPage} of {totalPages}
+        </span>
+
+        {/* XLM balance badge — only rendered when the prop is provided */}
+        {(xlmBalance !== undefined || xlmBalanceStatus === 'loading') && (
+          <span
+            className={clsx(
+              'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold',
+              'bg-gray-100 dark:bg-gray-800',
+              xlmBalanceStatus === 'error'
+                ? 'text-red-500 dark:text-red-400'
+                : 'text-gray-600 dark:text-gray-400',
+            )}
+            aria-label={
+              xlmBalanceStatus === 'loading'
+                ? 'Fetching XLM balance'
+                : xlmBalanceStatus === 'error'
+                  ? 'XLM balance unavailable'
+                  : `XLM balance: ${xlmBalance ?? '0'}`
+            }
+          >
+            {xlmBalanceStatus === 'loading' ? (
+              <>
+                <Loader2
+                  size={10}
+                  className="animate-spin"
+                  aria-hidden="true"
+                />
+                <span aria-hidden="true">XLM</span>
+              </>
+            ) : xlmBalanceStatus === 'error' ? (
+              <span>XLM —</span>
+            ) : (
+              <>
+                <span aria-hidden="true">⊕</span>
+                <span>{xlmBalance} XLM</span>
+              </>
+            )}
+          </span>
+        )}
       </div>
     </nav>
   );
