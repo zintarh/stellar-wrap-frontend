@@ -56,7 +56,7 @@ const vibeCheckJsonLd = {
 };
 
 export default function VibeCheckLayout({
-  childreen,
+  children,
 }: {
   children: ReactNode;
 }) {
@@ -72,7 +72,7 @@ export default function VibeCheckLayout({
           />
         }
       >
-        {childreen}
+        {children}
       </Suspense>
     </>
   );

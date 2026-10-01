@@ -31,6 +31,18 @@ jobs:
           fi
           echo "⌈ Lock file validation passed"
 
+  check-route-file-casing:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check App Router file casing
+        run: node scripts/check-route-file-casing.mjs
+
   unit-tests:
     name: Unit Tests
     runs-on: ubuntu-latest
