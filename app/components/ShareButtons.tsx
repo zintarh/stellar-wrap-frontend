@@ -1,7 +1,7 @@
 "use client";
 
-import { motion } from 'motion/react';
-import { Share2, X, Link2, Check } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Share2, X } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useNativeShare, nativeShare } from '../hooks/useNativeShare';
 import { trackEvent } from '../utils/plausible';

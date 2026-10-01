@@ -1,24 +1,6 @@
-"use client";
-
-/**
- * ShareCard — public entry point (unchanged interface for all callers).
- *
- * This component is intentionally thin: it wires together stores, hooks, and
- * event handlers, then delegates all rendering to the three sub-components:
- *
- *   CardPreview   — animated share-card visual (left panel)
- *   MintSection   — Mint button + confirmation progress + timeout banner
- *   ShareActions  — "SHARE YOUR WRAP" heading + all download/share buttons
- *
- * Pure logic (getMintButtonText, buildShareText, getExplorerUrl) lives in
- * ./shareCard/shareCardUtils.ts and is covered by unit tests there.
- */
-
-import { motion } from "motion/react";
-import { useState, RefObject, useEffect } from "react";
-import { useTranslations } from "next-intl";
-import { toast } from "sonner";
-
+import { motion } from "framer-motion";
+import { Share2, Download, Twitter, Loader2, Sparkles } from "lucide-react";
+import { useState, RefObject } from "react";
 import { downloadShareImage } from "../utils/imageExport";
 import {
   downloadAnimatedGif,
