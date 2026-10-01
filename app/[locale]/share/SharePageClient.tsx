@@ -250,17 +250,71 @@ export default function SharePageClient() {
 
   return (
     <div className="min-h-screen bg-black text-white">
-      <div className="mx-auto max-w-4xl px-4 py-8">
+      <div className="mx-auto max-w-4xl px-4 py-10">
         <div className="mb-6 flex items-center justify-between">
-          <h1 className="text-2xl font-bold">{t("heading")}</h1>
+          <div>
+            <h1 className="text-3xl font-bold">{t("title")}</h1>
+            <p className="mt-2 text-white/70">{t("subtitle")}</p>
+          </div>
           <MuteToggle />
         </div>
 
         {showZeroActivity ? (
           <ZeroActivityEmptyState />
         ) : (
-          <>
-            <div className="mb-6 flex flex-wrap items-center gap-3">
+          <div className="mt-8 space-y-6">
+            <div ref={shareImageRef}>
+              {cardFormat === "square" ? (
+                <ShareImageCard
+                  username={username}
+                  transactions={transactions}
+                  persona={persona}
+                  topVibe={topVibe}
+                  vibePercentage={vibePercentage}
+                  themeColor={themeColor}
+                  labels={cardLabels}
+                />
+              ) : (
+                <ShareImageCardStories
+                  username={username}
+                  transactions={transactions}
+                  persona={persona}
+                  topVibe={topVibe}
+                  vibePercentage={vibePercentage}
+                  themeColor={themeColor}
+                  labels={cardLabels}
+                />
+              )}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setCardFormat("square")}
+                aria-pressed={cardFormat === "square"}
+                className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${
+                  cardFormat === "square"
+                    ? "bg-white text-black"
+                    : "border border-white/20 text-white hover:bg-white/10"
+                }`}
+              >
+                {t("squareFormat")}
+              </button>
+              <button
+                type="button"
+                onClick={() => setCardFormat("stories")}
+                aria-pressed={cardFormat === "stories"}
+                className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${
+                  cardFormat === "stories"
+                    ? "bg-white text-black"
+                    : "border border-white/20 text-white hover:bg-white/10"
+                }`}
+              >
+                {t("storiesFormat")}
+              </button>
+            </div>
+
+            <div className="relative flex flex-wrap items-center gap-3">
               <button
                 ref={shareBtnRef}
                 type="button"
@@ -270,7 +324,7 @@ export default function SharePageClient() {
                 className="inline-flex items-center gap-2 rounded-full bg-white px-5 py-2.5 font-semibold text-black transition hover:bg-white/90"
               >
                 <Share2 className="h-4 w-4" aria-hidden="true" />
-                {t("shareButton")}
+                {t("share")}
               </button>
 
               <button
@@ -297,91 +351,41 @@ export default function SharePageClient() {
                   {t("viewOnStellarExpert")}
                 </a>
               )}
+
+              <AnimatePresence>
+                {shareOpen && (
+                  <motion.div
+                    ref={shareMenuRef}
+                    role="menu"
+                    initial={prefersReducedMotion ? false : { opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: 8 }}
+                    transition={reducedMotionTransition(prefersReducedMotion)}
+                    className="absolute left-0 top-full z-20 mt-2 flex flex-wrap gap-2 rounded-2xl border border-white/10 bg-white/10 p-3 backdrop-blur"
+                  >
+                    {socialPlatforms.map(({ id, label, Icon }) => (
+                      <button
+                        key={id}
+                        type="button"
+                        role="menuitem"
+                        onClick={() => handleShare(id)}
+                        aria-label={label}
+                        className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm font-medium transition hover:bg-white/10"
+                      >
+                        <Icon className="h-4 w-4" aria-hidden="true" />
+                        {label}
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             {copyError && (
-              <p role="alert" className="mb-4 text-sm text-red-400">
+              <p role="alert" className="text-sm text-red-400">
                 {copyError}
               </p>
             )}
-
-            <AnimatePresence>
-              {shareOpen && (
-                <motion.div
-                  ref={shareMenuRef}
-                  role="menu"
-                  initial={prefersReducedMotion ? false : { opacity: 0, y: -8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: -8 }}
-                  transition={reducedMotionTransition(prefersReducedMotion)}
-                  className="mb-6 flex flex-wrap gap-2 rounded-2xl border border-white/10 bg-white/5 p-3"
-                >
-                  {socialPlatforms.map(({ id, label, Icon }) => (
-                    <button
-                      key={id}
-                      type="button"
-                      role="menuitem"
-                      onClick={() => handleShare(id)}
-                      className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm font-medium transition hover:bg-white/10"
-                    >
-                      <Icon className="h-4 w-4" aria-hidden="true" />
-                      {label}
-                    </button>
-                  ))}
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            <div className="mb-6 flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setCardFormat("square")}
-                aria-pressed={cardFormat === "square"}
-                className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${
-                  cardFormat === "square"
-                    ? "bg-white text-black"
-                    : "border border-white/20 text-white hover:bg-white/10"
-                }`}
-              >
-                {t("formats.square")}
-              </button>
-              <button
-                type="button"
-                onClick={() => setCardFormat("stories")}
-                aria-pressed={cardFormat === "stories"}
-                className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${
-                  cardFormat === "stories"
-                    ? "bg-white text-black"
-                    : "border border-white/20 text-white hover:bg-white/10"
-                }`}
-              >
-                {t("formats.stories")}
-              </button>
-            </div>
-
-            <div ref={shareImageRef} className="mb-8">
-              {cardFormat === "square" ? (
-                <ShareImageCard
-                  username={username}
-                  transactions={transactions}
-                  persona={persona}
-                  topVibe={topVibe}
-                  vibePercentage={vibePercentage}
-                  themeColor={themeColor}
-                  labels={cardLabels}
-                />
-              ) : (
-                <ShareImageCardStories
-                  username={username}
-                  transactions={transactions}
-                  persona={persona}
-                  topVibe={topVibe}
-                  vibePercentage={vibePercentage}
-                  themeColor={themeColor}
-                  labels={cardLabels}
-                />
-              )}
-            </div>
 
             <ShareCard
               username={username}
@@ -393,10 +397,10 @@ export default function SharePageClient() {
               labels={cardLabels}
             />
 
-            <div className="mt-8">
+            <div className="pt-2">
               <ProgressIndicator />
             </div>
-          </>
+          </div>
         )}
       </div>
     </div>
