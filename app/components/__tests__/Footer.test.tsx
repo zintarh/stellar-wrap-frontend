@@ -24,6 +24,11 @@
 import { render, screen, within } from "@testing-library/react";
 import { Footer } from "../Footer";
 
+jest.mock("../../store/wrapStore", () => ({
+  useWrapStore: (selector: (state: { network: string }) => unknown) =>
+    selector({ network: "testnet" }),
+}));
+
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
 /** Mounts the Footer and returns the <footer> landmark element. */
@@ -584,5 +589,16 @@ describe("Footer — snapshot", () => {
   it("matches the stable HTML snapshot", () => {
     const { container } = render(<Footer />);
     expect(container.firstChild).toMatchSnapshot();
+  });
+});
+
+// ─── 15. Active contract address ──────────────────────────────────────────────
+
+describe("Footer — active contract address", () => {
+  it("shows the active contract address for the current network", () => {
+    renderFooter();
+    expect(screen.getByTestId("active-contract-address")).toHaveTextContent(
+      /Testnet contract:/,
+    );
   });
 });
