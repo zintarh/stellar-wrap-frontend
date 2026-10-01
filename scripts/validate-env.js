@@ -1,12 +1,9 @@
 /**
  * Environment variable validation script for CI and `prebuild`.
- * Validates .env.example documentation and the configured contract addresses.
+ * Validates .env.example documentation and, with --build, the actual values
+ * in the environment (same loader and precedence as `next build`).
  *
- * This is the single contract verification script: it resolves the active
- * address per network in the same order as config/contractAddress.ts and
- * fails when none is configured or a configured one is malformed.
- *
- * Usage: node scripts/validate-env.js
+ * Usage: node scripts/validate-env.js [--build]
  * Exit codes:
  *   0 - All validations passed
  *   1 - Validation failed
@@ -52,20 +49,30 @@ function info(message) {
   log(`ℹ️  ${message}`, colors.blue);
 }
 
-// Required environment variables that must be documented
-const REQUIRED_ENV_VARS = [
-  'NEXT_PUBLIC_CONTRACT_ADDRESS_MAINNET',
-  'NEXT_PUBLIC_CONTRACT_ADDRESS_TESTNET',
-  'CRON_SECRET',
+// Every variable in .env.example (kept in sync by __tests__/validate-env.test.ts).
+// phase "build": NEXT_PUBLIC_* values are inlined into the bundle by `next build`,
+//   so a missing one cannot be fixed without rebuilding. Missing + required fails the build.
+// phase "runtime": read by server code per request, so the deployment can provide it
+//   after the build. Missing + required only warns at build time.
+const ENV_VARS = [
+  { name: 'NEXT_PUBLIC_CONTRACT_ADDRESS_MAINNET', phase: 'build', required: false },
+  { name: 'NEXT_PUBLIC_CONTRACT_ADDRESS_TESTNET', phase: 'build', required: false },
+  { name: 'NEXT_PUBLIC_CONTRACT_ADDRESS', phase: 'build', required: false },
+  { name: 'NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID', phase: 'build', required: false },
+  { name: 'NEXT_PUBLIC_PLAUSIBLE_DOMAIN', phase: 'build', required: false },
+  { name: 'NEXT_PUBLIC_SOROBAN_RPC_URL_MAINNET', phase: 'build', required: false },
+  { name: 'NEXT_PUBLIC_SOROBAN_RPC_URL_TESTNET', phase: 'build', required: false },
+  { name: 'CRON_SECRET', phase: 'runtime', required: true },
+  { name: 'RATE_LIMIT_WINDOW_SECONDS', phase: 'runtime', required: false },
+  { name: 'RATE_LIMIT_IP_MAX', phase: 'runtime', required: false },
+  { name: 'RATE_LIMIT_ACCOUNT_MAX', phase: 'runtime', required: false },
 ];
 
-// Optional but recommended environment variables
-const OPTIONAL_ENV_VARS = [
+// At least one contract address must be set at build time (see .env.example).
+const CONTRACT_ADDRESS_VARS = [
+  'NEXT_PUBLIC_CONTRACT_ADDRESS_MAINNET',
+  'NEXT_PUBLIC_CONTRACT_ADDRESS_TESTNET',
   'NEXT_PUBLIC_CONTRACT_ADDRESS',
-  'NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID',
-  'NEXT_PUBLIC_PLAUSIBLE_DOMAIN',
-  'NEXT_PUBLIC_SOROBAN_RPC_URL_MAINNET',
-  'NEXT_PUBLIC_SOROBAN_RPC_URL_TESTNET',
 ];
 
 // Soroban contract address validation (C + 55 base32 chars = 56 total)
@@ -76,6 +83,102 @@ function isValidContractAddress(address) {
     return false;
   }
   return CONTRACT_ADDRESS_REGEX.test(address);
+}
+
+/** Variable names declared in .env.example content. */
+function parseEnvExample(content) {
+  return content
+    .split('\n')
+    .map((line) => line.match(/^([A-Z_][A-Z0-9_]*)=/))
+    .filter(Boolean)
+    .map((match) => match[1]);
+}
+
+/** Checks the values in `env` for a build; returns error and warning messages. */
+function checkBuildEnv(env) {
+  const errors = [];
+  const warnings = [];
+  const isSet = (name) => Boolean(env[name] && env[name].trim());
+
+  if (!CONTRACT_ADDRESS_VARS.some(isSet)) {
+    errors.push(
+      `Missing required build-time variable: set at least one of ${CONTRACT_ADDRESS_VARS.join(', ')}`
+    );
+  }
+
+  CONTRACT_ADDRESS_VARS.filter(isSet).forEach((name) => {
+    const value = env[name].trim();
+    if (!isValidContractAddress(value)) {
+      errors.push(
+        `${name} is not a valid contract address (56 characters: C followed by 55 base32 chars)`
+      );
+    } else if (value.startsWith('CAAAAAAA')) {
+      errors.push(`${name} is the placeholder address, not a deployed contract`);
+    }
+  });
+
+  ENV_VARS.filter((v) => v.required && !isSet(v.name)).forEach(({ name, phase }) => {
+    if (phase === 'build') {
+      errors.push(`Missing required build-time variable: ${name}`);
+    } else {
+      warnings.push(
+        `Missing runtime variable: ${name} (required at runtime; set it in the deployment environment)`
+      );
+    }
+  });
+
+  return { errors, warnings };
+}
+
+function validateBuildEnv() {
+  log('\n' + '='.repeat(70), colors.bold);
+  log('Build Environment Validation', colors.bold);
+  log('='.repeat(70) + '\n', colors.bold);
+
+  // Load .env files with the same loader and precedence `next build` uses.
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- CommonJS script, like the requires above
+  const { loadEnvConfig } = require(
+    require.resolve('@next/env', { paths: [require.resolve('next')] })
+  );
+  loadEnvConfig(rootDir);
+
+  // Per-network validation (checks each contract address variable individually)
+  const env = process.env;
+  let configured = 0;
+  ['mainnet', 'testnet'].forEach((network) => {
+    const varName = `NEXT_PUBLIC_CONTRACT_ADDRESS_${network.toUpperCase()}`;
+    const source = env[varName] ? varName : env.NEXT_PUBLIC_CONTRACT_ADDRESS ? 'NEXT_PUBLIC_CONTRACT_ADDRESS' : null;
+    const address = source ? env[source].trim() : '';
+
+    if (!address) {
+      warning(`${network}: no contract address configured (set ${varName})`);
+      return;
+    }
+    if (!isValidContractAddress(address)) {
+      error(`${network}: ${source} is malformed: ${address}`);
+      info('Contract addresses must be 56 characters: C followed by 55 base32 chars (A-Z, 2-7)');
+      return;
+    }
+    if (address.startsWith('CAAAAAAA')) {
+      error(`${network}: ${source} is the placeholder address, not a deployed contract`);
+      return;
+    }
+    configured++;
+    success(`${network}: ${address} (from ${source})`);
+  });
+
+  if (configured === 0) {
+    error(
+      'No contract address configured. Set NEXT_PUBLIC_CONTRACT_ADDRESS_MAINNET and/or NEXT_PUBLIC_CONTRACT_ADDRESS_TESTNET.',
+    );
+  }
+
+  const { errors, warnings } = checkBuildEnv(env);
+  errors.forEach(error);
+  warnings.forEach(warning);
+  if (errors.length === 0) {
+    success('Required build-time variables are set');
+  }
 }
 
 function validateEnvExample() {
@@ -96,35 +199,21 @@ function validateEnvExample() {
 
   // Read .env.example
   const envExampleContent = fs.readFileSync(envExamplePath, 'utf8');
-  const documentedVars = new Set();
+  const documentedVars = new Set(parseEnvExample(envExampleContent));
 
-  // Parse documented variables
-  envExampleContent.split('\n').forEach((line) => {
-    const match = line.match(/^([A-Z_][A-Z0-9_]*)=/);
-    if (match) {
-      documentedVars.add(match[1]);
+  log('\n📋 Checking environment variables are documented...\n');
+
+  ENV_VARS.forEach(({ name }) => {
+    if (documentedVars.has(name)) {
+      success(`${name} is documented`);
+    } else {
+      error(`${name} is not documented in .env.example`);
     }
   });
 
-  log('\n📋 Checking required environment variables...\n');
-
-  // Check required variables are documented
-  REQUIRED_ENV_VARS.forEach((varName) => {
-    if (documentedVars.has(varName)) {
-      success(`${varName} is documented`);
-    } else {
-      error(`${varName} is not documented in .env.example`);
-    }
-  });
-
-  log('\n📋 Checking optional environment variables...\n');
-
-  // Check optional variables
-  OPTIONAL_ENV_VARS.forEach((varName) => {
-    if (documentedVars.has(varName)) {
-      success(`${varName} is documented`);
-    } else {
-      info(`${varName} could be documented (optional)`);
+  documentedVars.forEach((name) => {
+    if (!ENV_VARS.some((v) => v.name === name)) {
+      error(`${name} is in .env.example but not in ENV_VARS in scripts/validate-env.js`);
     }
   });
 
@@ -204,60 +293,6 @@ function validateContractConfig() {
   });
 }
 
-/** Reads .env files the way Next.js does; real environment variables win. */
-function loadEnv() {
-  const fileVars = {};
-  ['.env', '.env.production', '.env.local', '.env.production.local'].forEach((file) => {
-    const envPath = path.join(rootDir, file);
-    if (!fs.existsSync(envPath)) return;
-    fs.readFileSync(envPath, 'utf8')
-      .split('\n')
-      .forEach((line) => {
-        const match = line.match(/^\s*([A-Z_][A-Z0-9_]*)\s*=(.*)$/);
-        if (match) fileVars[match[1]] = match[2].trim().replace(/^["']|["']$/g, '');
-      });
-  });
-  return { ...fileVars, ...process.env };
-}
-
-function validateConfiguredContractAddresses() {
-  log('\n' + '='.repeat(70), colors.bold);
-  log('Active Contract Address Validation', colors.bold);
-  log('='.repeat(70) + '\n', colors.bold);
-
-  const env = loadEnv();
-  const legacy = env.NEXT_PUBLIC_CONTRACT_ADDRESS;
-  let configured = 0;
-
-  ['mainnet', 'testnet'].forEach((network) => {
-    const varName = `NEXT_PUBLIC_CONTRACT_ADDRESS_${network.toUpperCase()}`;
-    const source = env[varName] ? varName : legacy ? 'NEXT_PUBLIC_CONTRACT_ADDRESS' : null;
-    const address = source ? env[source].trim() : '';
-
-    if (!address) {
-      warning(`${network}: no contract address configured (set ${varName})`);
-      return;
-    }
-    if (!isValidContractAddress(address)) {
-      error(`${network}: ${source} is malformed: ${address}`);
-      info('Contract addresses must be 56 characters: C followed by 55 base32 chars (A-Z, 2-7)');
-      return;
-    }
-    if (address.startsWith('CAAAAAAA')) {
-      error(`${network}: ${source} is the placeholder address, not a deployed contract`);
-      return;
-    }
-    configured++;
-    success(`${network}: ${address} (from ${source})`);
-  });
-
-  if (configured === 0) {
-    error(
-      'No contract address configured. Set NEXT_PUBLIC_CONTRACT_ADDRESS_MAINNET and/or NEXT_PUBLIC_CONTRACT_ADDRESS_TESTNET.',
-    );
-  }
-}
-
 function validateREADME() {
   log('\n' + '='.repeat(70), colors.bold);
   log('README Documentation Validation', colors.bold);
@@ -307,10 +342,13 @@ function validateREADME() {
 function main() {
   log('\n🚀 Starting environment variable validation...\n', colors.bold);
 
-  validateEnvExample();
-  validateContractConfig();
-  validateConfiguredContractAddresses();
-  validateREADME();
+  if (process.argv.includes('--build')) {
+    validateBuildEnv();
+  } else {
+    validateEnvExample();
+    validateContractConfig();
+    validateREADME();
+  }
 
   // Summary
   log('\n' + '='.repeat(70), colors.bold);
@@ -332,4 +370,8 @@ function main() {
   }
 }
 
-main();
+if (require.main === module) {
+  main();
+}
+
+module.exports = { ENV_VARS, CONTRACT_ADDRESS_VARS, parseEnvExample, checkBuildEnv };
