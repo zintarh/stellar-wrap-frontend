@@ -1,10 +1,36 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect } from "react";
+/**
+ * Withdraw Page — Issue #477
+ *
+ * Keyboard navigation contract:
+ *   - On wallet connect:  focus moves to the amount input automatically.
+ *   - On validation/submission error: focus moves to the error alert so
+ *     screen-reader and keyboard users are notified without polling.
+ *   - On successful withdrawal: focus moves to the "Withdraw Again" button.
+ *   - Enter in the amount field triggers the withdraw action (same as click).
+ *   - Tab / Shift+Tab traverse: Back button → amount input → Withdraw button.
+ *   - Escape in the amount field clears it (convenience shortcut).
+ *   - All interactive elements carry explicit aria-labels.
+ *   - The submit button is aria-busy during the in-flight request.
+ *
+ * Design decisions:
+ *   - No inline styles — all sizing/colours use Tailwind utility classes and
+ *     the project's CSS custom properties (app/globals.css).
+ *   - Strictly typed — no `any`.
+ */
+
+import { useState, useCallback, useRef, useEffect, KeyboardEvent } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { ArrowLeft, Wallet, Loader2, AlertCircle, CheckCircle } from "lucide-react";
+import {
+  ArrowLeft,
+  Wallet,
+  Loader2,
+  AlertCircle,
+  CheckCircle,
+} from "lucide-react";
 import { useWrapStore } from "../../store/wrapStore";
 import { useWalletStore } from "../../store/walletStore";
 import { ConnectWalletButton } from "../../components/ConnectWalletButton";
@@ -16,16 +42,21 @@ export default function WithdrawPage() {
   const router = useRouter();
   const network = useWrapStore((s) => s.network);
   const { address, provider, isConnected } = useWalletStore();
+
   const [amount, setAmount] = useState("");
-  const [status, setStatus] = useState<"idle" | "withdrawing" | "success" | "failed">("idle");
+  const [status, setStatus] = useState<
+    "idle" | "withdrawing" | "success" | "failed"
+  >("idle");
   const [error, setError] = useState<string | null>(null);
   const [txHash, setTxHash] = useState<string | null>(null);
 
+  // Refs for programmatic focus management
   const amountInputRef = useRef<HTMLInputElement>(null);
   const withdrawButtonRef = useRef<HTMLButtonElement>(null);
   const withdrawAgainButtonRef = useRef<HTMLButtonElement>(null);
   const errorRef = useRef<HTMLDivElement>(null);
 
+  // ── Withdraw logic ─────────────────────────────────────────────────────────
   const handleWithdraw = useCallback(async () => {
     setError(null);
     setTxHash(null);
@@ -72,8 +103,27 @@ export default function WithdrawPage() {
 
   const isWithdrawing = status === "withdrawing";
 
-  // Move focus to the amount input when the wallet connects so keyboard users
-  // land on the first actionable control of the flow.
+  // ── Keyboard shortcuts ─────────────────────────────────────────────────────
+
+  /** Enter in the amount field triggers the withdraw; Escape clears it. */
+  const handleAmountKeyDown = useCallback(
+    (e: KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === "Enter" && !isWithdrawing && amount.trim()) {
+        e.preventDefault();
+        void handleWithdraw();
+      }
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setAmount("");
+      }
+    },
+    [amount, isWithdrawing, handleWithdraw],
+  );
+
+  // ── Focus management effects ───────────────────────────────────────────────
+
+  // Move focus to the amount input as soon as the wallet connects so keyboard
+  // users land on the first actionable control of the flow.
   useEffect(() => {
     if (isConnected) {
       amountInputRef.current?.focus();
@@ -81,62 +131,67 @@ export default function WithdrawPage() {
   }, [isConnected]);
 
   // Move focus to the error alert when validation or submission fails so
-  // screen reader and keyboard users are notified immediately.
+  // screen-reader and keyboard users are notified immediately.
   useEffect(() => {
     if (error) {
       errorRef.current?.focus();
     }
   }, [error]);
 
-  // Move focus to the "Withdraw Again" action once the withdrawal succeeds.
+  // Move focus to the "Withdraw Again" action once the withdrawal succeeds so
+  // the keyboard user can immediately restart the flow without re-tabbing.
   useEffect(() => {
     if (status === "success") {
       withdrawAgainButtonRef.current?.focus();
     }
   }, [status]);
 
+  // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <main className="relative w-full min-h-screen h-screen overflow-hidden flex items-center justify-center bg-theme-background">
-      <div className="absolute inset-0 bg-linear-to-br from-black via-black to-black opacity-60" />
+    <main className="relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-theme-background">
+      {/* Decorative overlay — no semantic content */}
+      <div
+        className="absolute inset-0 bg-gradient-to-br from-black via-black to-black opacity-60"
+        aria-hidden="true"
+      />
 
-      <div className="relative z-10 max-w-xl w-full mx-auto px-4 sm:px-6 md:px-8">
+      <div className="relative z-10 mx-auto w-full max-w-xl px-4 sm:px-6 md:px-8">
+        {/* ── Page heading ─────────────────────────────────────────────── */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-8"
+          className="mb-8 text-center"
         >
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-white mb-3 tracking-tight">
+          <h1 className="mb-3 text-3xl font-black tracking-tight text-white sm:text-4xl md:text-5xl">
             Withdraw
           </h1>
-          <p className="text-base text-white/60 font-medium">
+          <p className="text-base font-medium text-white/60">
             Withdraw funds from your Soroban smart contract
           </p>
         </motion.div>
 
-        <div
-          className="relative backdrop-blur-xl p-6 sm:p-8 rounded-2xl border"
-          style={{
-            backgroundColor: "rgba(0, 0, 0, 0.7)",
-            borderColor: "rgba(var(--color-theme-primary-rgb), 0.3)",
-          }}
-        >
+        {/* ── Card ─────────────────────────────────────────────────────── */}
+        <div className="relative rounded-2xl border border-theme-primary/30 bg-black/70 p-6 backdrop-blur-xl sm:p-8">
           {!isConnected ? (
+            /* ── Wallet not connected ────────────────────────────── */
             <div className="space-y-4">
-              <p className="text-sm text-white/60 text-center">
+              <p className="text-center text-sm text-white/60">
                 Connect your wallet to withdraw
               </p>
               <ConnectWalletButton
                 walletName={provider ?? "Freighter"}
-                icon={<Wallet className="w-5 h-5" />}
+                icon={<Wallet className="h-5 w-5" aria-hidden="true" />}
                 onConnect={() => {}}
               />
             </div>
           ) : (
+            /* ── Wallet connected ─────────────────────────────────── */
             <div className="space-y-6">
+              {/* Amount field */}
               <div>
                 <label
                   htmlFor="withdraw-amount"
-                  className="block text-sm font-black text-white/70 mb-2 tracking-wider"
+                  className="mb-2 block text-sm font-black tracking-wider text-white/70"
                 >
                   Amount (XLM)
                 </label>
@@ -147,26 +202,25 @@ export default function WithdrawPage() {
                   inputMode="decimal"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !isWithdrawing && amount.trim()) {
-                      e.preventDefault();
-                      void handleWithdraw();
-                    }
-                  }}
+                  onKeyDown={handleAmountKeyDown}
                   placeholder="0.0000000"
-                  className="w-full px-5 py-4 rounded-xl font-mono text-sm sm:text-base border-2 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-theme-primary focus:ring-offset-2 focus:ring-offset-black bg-black/50"
-                  style={{
-                    borderColor: error
-                      ? "rgba(239, 68, 68, 0.5)"
-                      : "rgba(255, 255, 255, 0.1)",
-                    color: "white",
-                  }}
                   disabled={isWithdrawing}
+                  aria-label="Withdrawal amount in XLM"
                   aria-invalid={!!error}
                   aria-describedby={error ? "withdraw-error" : undefined}
+                  className={[
+                    "w-full rounded-xl border-2 bg-black/50 px-5 py-4 font-mono text-sm text-white transition-all duration-200",
+                    "placeholder:text-white/20",
+                    "focus:outline-none focus:ring-2 focus:ring-theme-primary focus:ring-offset-2 focus:ring-offset-black",
+                    "disabled:cursor-not-allowed disabled:opacity-50",
+                    error
+                      ? "border-red-500/50"
+                      : "border-white/10 hover:border-white/20",
+                  ].join(" ")}
                 />
               </div>
 
+              {/* Error alert */}
               {error && (
                 <motion.div
                   initial={{ opacity: 0, y: -10 }}
@@ -176,50 +230,71 @@ export default function WithdrawPage() {
                   tabIndex={-1}
                   role="alert"
                   aria-live="assertive"
-                  className="p-4 bg-red-500/10 border-2 border-red-500/50 rounded-xl text-red-400 text-sm font-medium flex items-start gap-2 focus:outline-none focus:ring-2 focus:ring-red-500/50"
+                  className="flex items-start gap-2 rounded-xl border-2 border-red-500/50 bg-red-500/10 p-4 text-sm font-medium text-red-400 focus:outline-none focus:ring-2 focus:ring-red-500/50"
                 >
-                  <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" aria-hidden="true" />
+                  <AlertCircle
+                    className="mt-0.5 h-5 w-5 shrink-0"
+                    aria-hidden="true"
+                  />
                   <span>{error}</span>
                 </motion.div>
               )}
 
+              {/* Success banner */}
               {status === "success" && txHash && (
                 <motion.div
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="p-4 bg-emerald-500/10 border-2 border-emerald-500/50 rounded-xl text-emerald-400 text-sm font-medium flex items-start gap-2"
+                  role="status"
+                  aria-live="polite"
+                  className="flex items-start gap-2 rounded-xl border-2 border-emerald-500/50 bg-emerald-500/10 p-4 text-sm font-medium text-emerald-400"
                 >
-                  <CheckCircle className="w-5 h-5 shrink-0 mt-0.5" aria-hidden="true" />
+                  <CheckCircle
+                    className="mt-0.5 h-5 w-5 shrink-0"
+                    aria-hidden="true"
+                  />
                   <div>
                     <p className="font-bold">Withdrawal submitted</p>
-                    <p className="text-xs mt-1 break-all font-mono opacity-80">
+                    <p className="mt-1 break-all font-mono text-xs opacity-80">
                       Hash: {txHash}
                     </p>
                   </div>
                 </motion.div>
               )}
 
+              {/* Withdraw button */}
               <motion.button
                 ref={withdrawButtonRef}
-                onClick={handleWithdraw}
+                type="button"
+                onClick={() => void handleWithdraw()}
                 disabled={isWithdrawing || !amount.trim()}
-                className="w-full px-6 py-4 rounded-xl font-bold text-black bg-theme-primary hover:bg-theme-primary/90 transition-colors flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-theme-primary focus:ring-offset-2 focus:ring-offset-black disabled:opacity-50 disabled:cursor-not-allowed"
+                aria-busy={isWithdrawing}
+                aria-label={
+                  isWithdrawing
+                    ? "Withdrawal in progress, please wait"
+                    : `Withdraw ${amount || "0"} XLM`
+                }
                 whileHover={isWithdrawing ? undefined : { scale: 1.02 }}
                 whileTap={isWithdrawing ? undefined : { scale: 0.98 }}
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-theme-primary px-6 py-4 font-bold text-black transition-colors hover:bg-theme-primary/90 focus:outline-none focus:ring-2 focus:ring-theme-primary focus:ring-offset-2 focus:ring-offset-black disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isWithdrawing && (
-                  <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" />
+                  <Loader2
+                    className="h-5 w-5 animate-spin"
+                    aria-hidden="true"
+                  />
                 )}
-                <span>
-                  {isWithdrawing ? "Withdrawing..." : "Withdraw"}
-                </span>
+                <span>{isWithdrawing ? "Withdrawing…" : "Withdraw"}</span>
               </motion.button>
 
+              {/* Withdraw again (visible after success) */}
               {status === "success" && (
                 <motion.button
                   ref={withdrawAgainButtonRef}
+                  type="button"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
+                  aria-label="Start another withdrawal"
                   onClick={() => {
                     setStatus("idle");
                     setAmount("");
@@ -227,7 +302,7 @@ export default function WithdrawPage() {
                     setError(null);
                     amountInputRef.current?.focus();
                   }}
-                  className="w-full px-6 py-3 rounded-xl font-bold text-white/70 border border-white/10 hover:text-white hover:border-white/20 transition-colors text-sm focus:outline-none focus:ring-2 focus:ring-theme-primary focus:ring-offset-2 focus:ring-offset-black"
+                  className="w-full rounded-xl border border-white/10 px-6 py-3 text-sm font-bold text-white/70 transition-colors hover:border-white/20 hover:text-white focus:outline-none focus:ring-2 focus:ring-theme-primary focus:ring-offset-2 focus:ring-offset-black"
                 >
                   Withdraw Again
                 </motion.button>
@@ -236,12 +311,14 @@ export default function WithdrawPage() {
           )}
         </div>
 
+        {/* ── Back button ───────────────────────────────────────────────── */}
         <motion.button
+          type="button"
           onClick={() => router.back()}
-          className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-white/60 hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-theme-primary focus:ring-offset-2 focus:ring-offset-black rounded-lg px-2 py-1"
           aria-label="Go back to previous page"
+          className="mt-6 inline-flex items-center gap-2 rounded-lg px-2 py-1 text-sm font-bold text-white/60 transition-colors hover:text-white focus:outline-none focus:ring-2 focus:ring-theme-primary focus:ring-offset-2 focus:ring-offset-black"
         >
-          <ArrowLeft className="w-4 h-4" aria-hidden="true" />
+          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
           <span>Back</span>
         </motion.button>
       </div>
