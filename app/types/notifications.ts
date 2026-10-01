@@ -75,10 +75,19 @@ export interface DispatchLogEntry {
   /** e.g. "2025-W03", "2025-01", "2025" */
   periodKey: string;
   sentAt: string; // ISO-8601
-  status: "sent" | "failed";
+  status: "sent" | "failed" | "pruned";
   attempts: number;
   /** Error message from the final failed attempt (only present if status === "failed") */
   error?: string;
+}
+
+// ─── Prune log entry (stored in KV at notif:prune:{wallet}:{prunedAt}) ──────────
+
+export interface PruneLogEntry {
+  walletAddress: string;
+  channel: "push";
+  statusCode: number; // e.g. 404 or 410
+  prunedAt: string; // ISO-8601
 }
 
 // ─── Notification preferences (Zustand store shape) ──────────────────────────

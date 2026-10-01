@@ -633,6 +633,11 @@ paths:
                     minimum: 0
                     description: Number of notifications actually sent.
                     example: 42
+                  pruned:
+                    type: integer
+                    minimum: 0
+                    description: Number of expired web-push subscriptions pruned during dispatch.
+                    example: 2
                   periods:
                     type: array
                     description: Periods considered by this dispatch.
@@ -647,6 +652,7 @@ paths:
                   value:
                     ok: true
                     dispatched: 42
+                    pruned: 2
                     periods:
                       - monthly
                 noActivePeriods:

@@ -25,6 +25,7 @@
  * | `notif:sub:`    | `notif:sub:<walletAddress>`                         | subscribe / unsubscribe / preferences / data | One `SubscriptionRecord` per wallet. Contains push subscription JSON, email address, channel period preferences, consent flags, and optionally a deletion timestamp.             |
  * | `notif:period:` | `notif:period:<period>`                             | subscribe / unsubscribe                      | A set of wallet addresses opted in to `period`. Used by dispatch to fan out without a full scan when only one period is active.                                                  |
  * | `notif:log:`    | `notif:log:<wallet>:<channel>:<period>:<periodKey>` | dispatch                                     | Idempotency log. One `DispatchLogEntry` per (wallet, channel, period, periodKey) tuple. Prevents double-sending within the same period window.                                   |
+ * | `notif:prune:`  | `notif:prune:<wallet>:<timestamp>`                  | dispatch (prune audit)                       | Optional audit log for pruned push subscriptions. One entry per pruned subscription. Contains metadata about the pruning event.                                                  |
  *
  * ---
  *
@@ -140,3 +141,21 @@ export const LOG_KEY = (
   period: string,
   periodKey: string,
 ): string => `notif:log:${wallet}:${channel}:${period}:${periodKey}`;
+
+/**
+ * Prune audit-log key.
+ *
+ * Records a pruning event when a push subscription is removed due to a
+ * terminal error (HTTP 404 or 410).  Each entry is stored under a unique
+ * timestamp for this wallet.
+ *
+ * Pattern: `notif:prune:<wallet>:<timestamp>`
+ *   e.g.   `notif:prune:GABC…:1700000000`
+ *
+ * Failure mode: **LOUD** — if the audit log write fails the pruning itself
+ * still proceeds; the error is logged but not propagated.
+ */
+export const PRUNE_KEY = (
+  wallet: string,
+  timestamp: string,
+): string => `notif:prune:${wallet}:${timestamp}`;

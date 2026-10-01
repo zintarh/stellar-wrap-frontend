@@ -12,13 +12,13 @@ import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 // KV_FAILURE: LOUD — dispatch must read/write reliably; errors propagate so
 // the cron job retries the entire run rather than silently skipping sends.
-import { kvGet, kvSet, kvKeys, SUB_KEY, LOG_KEY } from "../_lib/kv";
+import { kvGet, kvSet, kvKeys, kvSRem, SUB_KEY, LOG_KEY, PERIOD_KEY, PRUNE_KEY } from "../_lib/kv";
 import { sendEmail } from "../_lib/email";
 import { formatPushPayload } from "@app/utils/notifications/pushPayloadFormatter";
 import { renderEmailTemplate } from "@app/utils/notifications/emailTemplate";
 import { logger } from "@/app/utils/logger";
 import { getPeriodKey, getActivePeriodsForNow } from "@app/utils/notifications/periodKey";
-import type { SubscriptionRecord, DispatchLogEntry, WrapPeriod } from "@app/types/notifications";
+import type { SubscriptionRecord, DispatchLogEntry, WrapPeriod, PruneLogEntry } from "@app/types/notifications";
 import { apiError, internalApiError } from "@/app/api/_lib/apiError";
 
 const log = logger.child("api:dispatch");
@@ -29,15 +29,39 @@ const PERIOD_LABEL: Record<WrapPeriod, string> = {
   yearly: "Yearly",
 };
 
+const VALID_PERIODS = ["weekly", "monthly", "yearly"] as const;
+
+// ─── Push Error Classification Helpers ───────────────────────────────────────
+
+function getPushErrorStatus(err: unknown): number | undefined {
+  if (typeof err === "object" && err !== null) {
+    const e = err as { statusCode?: number; status?: number };
+    return e.statusCode ?? e.status;
+  }
+  return undefined;
+}
+
+function isTerminalPushError(err: unknown): boolean {
+  const status = getPushErrorStatus(err);
+  return status === 404 || status === 410;
+}
+
 // ─── Retry with exponential backoff ──────────────────────────────────────────
 
-async function withRetry<T>(fn: () => Promise<T>, maxRetries = 3): Promise<T> {
+async function withRetry<T>(
+  fn: () => Promise<T>,
+  maxRetries = 3,
+  shouldRetry?: (err: unknown) => boolean
+): Promise<T> {
   let lastError: unknown;
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       return await fn();
     } catch (err) {
       lastError = err;
+      if (shouldRetry && !shouldRetry(err)) {
+        throw err;
+      }
       if (attempt < maxRetries) {
         await new Promise((r) => setTimeout(r, 1000 * Math.pow(2, attempt)));
       }
@@ -46,20 +70,46 @@ async function withRetry<T>(fn: () => Promise<T>, maxRetries = 3): Promise<T> {
   throw lastError;
 }
 
+// ─── Pruning Helper ──────────────────────────────────────────────────────────
+
+async function prunePushSubscription(walletAddress: string, statusCode: number): Promise<void> {
+  // 1. Remove push subscription from SubscriptionRecord
+  const record = await kvGet<SubscriptionRecord>(SUB_KEY(walletAddress));
+  if (record) {
+    const updatedRecord: SubscriptionRecord = { ...record, push: undefined };
+    await kvSet(SUB_KEY(walletAddress), updatedRecord);
+  }
+
+  // 2. Remove wallet address from period indexes
+  await Promise.all(VALID_PERIODS.map((period) => kvSRem(PERIOD_KEY(period), walletAddress)));
+
+  // 3. Record pruning in KV and log
+  const prunedAt = new Date().toISOString();
+  const pruneLogEntry: PruneLogEntry = {
+    walletAddress,
+    channel: "push",
+    statusCode,
+    prunedAt,
+  };
+  await kvSet(PRUNE_KEY(walletAddress, prunedAt), pruneLogEntry);
+
+  log.warn({ walletAddress, statusCode, prunedAt }, `Pruned expired web-push subscription (${statusCode})`);
+}
+
 // ─── Push dispatch ────────────────────────────────────────────────────────────
 
 async function sendPushNotification(
   subscription: PushSubscriptionJSON,
   walletAddress: string,
   period: WrapPeriod
-): Promise<void> {
+): Promise<{ success: boolean; pruned: boolean }> {
   const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY;
   const vapidPublicKey = process.env.VAPID_PUBLIC_KEY;
   const vapidSubject = process.env.VAPID_SUBJECT ?? "mailto:noreply@stellarwrapped.app";
 
   if (!vapidPrivateKey || !vapidPublicKey) {
     log.warn("VAPID keys not configured — skipping push");
-    return;
+    return { success: false, pruned: false };
   }
 
   const webPush = await import("web-push");
@@ -68,21 +118,23 @@ async function sendPushNotification(
   const payload = formatPushPayload(period);
 
   try {
-    await withRetry(async () => {
-      const result = await webPush.sendNotification(
-        subscription as Parameters<typeof webPush.sendNotification>[0],
-        JSON.stringify(payload)
-      );
-      return result;
-    });
+    await withRetry(
+      async () => {
+        const result = await webPush.sendNotification(
+          subscription as Parameters<typeof webPush.sendNotification>[0],
+          JSON.stringify(payload)
+        );
+        return result;
+      },
+      3,
+      (err) => !isTerminalPushError(err)
+    );
+    return { success: true, pruned: false };
   } catch (err: unknown) {
-    // 410 Gone — subscription is no longer valid; remove it
-    const status = (err as { statusCode?: number })?.statusCode;
-    if (status === 410) {
-      const record = await kvGet<SubscriptionRecord>(SUB_KEY(walletAddress));
-      if (record) {
-        await kvSet(SUB_KEY(walletAddress), { ...record, push: undefined });
-      }
+    const status = getPushErrorStatus(err);
+    if (isTerminalPushError(err)) {
+      await prunePushSubscription(walletAddress, status ?? 410);
+      return { success: false, pruned: true };
     }
     throw err;
   }
@@ -150,12 +202,13 @@ export async function POST(request: NextRequest) {
     const activePeriods: WrapPeriod[] = body.periods ?? getActivePeriodsForNow(now);
 
     if (activePeriods.length === 0) {
-      return NextResponse.json({ ok: true, dispatched: 0, message: "No active periods" });
+      return NextResponse.json({ ok: true, dispatched: 0, pruned: 0, message: "No active periods" });
     }
 
     // Scan all subscription records
     const subKeys = await kvKeys("notif:sub:*");
     let dispatched = 0;
+    let pruned = 0;
     const dispatchedWallets = new Set<string>();
 
     for (const key of subKeys) {
@@ -186,12 +239,20 @@ export async function POST(request: NextRequest) {
             };
             await kvSet(logKey, logEntry);
 
-            let status: "sent" | "failed" = "sent";
+            let status: "sent" | "failed" | "pruned" = "sent";
             let attempts = 1;
             let error: string | undefined;
 
             try {
-              await sendPushNotification(record.push.subscription, walletAddress, period);
+              const res = await sendPushNotification(
+                record.push.subscription,
+                walletAddress,
+                period
+              );
+              if (res.pruned) {
+                status = "pruned";
+                pruned++;
+              }
             } catch (err) {
               status = "failed";
               attempts = 4; // 1 initial + 3 retries
@@ -250,6 +311,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       ok: true,
       dispatched,
+      pruned,
       periods: activePeriods,
       uniqueWallets: dispatchedWallets.size,
     });
