@@ -179,6 +179,58 @@ jobs:
           path: coverage/
           retention-days: 30
 
+  # Standalone so "Production Build" reports its own status and can be marked
+  # as a required check in branch protection.
+  production-build:
+    name: Production Build
+    runs-on: ubuntu-latest
+    needs: check-lock-files
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # No version input: the pnpm version comes from packageManager in package.json.
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Reuse the Next.js build cache between runs; a source or lockfile change
+      # falls back to the most recent cache for the same lockfile.
+      - name: Cache Next.js build
+        uses: actions/cache@v4
+        with:
+          path: .next/cache
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('pnpm-lock.yaml') }}-${{ hashFiles('**/*.[jt]s', '**/*.[jt]sx', '!node_modules/**') }}
+          restore-keys: |
+            ${{ runner.os }}-nextjs-${{ hashFiles('pnpm-lock.yaml') }}-
+
+      - name: Build
+        run: pnpm build
+
+      # Totals only; the Bundle Size Tracking workflow has the per-bundle breakdown.
+      - name: Build output size
+        run: |
+          size() { find "$@" -type f -print0 | du -ch --files0-from=- | tail -n 1 | cut -f 1; }
+          {
+            echo "## Production build output"
+            echo ""
+            echo "| Output | Size |"
+            echo "| --- | --- |"
+            echo "| Client JavaScript | $(size .next/static -name '*.js') |"
+            echo "| Client CSS | $(size .next/static -name '*.css') |"
+            echo "| All static assets (\`.next/static\`) | $(size .next/static) |"
+            echo "| Server output (\`.next/server\`) | $(size .next/server) |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
   visual-regression:
     runs-on: ubuntu-latest
     needs: check-lock-files
