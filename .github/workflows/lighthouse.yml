@@ -7,6 +7,9 @@ on:
   pull_request:
     branches:
       - '**'
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
 
 # Allow the Lighthouse action to post score comments on pull requests.
 permissions:
@@ -25,19 +28,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+      - name: Setup
+        uses: ./.github/actions/setup
         with:
-          version: 10.25.0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+          node-version: "20"
 
       - name: Build Next.js app
         run: pnpm build

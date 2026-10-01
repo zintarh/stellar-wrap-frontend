@@ -4,6 +4,9 @@ on:
   pull_request:
     branches:
       - "**"
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
   push:
     branches:
       - main
@@ -18,19 +21,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10.25.0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Setup
+        uses: ./.github/actions/setup
 
       - name: Build with bundle analyzer
         run: ANALYZE=true pnpm build

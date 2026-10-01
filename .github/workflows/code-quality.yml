@@ -4,6 +4,9 @@ on:
   pull_request:
     branches:
       - "**"
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
   push:
     branches:
       - main
@@ -16,6 +19,8 @@ concurrency:
   group: code-quality-${{ github.ref }}
   cancel-in-progress: true
 
+# The single authoritative lint, formatting and type check. Unit tests run in
+# ci.yml.
 jobs:
   lint-and-typecheck:
     name: ESLint, Prettier & TypeScript
@@ -26,24 +31,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # ── Tool setup ──────────────────────────────────────────────────────────
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          # Pinned to match packageManager in package.json (pnpm@10.25.0).
-          version: 10.25.0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          # Restores the pnpm store cache keyed on the lock file so installs
-          # are fast on subsequent runs.
-          cache: pnpm
-
-      # ── Install ─────────────────────────────────────────────────────────────
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      # ── Setup ───────────────────────────────────────────────────────────────
+      # pnpm (pinned by packageManager in package.json), Node.js, the pnpm
+      # store cache and a frozen-lockfile install — see .github/actions/setup.
+      - name: Setup
+        uses: ./.github/actions/setup
 
       # ── ESLint ──────────────────────────────────────────────────────────────
       # Runs the project's configured ESLint rules (eslint.config.mjs).
@@ -65,14 +57,6 @@ jobs:
       # inference failures, strict null checks).
       - name: Run TypeScript type check
         run: pnpm typecheck
-
-      # ── Unit tests ──────────────────────────────────────────────────────────
-      # Runs the full unit test suite on every pull request.  `pnpm test`
-      # executes both halves of the suite (the two test scripts defined in
-      # package.json), so a failure in either half fails this required check
-      # and blocks the PR from merging.
-      - name: Run unit tests
-        run: pnpm test
 
       # ── ESLint SARIF annotations ─────────────────────────────────────────────
       # Re-run ESLint with SARIF output so findings appear inline on the PR
