@@ -42,6 +42,33 @@ jobs:
       - name: Build Storybook
         run: pnpm run build-storybook
 
+      # Accessibility assertions run against the built Storybook so violations
+      # fail CI instead of only surfacing in the Storybook UI.
+      #
+      # Division of responsibility:
+      #   - @storybook/addon-a11y: interactive, per-story feedback in the
+      #     Storybook UI for authors while developing components.
+      #   - @axe-core/playwright: automated, headless assertions in CI against
+      #     the built Storybook (component-level checks). Page-level axe checks
+      #     live in the Playwright e2e suite (see e2e-tests.yml).
+      #
+      # The check gates on regression against a recorded baseline
+      # (a11y-baseline.json) so pre-existing violations tracked by #421, #426,
+      # and #500 do not block the work; new violations fail the build.
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Run accessibility assertions
+        run: pnpm run test:a11y
+
+      - name: Upload accessibility report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: a11y-report
+          path: a11y-report/
+          if-no-files-found: ignore
+
       - name: Upload Pages artifact
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: actions/upload-pages-artifact@v3

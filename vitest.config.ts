@@ -6,6 +6,11 @@ import path from "path";
 // and `test:hooks`; the split was accidental, so everything now runs under
 // Vitest. This config covers the node environment (unit + integration);
 // component tests keep their own jsdom config in vitest.hooks.config.ts.
+//
+// The hooks suite is kept separate because it needs a jsdom environment
+// (React component rendering) plus its own setup file, which the node-based
+// integration setup does not provide. That is a genuine environment need, so
+// the split is intentional rather than accidental.
 export default defineConfig({
   test: {
     globals: true,

@@ -45,9 +45,12 @@ jobs:
         # PLAYWRIGHT_BASE_URL is intentionally unset so the Playwright webServer
         # starts the Next.js dev server itself (see playwright.config.ts).
         # CI env enables retries + single worker in the config for reliability.
+        # Retries are bounded to 2 in CI only; locally retries stay at 0 so
+        # flakiness is visible to the author who introduced it.
         run: pnpm test:e2e
         env:
           CI: "true"
+          PLAYWRIGHT_RETRIES: "2"
 
       - name: Run Transaction Signing E2E flow
         # Issue #417: dedicated run of the Transaction Signing journey so the
@@ -56,6 +59,7 @@ jobs:
         run: pnpm exec playwright test tests/e2e/transaction-signing.spec.ts
         env:
           CI: "true"
+          PLAYWRIGHT_RETRIES: "2"
 
       - name: Upload Playwright report & traces
         uses: actions/upload-artifact@v4
@@ -65,6 +69,17 @@ jobs:
           path: |
             playwright-report/
             test-results/
+          retention-days: 30
+
+      - name: Upload Playwright traces
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-traces-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            test-results/**/trace.zip
+            test-results/**/trace-*.zip
+          if-no-files-found: ignore
           retention-days: 30
 
   smart-contract-invocation:
@@ -101,6 +116,7 @@ jobs:
         run: pnpm exec playwright test e2e/smart-contract-invocation.spec.ts
         env:
           CI: "true"
+          PLAYWRIGHT_RETRIES: "2"
 
       - name: Upload Smart Contract Invocation report & traces
         uses: actions/upload-artifact@v4

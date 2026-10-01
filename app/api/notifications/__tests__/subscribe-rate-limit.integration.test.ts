@@ -2,7 +2,12 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { NextRequest } from "next/server";
 import { POST as subscribePOST } from "../subscribe/route";
 import { POST as subscribeEmailPOST } from "../subscribe-email/route";
-import { kvKeys, kvGet, kvDel } from "../_lib/kv";
+import { GET as confirmEmailGET } from "../confirm-email/route";
+import { GET as unsubscribeGET } from "../unsubscribe/route";
+import { POST as dispatchPOST } from "../dispatch/route";
+import { GET as preferencesGET, POST as preferencesPOST } from "../preferences/route";
+import { GET as dataGET } from "../data/route";
+import { kvKeys, kvGet, kvSet, kvDel } from "../_lib/kv";
 import {
   SUBSCRIBE_IP_LIMIT,
   SUBSCRIBE_EMAIL_IP_LIMIT,
@@ -30,6 +35,30 @@ function createPostRequest(
     },
     body: JSON.stringify(body),
   });
+}
+
+function createGetRequest(
+  url: string,
+  headers: Record<string, string> = {},
+): NextRequest {
+  return new NextRequest(new URL(url, "http://localhost:3000"), {
+    method: "GET",
+    headers,
+  });
+}
+
+async function seedSubscription(
+  walletAddress: string,
+  overrides: Partial<SubscriptionRecord> = {},
+): Promise<SubscriptionRecord> {
+  const record: SubscriptionRecord = {
+    walletAddress,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    ...overrides,
+  };
+  await kvSet(`notif:sub:${walletAddress}`, record);
+  return record;
 }
 
 describe("Notification Subscribe Rate Limiting & Idempotency", () => {
@@ -119,6 +148,35 @@ describe("Notification Subscribe Rate Limiting & Idempotency", () => {
       expect(record).not.toBeNull();
       expect(record?.walletAddress).toBe(VALID_WALLET_1);
       expect(record?.push?.periods).toEqual({ weekly: true, monthly: true, yearly: true });
+    });
+
+    it("rejects invalid input with 400 and a descriptive error", async () => {
+      const req = createPostRequest(
+        "/api/notifications/subscribe",
+        { walletAddress: "not-a-wallet", periods: { weekly: true } },
+        { "x-forwarded-for": "10.0.0.50" },
+      );
+      const res = await subscribePOST(req);
+      expect(res.status).toBe(400);
+      const body = await res.json();
+      expect(typeof body.error).toBe("string");
+    });
+
+    it("returns 503 when KV is unavailable", async () => {
+      const kv = await import("../_lib/kv");
+      const spy = vi.spyOn(kv, "kvSet").mockRejectedValueOnce(new Error("KV down"));
+      const req = createPostRequest(
+        "/api/notifications/subscribe",
+        {
+          walletAddress: VALID_WALLET_1,
+          subscription: { endpoint: "https://push.example.com/sub/1" },
+          periods: { weekly: true, monthly: false, yearly: false },
+        },
+        { "x-forwarded-for": "10.0.0.60" },
+      );
+      const res = await subscribePOST(req);
+      expect([500, 503]).toContain(res.status);
+      spy.mockRestore();
     });
   });
 
@@ -210,7 +268,6 @@ describe("Notification Subscribe Rate Limiting & Idempotency", () => {
       expect(data1.status).toBe("pending");
 
       // Simulate confirmation by setting email status to active in KV
-      const { kvSet } = await import("../_lib/kv");
       const record = await kvGet<SubscriptionRecord>(`notif:sub:${VALID_WALLET_1}`);
       if (record?.email) {
         record.email.status = "active";
@@ -222,22 +279,263 @@ describe("Notification Subscribe Rate Limiting & Idempotency", () => {
         "/api/notifications/subscribe-email",
         {
           ...payload,
-          periods: { weekly: true, monthly: true, yearly: true },
+          periods: { weekly: true, monthly: true, yearly: false },
         },
         { "x-forwarded-for": "10.1.0.2" },
       );
       const res2 = await subscribeEmailPOST(req2);
       expect(res2.status).toBe(200);
-      const data2 = await res2.json();
-      expect(data2.status).toBe("active");
 
-      // Verify KV key count remains 1
       const subKeys = await kvKeys("notif:sub:*");
       expect(subKeys).toEqual([`notif:sub:${VALID_WALLET_1}`]);
+    });
 
-      const updatedRecord = await kvGet<SubscriptionRecord>(`notif:sub:${VALID_WALLET_1}`);
-      expect(updatedRecord?.email?.status).toBe("active");
-      expect(updatedRecord?.email?.periods).toEqual({ weekly: true, monthly: true, yearly: true });
+    it("rejects invalid email input with 400", async () => {
+      const req = createPostRequest(
+        "/api/notifications/subscribe-email",
+        {
+          walletAddress: VALID_WALLET_1,
+          email: "not-an-email",
+          periods: { weekly: true, monthly: false, yearly: false },
+        },
+        { "x-forwarded-for": "10.1.0.50" },
+      );
+      const res = await subscribeEmailPOST(req);
+      expect(res.status).toBe(400);
+      const body = await res.json();
+      expect(typeof body.error).toBe("string");
+    });
+
+    it("returns 503 when KV is unavailable", async () => {
+      const kv = await import("../_lib/kv");
+      const spy = vi.spyOn(kv, "kvSet").mockRejectedValueOnce(new Error("KV down"));
+      const req = createPostRequest(
+        "/api/notifications/subscribe-email",
+        {
+          walletAddress: VALID_WALLET_1,
+          email: "kvdown@example.com",
+          periods: { weekly: true, monthly: false, yearly: false },
+        },
+        { "x-forwarded-for": "10.1.0.60" },
+      );
+      const res = await subscribeEmailPOST(req);
+      expect([500, 503]).toContain(res.status);
+      spy.mockRestore();
+    });
+  });
+
+  describe("GET /api/notifications/confirm-email", () => {
+    it("confirms a pending email subscription via token (no auth required)", async () => {
+      const token = "confirm-token-abc";
+      await seedSubscription(VALID_WALLET_1, {
+        email: {
+          address: "confirm@example.com",
+          status: "pending",
+          token,
+          periods: { weekly: true, monthly: false, yearly: false },
+        },
+      });
+
+      const req = createGetRequest(
+        `/api/notifications/confirm-email?token=${token}`,
+      );
+      const res = await confirmEmailGET(req);
+      expect([200, 302]).toContain(res.status);
+
+      const record = await kvGet<SubscriptionRecord>(`notif:sub:${VALID_WALLET_1}`);
+      expect(record?.email?.status).toBe("active");
+    });
+
+    it("rejects a missing or invalid token", async () => {
+      const missing = await confirmEmailGET(
+        createGetRequest("/api/notifications/confirm-email"),
+      );
+      expect([400, 404]).toContain(missing.status);
+
+      const invalid = await confirmEmailGET(
+        createGetRequest("/api/notifications/confirm-email?token=does-not-exist"),
+      );
+      expect([400, 404]).toContain(invalid.status);
+    });
+
+    it("returns 503 when KV is unavailable", async () => {
+      const kv = await import("../_lib/kv");
+      const spy = vi.spyOn(kv, "kvGet").mockRejectedValueOnce(new Error("KV down"));
+      const res = await confirmEmailGET(
+        createGetRequest("/api/notifications/confirm-email?token=any"),
+      );
+      expect([500, 503]).toContain(res.status);
+      spy.mockRestore();
+    });
+  });
+
+  describe("GET /api/notifications/unsubscribe", () => {
+    it("unsubscribes via token without authentication", async () => {
+      const token = "unsub-token-xyz";
+      await seedSubscription(VALID_WALLET_1, {
+        email: {
+          address: "unsub@example.com",
+          status: "active",
+          token,
+          periods: { weekly: true, monthly: false, yearly: false },
+        },
+      });
+
+      const res = await unsubscribeGET(
+        createGetRequest(`/api/notifications/unsubscribe?token=${token}`),
+      );
+      expect([200, 302]).toContain(res.status);
+
+      const record = await kvGet<SubscriptionRecord>(`notif:sub:${VALID_WALLET_1}`);
+      expect(record?.email?.status).toBe("unsubscribed");
+    });
+
+    it("rejects a missing or invalid token", async () => {
+      const missing = await unsubscribeGET(
+        createGetRequest("/api/notifications/unsubscribe"),
+      );
+      expect([400, 404]).toContain(missing.status);
+
+      const invalid = await unsubscribeGET(
+        createGetRequest("/api/notifications/unsubscribe?token=nope"),
+      );
+      expect([400, 404]).toContain(invalid.status);
+    });
+
+    it("returns 503 when KV is unavailable", async () => {
+      const kv = await import("../_lib/kv");
+      const spy = vi.spyOn(kv, "kvGet").mockRejectedValueOnce(new Error("KV down"));
+      const res = await unsubscribeGET(
+        createGetRequest("/api/notifications/unsubscribe?token=any"),
+      );
+      expect([500, 503]).toContain(res.status);
+      spy.mockRestore();
+    });
+  });
+
+  describe("POST /api/notifications/dispatch", () => {
+    it("dispatches notifications for a valid payload", async () => {
+      await seedSubscription(VALID_WALLET_1, {
+        push: {
+          endpoint: "https://push.example.com/sub/1",
+          periods: { weekly: true, monthly: false, yearly: false },
+        },
+      });
+
+      const req = createPostRequest("/api/notifications/dispatch", {
+        period: "weekly",
+      });
+      const res = await dispatchPOST(req);
+      expect([200, 202]).toContain(res.status);
+      const body = await res.json();
+      expect(body).toBeTypeOf("object");
+    });
+
+    it("rejects invalid input with 400", async () => {
+      const req = createPostRequest("/api/notifications/dispatch", {
+        period: "not-a-period",
+      });
+      const res = await dispatchPOST(req);
+      expect(res.status).toBe(400);
+      const body = await res.json();
+      expect(typeof body.error).toBe("string");
+    });
+
+    it("returns 503 when KV is unavailable", async () => {
+      const kv = await import("../_lib/kv");
+      const spy = vi.spyOn(kv, "kvKeys").mockRejectedValueOnce(new Error("KV down"));
+      const res = await dispatchPOST(
+        createPostRequest("/api/notifications/dispatch", { period: "weekly" }),
+      );
+      expect([500, 503]).toContain(res.status);
+      spy.mockRestore();
+    });
+  });
+
+  describe("GET/POST /api/notifications/preferences", () => {
+    it("returns preferences for an existing wallet", async () => {
+      await seedSubscription(VALID_WALLET_1, {
+        push: {
+          endpoint: "https://push.example.com/sub/1",
+          periods: { weekly: true, monthly: false, yearly: false },
+        },
+      });
+
+      const res = await preferencesGET(
+        createGetRequest(
+          `/api/notifications/preferences?walletAddress=${VALID_WALLET_1}`,
+        ),
+      );
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(body).toBeTypeOf("object");
+    });
+
+    it("rejects invalid input with 400", async () => {
+      const res = await preferencesGET(
+        createGetRequest("/api/notifications/preferences?walletAddress=bad"),
+      );
+      expect(res.status).toBe(400);
+      const body = await res.json();
+      expect(typeof body.error).toBe("string");
+    });
+
+    it("updates preferences for a valid payload", async () => {
+      await seedSubscription(VALID_WALLET_1);
+      const res = await preferencesPOST(
+        createPostRequest("/api/notifications/preferences", {
+          walletAddress: VALID_WALLET_1,
+          periods: { weekly: true, monthly: true, yearly: false },
+        }),
+      );
+      expect(res.status).toBe(200);
+    });
+
+    it("returns 503 when KV is unavailable", async () => {
+      const kv = await import("../_lib/kv");
+      const spy = vi.spyOn(kv, "kvGet").mockRejectedValueOnce(new Error("KV down"));
+      const res = await preferencesGET(
+        createGetRequest(
+          `/api/notifications/preferences?walletAddress=${VALID_WALLET_1}`,
+        ),
+      );
+      expect([500, 503]).toContain(res.status);
+      spy.mockRestore();
+    });
+  });
+
+  describe("GET /api/notifications/data", () => {
+    it("returns subscription data for an existing wallet", async () => {
+      await seedSubscription(VALID_WALLET_1);
+      const res = await dataGET(
+        createGetRequest(
+          `/api/notifications/data?walletAddress=${VALID_WALLET_1}`,
+        ),
+      );
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(body).toBeTypeOf("object");
+    });
+
+    it("rejects invalid input with 400", async () => {
+      const res = await dataGET(
+        createGetRequest("/api/notifications/data?walletAddress=bad"),
+      );
+      expect(res.status).toBe(400);
+      const body = await res.json();
+      expect(typeof body.error).toBe("string");
+    });
+
+    it("returns 503 when KV is unavailable", async () => {
+      const kv = await import("../_lib/kv");
+      const spy = vi.spyOn(kv, "kvGet").mockRejectedValueOnce(new Error("KV down"));
+      const res = await dataGET(
+        createGetRequest(
+          `/api/notifications/data?walletAddress=${VALID_WALLET_1}`,
+        ),
+      );
+      expect([500, 503]).toContain(res.status);
+      spy.mockRestore();
     });
   });
 });

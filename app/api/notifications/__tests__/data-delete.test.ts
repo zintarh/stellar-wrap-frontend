@@ -85,4 +85,26 @@ describe("notification data deletion", () => {
     const res = await deleteByToken(req("/api/notifications/data", { body: { token: "nope" } }));
     expect(res.status).toBe(401);
   });
+
+  it("returns 400 when the wallet path param is missing", async () => {
+    const res = await deleteByWallet(req("/api/notifications/data/"), {
+      params: Promise.resolve({ wallet: "" }),
+    });
+    expect(res.status).toBe(400);
+    expect(await kvGet(SUB_KEY(WALLET))).not.toBeNull();
+  });
+
+  it("returns 400 when the token body is missing", async () => {
+    const res = await deleteByToken(req("/api/notifications/data", { body: {} }));
+    expect(res.status).toBe(400);
+    expect(await kvGet(SUB_KEY(WALLET))).not.toBeNull();
+  });
+
+  it("returns 503 when KV is unavailable", async () => {
+    const kv = jest.requireActual("../_lib/kv");
+    const spy = jest.spyOn(kv, "kvGet").mockRejectedValue(new Error("kv down"));
+    const res = await deleteByToken(req("/api/notifications/data", { body: { token: TOKEN } }));
+    expect(res.status).toBe(503);
+    spy.mockRestore();
+  });
 });
