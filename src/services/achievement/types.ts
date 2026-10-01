@@ -5,8 +5,7 @@
  * that the achievement calculator service will implement.
  */
 
-import { IndexedTransaction } from '../indexer/types';
-import { Timeframe } from '../indexer/types';
+import { IndexedTransaction, Timeframe } from './horizonTypes';
 
 /**
  * Asset information extracted from transactions

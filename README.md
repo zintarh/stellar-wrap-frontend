@@ -156,7 +156,9 @@ flowchart TD
 | Component | Location | Purpose |
 |-----------|----------|---------|
 | **Horizon API** | `src/services/horizonIndexer.ts` | Fetches account data, payments, and transactions from Stellar Horizon |
-| **Indexer Service** | `app/services/indexerService.ts` | Orchestrates indexing with caching and rate limiting |
+| **Indexer Core** | `app/services/indexerCore.ts` | Server-safe Horizon fetch and achievement calculation |
+| **Indexer Service** | `app/services/indexerService.ts` | Browser entry point (`indexAccount`) with IndexedDB caching |
+| **Indexer Server** | `app/services/indexerServer.ts` | API route entry point (`indexAccount`) for `/api/wrapped`, always live |
 | **Zustand Stores** | `app/store/`, `src/store/` | Manages application state (wrap data, transactions, rate limits) |
 | **Contract Bridge** | `app/utils/contractBridge.ts` | Interfaces with Soroban smart contracts for minting |
 | **Persona Generator** | `app/actions/generate-persona.ts` | AI-powered persona description generation |
