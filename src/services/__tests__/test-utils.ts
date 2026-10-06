@@ -2,7 +2,7 @@
  * Test utilities and helpers for service unit tests
  */
 
-import { IndexedTransaction, HorizonTransaction, HorizonOperation } from '../indexer/types';
+import { IndexedTransaction, HorizonTransaction, HorizonOperation } from '../achievement/horizonTypes';
 import { AssetInfo } from '../achievement/types';
 
 /**

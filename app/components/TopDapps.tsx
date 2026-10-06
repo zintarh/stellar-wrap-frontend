@@ -3,10 +3,12 @@
 import { motion } from "framer-motion";
 import { useWrapStore } from "../store/wrapStore";
 import { DappCard } from "./DappCard";
+import { DappCardSkeleton } from "./DappCardSkeleton";
 
 export function TopDapps() {
-  const { result } = useWrapStore();
+  const { result, status, isLoading } = useWrapStore();
   const topDapps = result?.dapps ?? [];
+  const showSkeleton = isLoading || status === "loading";
 
   const container = {
     hidden: { opacity: 0 },
@@ -20,7 +22,7 @@ export function TopDapps() {
   };
 
   return (
-    <div className="w-full max-w-[1400px] mx-auto px-8 md:px-16 flex flex-col gap-10 md:gap-14">
+    <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-8 md:px-16 flex flex-col gap-8 md:gap-14">
       {/* Header Section */}
       <motion.div
         initial={{ x: -60, opacity: 0 }}
@@ -34,7 +36,7 @@ export function TopDapps() {
         <h1
           data-story-heading="true"
           tabIndex={-1}
-          className="text-[48px] md:text-[72px] lg:text-[90px] font-black leading-[0.95] tracking-tight uppercase focus:outline-none"
+          className="text-[40px] sm:text-[56px] md:text-[72px] lg:text-[90px] font-black leading-[0.95] tracking-tight uppercase focus:outline-none"
         >
           <span className="block text-white">Your Top</span>
           <span
@@ -51,24 +53,26 @@ export function TopDapps() {
         </h1>
       </motion.div>
 
-      {/* Cards Row */}
+      {/* Cards Grid — single column on mobile, 3-up on md+ */}
       <motion.div
         variants={container}
         initial="hidden"
         animate="show"
-        className="grid grid-cols-1 md:grid-cols-3 gap-5 md:gap-6 w-full"
+        className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-5 md:gap-6 w-full"
       >
-        {topDapps.slice(0, 3).map((dapp, index) => (
-          <DappCard
-            key={dapp.name}
-            rank={index + 1}
-            name={dapp.name}
-            icon={dapp.icon}
-            logo={dapp.logo}
-            interactions={dapp.interactions}
-            delay={index * 0.15}
-          />
-        ))}
+        {showSkeleton
+          ? [0, 1, 2].map((index) => <DappCardSkeleton key={index} />)
+          : topDapps.slice(0, 3).map((dapp, index) => (
+              <DappCard
+                key={dapp.name}
+                rank={index + 1}
+                name={dapp.name}
+                icon={dapp.icon}
+                logo={dapp.logo}
+                interactions={dapp.interactions}
+                delay={index * 0.15}
+              />
+            ))}
       </motion.div>
     </div>
   );

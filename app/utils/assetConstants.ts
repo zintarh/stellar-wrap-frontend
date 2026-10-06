@@ -103,7 +103,7 @@ export const ASSET_CACHE_TTL = 24 * 60 * 60 * 1000;
  * Increment when cached metadata shape or resolution policy changes.
  * Entries with an older version are treated as stale and evicted on read.
  */
-export const ASS_CACHE_VERSION = 1;
+export const ASSET_CACHE_VERSION = 1;
 
 /**
  * Asset directory API endpoints

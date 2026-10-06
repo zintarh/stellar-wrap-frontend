@@ -1,6 +1,6 @@
 "use client";
 
-import { ErrorCard } from "@/components/ErrorCard";
+import { ErrorCard } from "@/app/components/ErrorCard";
 
 export default function LoadingError({
   error,

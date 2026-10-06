@@ -30,6 +30,11 @@ export interface UseRecentLedgersResult {
  * Recent Stellar ledgers for `network`, cached and deduplicated by React
  * Query instead of the previous `useEffect` + local `useState` fetch.
  *
+ * This is the single canonical implementation of `useRecentLedgers` for the
+ * app. The former duplicate under `app/hooks/useRecentLedgers.ts` has been
+ * removed (see #585); every importer must resolve to this module so caching,
+ * polling, and error behaviour stay consistent across the codebase.
+ *
  * `refresh()` is a `useMutation`, not a plain `refetch()` call, specifically
  * to get optimistic-update semantics: clicking refresh flips `isRefreshing`
  * true synchronously (before the network round-trip resolves) so the UI can

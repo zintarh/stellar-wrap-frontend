@@ -6,7 +6,7 @@ import {
   Transaction,
   TransactionBuilder,
   xdr,
-} from "@stellar/stellar-sdk";
+} from "stellar-sdk";
 import { Network, NETWORK_PASSPHRASES } from "../../src/config";
 import type { WalletProvider } from "../store/walletStore";
 
@@ -551,29 +551,6 @@ export const connectXBull = async (_network: Network): Promise<string> => {
 };
 
 // ─── Session re-validation ──────────────────────────────────────────────────
-
-/**
- * Races a promise against a timeout so a slow/hung wallet probe can never
- * block the UI on app reload. Kept local to avoid coupling the wallet
- * utilities to the transaction signer.
- */
-async function withTimeout<T>(
-  promise: Promise<T>,
-  timeoutMs: number,
-  timeoutMessage: string,
-): Promise<T> {
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  try {
-    const guarded = new Promise<never>((_, reject) => {
-      timer = setTimeout(() => reject(new Error(timeoutMessage)), timeoutMs);
-    });
-    return await Promise.race([promise, guarded]);
-  } finally {
-    if (timer !== undefined) {
-      clearTimeout(timer);
-    }
-  }
-}
 
 export type WalletValidationResult =
   | { ok: true }

@@ -1,0 +1,15 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#00D4FF;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0099CC;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <g transform="translate(256, 256)">
+    <!-- Sparkles/Chart icon representing The Trader -->
+    <path d="M-60 -20 L-40 -60 L-20 -20 L0 -80 L20 -20 L40 -60 L60 -20 L20 10 L40 50 L20 20 L0 80 L-20 20 L-40 50 L-20 10 Z" fill="#ffffff" opacity="0.9"/>
+    <path d="M-30 10 L0 -30 L30 10" fill="#ffffff" opacity="0.6"/>
+    <path d="M-50 -30 L-70 -70 M50 -30 L70 -70 M-50 20 L-70 60 M50 20 L70 60" stroke="#ffffff" stroke-width="3" opacity="0.4"/>
+  </g>
+</svg>

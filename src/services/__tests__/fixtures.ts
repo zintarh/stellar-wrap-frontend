@@ -4,7 +4,7 @@
  * These fixtures provide realistic test data scenarios for various edge cases
  */
 
-import { IndexedTransaction } from '../indexer/types';
+import { IndexedTransaction } from '../achievement/horizonTypes';
 import {
   createMockIndexedTransaction,
   createMockOperation,

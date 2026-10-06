@@ -36,6 +36,12 @@ jobs:
         run: ANALYZE=true pnpm build
         env:
           ANALYZE: true
+          # Placeholder contract address: satisfies the prebuild env check and
+          # the app treats it as "no contract configured".
+          NEXT_PUBLIC_CONTRACT_ADDRESS_TESTNET: CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+
+      - name: Check bundle size against .size-limit.json
+        run: pnpm exec size-limit
 
       - name: Upload bundle analysis
         uses: actions/upload-artifact@v4
