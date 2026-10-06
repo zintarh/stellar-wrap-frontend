@@ -29,6 +29,8 @@
     "test:coverage:merge": "node scripts/merge-coverage.mjs",
     "test:a11y": "playwright test --project=a11y-chromium",
     "test:a11y:update": "playwright test --project=a11y-chromium --update-snapshots",
+    "test:a11y:unit": "vitest run __tests__/a11y.test.tsx",
+    "test:a11y:unit:report": "tsx scripts/a11y-reporter.ts a11y-axe-results.json",
     "test:load": "node load-tests/run.mjs",
     "test:load:baseline": "node load-tests/run.mjs --update-baseline",
     "check:route-casing": "node scripts/check-route-file-casing.mjs",

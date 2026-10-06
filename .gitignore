@@ -45,3 +45,7 @@ playwright/.cache/
 
 # Storybook
 storybook-static/
+
+# a11y reports
+a11y-report.sarif
+a11y-axe-results.json
