@@ -26,15 +26,12 @@ import {
   PREFERENCES_WALLET_LIMIT,
   PREFERENCES_WALLET_WINDOW,
 } from "../../_lib/rateLimit";
+import { isValidWalletAddress as isValidWallet } from "@/src/utils/validateStellarAddress";
 
 const log = logger.child("api:preferences");
 
 interface RouteParams {
   params: Promise<{ wallet: string }>;
-}
-
-function isValidWallet(address: string): boolean {
-  return typeof address === "string" && address.startsWith("G") && address.length === 56;
 }
 
 /**

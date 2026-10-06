@@ -14,12 +14,9 @@ import {
 } from "../_lib/rateLimit";
 import type { SubscriptionRecord, PeriodPrefs } from "@/app/types/notifications";
 import { apiError, internalApiError } from "@/app/api/_lib/apiError";
+import { isValidWalletAddress as isValidWallet } from "@/src/utils/validateStellarAddress";
 
 const VALID_PERIODS = ["weekly", "monthly", "yearly"] as const;
-
-function isValidWallet(address: string): boolean {
-  return typeof address === "string" && address.startsWith("G") && address.length === 56;
-}
 
 async function syncPeriodIndex(
   walletAddress: string,

@@ -51,9 +51,7 @@ async function syncPeriodIndex(
   await Promise.all(ops);
 }
 
-function isValidWallet(address: string): boolean {
-  return typeof address === "string" && address.startsWith("G") && address.length === 56;
-}
+import { isValidWalletAddress as isValidWallet } from "@/src/utils/validateStellarAddress";
 
 export async function POST(request: NextRequest) {
   try {
