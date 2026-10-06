@@ -50,6 +50,7 @@ export function LandingPage() {
 
       {/* Animated scan lines */}
       <motion.div
+        data-testid="animated-scan-lines"
         className="absolute inset-0 pointer-events-none"
         style={{
           backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(var(--color-theme-primary-rgb), 0.03) 2px, rgba(var(--color-theme-primary-rgb), 0.03) 4px)',
@@ -68,6 +69,7 @@ export function LandingPage() {
 
       {/* Multiple layered glows for depth */}
       <motion.div
+        data-testid="animated-glow-1"
         className="absolute top-0 left-1/2 -translate-x-1/2 w-[1200px] h-[800px] rounded-full blur-[200px]"
         style={{ backgroundColor: 'rgba(var(--color-theme-primary-rgb), 0.1)' }}
         animate={
@@ -86,6 +88,7 @@ export function LandingPage() {
       />
 
       <motion.div
+        data-testid="animated-glow-2"
         className="absolute bottom-0 left-1/4 w-[800px] h-[600px] rounded-full blur-[180px]"
         style={{ backgroundColor: 'rgba(var(--color-theme-primary-rgb), 0.08)' }}
         animate={
@@ -104,6 +107,7 @@ export function LandingPage() {
       />
 
       <motion.div
+        data-testid="animated-glow-3"
         className="absolute top-1/3 right-1/4 w-[600px] h-[600px] rounded-full blur-[160px]"
         style={{ backgroundColor: 'rgba(var(--color-theme-primary-rgb), 0.06)' }}
         animate={
@@ -124,6 +128,7 @@ export function LandingPage() {
       {/* Floating blockchain nodes (geometric shapes) */}
       {!prefersReducedMotion && [...Array(8)].map((_, i) => (
         <motion.div
+          data-testid={`animated-node-${i}`}
           key={i}
           className="absolute hidden md:block"
           style={{
@@ -154,7 +159,7 @@ export function LandingPage() {
 
       {/* Blockchain connection lines */}
       {!prefersReducedMotion && (
-      <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-20 hidden md:block">
+      <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-20 hidden md:block" data-testid="animated-svg-lines">
         {[...Array(6)].map((_, i) => {
           const x1 = 20 + i * 15;
           const y1 = 30 + (i % 2) * 40;
@@ -188,7 +193,7 @@ export function LandingPage() {
 
       {/* Animated block chain visualization */}
       {!prefersReducedMotion && (
-      <div className="absolute left-4 md:left-12 top-1/2 -translate-y-1/2 hidden sm:block">
+      <div className="absolute left-4 md:left-12 top-1/2 -translate-y-1/2 hidden sm:block" data-testid="animated-block-chain">
         {[...Array(5)].map((_, i) => (
           <motion.div
             key={`block-${i}`}
@@ -233,7 +238,7 @@ export function LandingPage() {
 
       {/* Animated transaction flow on right side */}
       {!prefersReducedMotion && (
-      <div className="absolute right-4 md:right-12 top-1/4 hidden sm:block">
+      <div className="absolute right-4 md:right-12 top-1/4 hidden sm:block" data-testid="animated-tx-flow">
         {[...Array(8)].map((_, i) => (
           <motion.div
             key={`tx-${i}`}
@@ -455,7 +460,7 @@ export function LandingPage() {
         </motion.div>
 
         {/* Live Wrap Counter */}
-        <LiveWrapCounter />
+        <LiveWrapCounter data-testid="live-wrap-counter" />
 
         {/* Period selection */}
         <motion.div

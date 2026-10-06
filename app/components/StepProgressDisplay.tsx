@@ -33,11 +33,13 @@ const AnimatePresence = lazy(() =>
 interface StepProgressDisplayProps {
   onRetry?: () => void;
   onCancel?: () => void;
+  "data-testid"?: string;
 }
 
 function StepProgressDisplayBase({
   onRetry,
   onCancel,
+  "data-testid": dataTestid,
 }: StepProgressDisplayProps) {
   const {
     currentStep,
@@ -88,6 +90,7 @@ function StepProgressDisplayBase({
 
   return (
     <motion.div
+      data-testid={dataTestid}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 20 }}

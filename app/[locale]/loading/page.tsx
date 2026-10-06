@@ -272,7 +272,7 @@ export default function LoadingScreen() {
   return (
     <div className="relative w-full min-h-screen h-screen overflow-hidden flex items-center justify-center bg-theme-background">
       <ProgressRecoveryBanner />
-      <ProgressIndicator currentStep={3} totalSteps={6} showNext={false} />
+      <ProgressIndicator currentStep={3} totalSteps={6} showNext={false} data-testid="progress-indicator" />
 
       {showZeroActivity ? (
         <div className="relative z-40 w-full max-w-2xl px-4">
@@ -287,6 +287,7 @@ export default function LoadingScreen() {
             <StepProgressDisplay
               onCancel={handleCancel}
               onRetry={handleRetry}
+              data-testid="step-progress-display"
             />
             <CacheStatusBadge />
           </div>
