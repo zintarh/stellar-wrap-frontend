@@ -31,10 +31,10 @@ import React, {
 } from 'react';
 
 import { useMultiSigWallet } from '../../src/hooks/useMultiSigWallet';
-import { useMultiSigStore } from '../../src/store/multiSigStore';
+import { useMultiSigStore } from '@/app/store/multiSigStore';
 
 import type { ProposeParams } from '../../src/hooks/useMultiSigWallet';
-import type { SignerStatus } from '../../src/store/multiSigStore';
+import type { SignerStatus } from '@/app/store/multiSigStore';
 import type {
   MultiSigContractArgs,
   MultiSigContractMethod,

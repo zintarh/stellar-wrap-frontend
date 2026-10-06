@@ -155,7 +155,7 @@ import {
 } from '../../types/multiSig';
 import type { MultiSigProposal } from '../../types/multiSig';
 
-import { useMultiSigStore } from '../../store/multiSigStore';
+import { useMultiSigStore } from '@/app/store/multiSigStore';
 
 import {
   proposeMultiSigTransaction,

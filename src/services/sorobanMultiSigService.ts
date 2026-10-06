@@ -51,7 +51,7 @@ import {
 } from '../../config/contracts';
 import { mapContractError } from '../../app/utils/contractErrors';
 import { HorizonRequestQueue } from '../utils/horizonRequestQueue';
-import { useRateLimitStore } from '../store/rateLimitStore';
+import { useRateLimitStore } from '@/app/store/rateLimitStore';
 
 import type {
   MultiSigProposal,

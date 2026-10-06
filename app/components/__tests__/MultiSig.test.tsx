@@ -3,10 +3,10 @@
  */
 import { render, screen } from '@testing-library/react';
 import { MultiSig } from '../MultiSig';
-import { useMultiSigStore } from '../../store/multiSigStore';
-import { useMultiSigWallet } from '../../hooks/useMultiSigWallet';
+import { useMultiSigStore } from '@/app/store/multiSigStore';
+import { useMultiSigWallet } from '@/src/hooks/useMultiSigWallet';
 
-jest.mock('../../hooks/useMultiSigWallet', () => ({
+jest.mock('@/src/hooks/useMultiSigWallet', () => ({
   useMultiSigWallet: jest.fn(),
 }));
 

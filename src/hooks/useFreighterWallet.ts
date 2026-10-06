@@ -40,8 +40,8 @@ import {
 } from "../../app/utils/walletConnect";
 import { getHorizonServer } from "../../app/utils/stellarClient";
 import { horizonQueue } from "../utils/horizonRequestQueue";
-import { useRateLimitStore } from "../store/rateLimitStore";
-import { truncatePublicKey, formatXlm } from "../utils/stellarAmount";
+import { useRateLimitStore } from "@/app/store/rateLimitStore";
+import { truncatePublicKey, formatXlm } from "../utils/stellarAmounts";
 import type { Network } from "../config";
 
 // ─── Error codes ──────────────────────────────────────────────────────────────

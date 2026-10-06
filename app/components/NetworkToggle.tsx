@@ -10,7 +10,7 @@ import { clearContractCache } from '../utils/contractBridge';
 import { useDialogFocusManagement } from '../hooks/useDialogFocusManagement';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { verifyWalletForNetwork } from '../services/transactionSigner';
-import { useRateLimitStore } from '../../src/store/rateLimitStore';
+import { useRateLimitStore } from '@/app/store/rateLimitStore';
 import { NetworkSwitchFailureReason } from '../../app/types/networkSwitch';
 import { NetworkSwitchService } from '../../src/services/networkSwitchService';
 

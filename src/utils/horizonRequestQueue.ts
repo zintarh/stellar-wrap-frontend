@@ -1,5 +1,5 @@
 import { parseHorizonError } from './horizonErrorHandler';
-import { useRateLimitStore } from '../store/rateLimitStore';
+import { useRateLimitStore } from '@/app/store/rateLimitStore';
 import { logger } from '../../app/utils/logger';
 import { RequestQueue, type RetryDecision } from './requestQueue';
 
